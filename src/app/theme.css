@@ -1,0 +1,29 @@
+/* ==========================================================================
+   BRAND COLOR — SINGLE SOURCE OF TRUTH
+   The color itself lives in src/constants/colors.ts (PRIMARY_COLOR).
+   It is injected as --brand-primary on <html> by app/[lang]/layout.tsx,
+   so changing that one constant updates the whole site
+   (buttons, links, accents, SVGs, hover states, tinted cards…).
+   Hover / light / deep shades are derived automatically from it.
+   ========================================================================== */
+
+/* Fallback so the colors ALWAYS render, even before/without the runtime
+   injection. The real value comes from PRIMARY_COLOR in
+   src/constants/colors.ts (set inline on <html> by layout.tsx, which
+   overrides this). If you change the constant, update this hex too. */
+:root {
+  --brand-primary: #0062ff;
+}
+
+@theme {
+  --color-primary: var(--brand-primary);
+  /* slightly darker — hover states */
+  --color-primary-hover: color-mix(in srgb, var(--brand-primary) 88%, black);
+  /* lighter — links on dark backgrounds */
+  --color-primary-light: color-mix(in srgb, var(--brand-primary) 67%, white);
+  /* very dark tint — "deep" cards in the navbar */
+  --color-primary-deep: color-mix(in srgb, var(--brand-primary) 18%, black);
+  /* pale tint — soft backgrounds on light surfaces, image tiles */
+  --color-primary-tint: color-mix(in srgb, var(--brand-primary) 35%, white);
+  --color-primary-deep-hover: color-mix(in srgb, var(--brand-primary) 25%, black);
+}
