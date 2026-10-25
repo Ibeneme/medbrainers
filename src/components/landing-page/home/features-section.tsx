@@ -151,7 +151,7 @@ export default function EnterpriseSupportSection() {
   return (
     <section
       ref={containerRef}
-      className="relative w-full overflow-hidden border-b border-white/5 bg-black pb-[6rem] pt-[1rem] text-white"
+      className="relative w-full overflow-hidden border-b border-white/5 bg-black pb-[6rem] pt-24 text-white"
     >
       <div className="relative z-10 mx-auto flex max-w-7xl flex-col items-start px-6 md:px-12">
         {/* Header */}

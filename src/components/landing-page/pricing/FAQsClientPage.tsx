@@ -83,7 +83,7 @@ export default function FAQsClientPage() {
       }}
       className="relative min-h-[85vh] w-full bg-white px-4 pb-20 pt-32 font-['Lufga'] text-black sm:px-6 md:pt-40 lg:px-8 selection:bg-[var(--accent)] selection:text-white"
     >
-      <RoughEdgeTop />
+      {/* <RoughEdgeTop /> */}
 
       <div className="relative z-10 mx-auto max-w-7xl">
         <motion.h1

@@ -36,7 +36,7 @@ const partners: string[] = [];
 const EDGE_PATH =
   "M0 395V180L18 180L32 175L40 178L75 200L110 211L150 198L165 185L175 177L185 181L220 157L255 146L270 150L290 165L310 175L335 177L350 168L365 157L395 152L410 149L458 150L470 153L530 166L560 170L605 178L630 170L670 176L725 173L735 166L765 170L825 170L840 160L870 138L885 129L920 122L925 120L1400 120L1410 123L1430 121L1605 121L1620 125L1650 127L1665 127L1690 120L1710 120L1722 133L1740 130L1750 120L1915 120L1930 121L2335 121L2342 121L2323 172L2303 187L2320 196L2392 200L2430 193L2462 189L2485 197L2545 210L2576 206V395Z";
 
-function RoughEdge({ position }: { position: "top" | "bottom" }) {
+export function RoughEdge({ position }: { position: "top" | "bottom" }) {
   return (
     <svg
       aria-hidden="true"
@@ -176,11 +176,11 @@ export default function MedBrainersIntro() {
   return (
     <section
       ref={rootRef}
-      className="relative w-full overflow-hidden bg-white text-black py-16 md:py-24 mb-16"
+      className="relative w-full overflow-hidden bg-white text-black pb-24"
     >
-      <RoughEdge position="top" />
+      {/* <RoughEdge position="top" /> */}
+      {/* <RoughEdge position="bottom" /> */}
       <RoughEdge position="bottom" />
-
       <div className="relative z-10 mx-auto max-w-7xl px-6 py-16 md:py-24 lg:px-12">
         {/* Hero row */}
         <div

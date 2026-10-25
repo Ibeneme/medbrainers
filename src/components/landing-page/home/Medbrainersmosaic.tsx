@@ -15,7 +15,6 @@ import { T, useT } from "@/i18n/provider";
 import { productName } from "@/constants/site";
 import Cells from "./dna/cells";
 
-
 gsap.registerPlugin(ScrollTrigger);
 
 type Tile = {
@@ -211,8 +210,9 @@ export default function MedBrainersMosaic() {
       <div className="relative z-10">
         <div className="flex mb-16 mt-24 w-full items-center justify-center gap-4 px-4">
           <span className="text-[17vw] text-center font-semibold leading-none tracking-tighter text-white md:text-[10vw]">
-            <T>Patients First.</T>
-          </span>
+            <T>Your Healthcare’s second brain.</T>
+          </span>{" "}
+          {/* */}
           {/* Lock Icon */}
           {/* <div className="flex items-center justify-center">
             <svg

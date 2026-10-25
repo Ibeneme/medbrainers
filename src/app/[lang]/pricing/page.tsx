@@ -4,7 +4,6 @@ import { faqData } from "@/components/landing-page/pricing/faq-data";
 import { isLocale } from "@/i18n/config";
 import { getT } from "@/i18n/server";
 import { pageMetadata, type LangParams } from "@/i18n/seo";
-import DnaSection from "@/components/landing-page/home/animated-dna";
 
 export async function generateMetadata({ params }: LangParams) {
   return pageMetadata(
@@ -36,7 +35,6 @@ export default async function Page({ params }: LangParams) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd).replace(/</g, "\\u003c") }}
       />
       <MedBrainersPricingPage />
-      <DnaSection />
       <FAQsClientPage />
     </div>
   );

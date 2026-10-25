@@ -516,10 +516,10 @@ export default function Testimonials() {
       ref={rootRef}
       className="relative w-full overflow-hidden bg-black text-white"
     >
-      <div className="relative my-[24px] mx-[0px] h-[350px] w-[calc(100%-48px)] overflow-hidden  bg-black">
+      {/*     <div className="relative my-[24px] mx-[0px] h-[350px] w-[calc(100%-48px)] overflow-hidden  bg-black">
         <VirusField />
 
-        {/* Bottom Encrypted Data Banner */}
+
         <div
           className="absolute bottom-6 left-6 right-6 md:left-12 md:right-12 z-20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-6 py-4 rounded-2xl shadow-xl"
           style={{
@@ -536,7 +536,7 @@ export default function Testimonials() {
           </div>
         </div>
       </div>
-
+ */}
       <div className="mx-auto max-w-7xl px-6 py-16 md:py-24 lg:px-12">
         {/* Intro */}
         <div

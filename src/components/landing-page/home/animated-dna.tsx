@@ -738,7 +738,7 @@ export default function DnaSection({
     <section
       ref={sectionRef}
       aria-label="Animated DNA double helix section"
-      className={`relative flex w-full flex-col gap-8 overflow-hidden bg-black pb-[clamp(24px,6vh,64px)] text-white md:pt-32 ${
+      className={`relative flex w-full flex-col gap-8 overflow-hidden bg-black pb-32 text-white md:pt-32 ${
         customCursor ? "cursor-none" : ""
       }`}
     >

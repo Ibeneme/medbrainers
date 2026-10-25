@@ -8,12 +8,14 @@ import MedBrainersIntro from "@/components/landing-page/home/intro";
 import Testimonials from "@/components/landing-page/home/testimonials";
 import { pageMetadata, type LangParams } from "@/i18n/seo";
 import { SITE } from "@/constants/site";
-import DataSecurity from "@/components/landing-page/home/data-security";
+import DataSecurity from "@/components/landing-page/home/ai-health";
 import Countdown from "@/components/atoms/timers/countdown";
 import DnaSection from "@/components/landing-page/home/animated-dna";
 import FeatureSlider from "@/components/atoms/timers/featuresslider";
 import MedAnimations from "@/components/landing-page/home/animations";
 import EmrImportSection from "@/components/landing-page/home/emr";
+import MacShowcase from "@/components/landing-page/home/mac-showcase";
+import HealthMeetsAI from "@/components/landing-page/home/ai-health";
 
 export async function generateMetadata({ params }: LangParams) {
   return pageMetadata(
@@ -31,16 +33,14 @@ export default function Home() {
   return (
     <div>
       <Hero />
-      {/* <FeatureSlider /> */}
+      <FeatureSlider />
       <EmrImportSection />
       <DnaSection />
-      {/* <IntegrationsShowcase /> */}
 
       <MedBrainersIntro />
       <EnterpriseSupportSection />
-      {/* <MedAnimations /> */}
+      <HealthMeetsAI />
       <Testimonials />
-      <DataSecurity />
       <MedBrainersMosaic /> 
       {/* <Countdown /> */}
     </div>

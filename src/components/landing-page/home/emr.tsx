@@ -7,8 +7,8 @@ import { PRIMARY_COLOR } from "@/constants/colors";
 const CARDS = [
   {
     src: "/assets/landing-page-images/cards/mac-a.png",
-    alt: "Patient data overview",
-    title: "Patient data, not paper",
+    alt: "e-Patient data overview",
+    title: "e-Patient data, not paper",
     body: "Every lab result, note, and history lives in one structured record — searchable, shareable, and ready when care teams need it.",
   },
   {
@@ -47,7 +47,7 @@ export default function FeatureCardsSection({
 
   return (
     <section
-      className={`relative flex min-h-screen w-full flex-col justify-center bg-black px-4 py-16 text-white sm:px-4 lg:px-8 ${className}`}
+      className={`relative pt-40 flex min-h-screen w-full flex-col justify-center bg-black px-4 py-16 text-white sm:px-4 lg:px-8 ${className}`}
     >
       <div className="mx-auto w-full max-w-6xl">
         {/* text */}

@@ -33,6 +33,12 @@ const EMR_FEATURES: { en: string; fr: string }[] = [
   { en: "Billing & Insurance", fr: "Facturation et assurance" },
   { en: "Secure Patient Data", fr: "Données patients sécurisées" },
   { en: "Doctor Dashboard", fr: "Tableau de bord du médecin" },
+  { en: "HIPAA Compliant", fr: "Conforme HIPAA" },
+  {
+    en: "Encrypted Client & Patient Data",
+    fr: "Données clients et patients chiffrées",
+  },
+  { en: "AI Integration & Analysis", fr: "Intégration et analyse IA" },
 ];
 
 const toLang = (value?: string | null): Lang =>

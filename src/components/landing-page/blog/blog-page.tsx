@@ -9,6 +9,7 @@ import { productName } from "@/constants/site";
 import { Art, type ArtName } from "@/components/atoms/art/isometric-art";
 import { posts, pick, type Post } from "./data";
 import Cells from "../home/dna/cells";
+import Dna from "../home/dna/dna";
 
 export const formatDate = (iso: string, locale: string) =>
   new Intl.DateTimeFormat(locale === "fr" ? "fr-FR" : "en-GB", {
@@ -75,7 +76,7 @@ function PostMeta({
   return (
     <p
       className={`text-sm ${
-        tone === "light" ? "text-black/50" : "text-white/40"
+        tone === "light" ? "text-white/60" : "text-white/40"
       }`}
     >
       {formatDate(post.date, locale)} · {post.readMinutes} <T>min read</T>
@@ -107,7 +108,7 @@ export default function BlogPage() {
     <div ref={rootRef} className="w-full bg-black font-lufga text-white">
       {/* ---------- Page header: product name + Cells bg ---------- */}
       <div className="relative mt-16 flex h-[280px] w-full select-none items-center overflow-hidden bg-black md:h-[350px] lg:h-[390px]">
-        <Cells />
+        <Dna /> 
         {/* Darkened overlay for contrast */}
         <div className="absolute inset-0 pointer-events-none bg-black/50 z-[1]" />
         {/* Film grain / Noise overlay */}
@@ -121,22 +122,22 @@ export default function BlogPage() {
         <div className="relative z-10 mx-auto w-full max-w-7xl px-6 lg:px-12">
           <p
             aria-hidden="true"
-            className="w-full text-left text-[clamp(3.8rem,14vw,12rem)] font-black leading-[0.85] tracking-tighter text-[#ffffff] md:text-[clamp(10rem,17vw,13rem)]"
+            className="w-full text-left text-[clamp(3.2rem,12vw,8rem)] font-black leading-[0.85] tracking-tighter text-[#ffffff] md:text-[clamp(10rem,17vw,8rem)]"
           >
-            <T>{productName}</T>
+            <T>{productName} Blog</T>
             <span style={{ color: PRIMARY_COLOR }}>.</span>
           </p>
         </div>
       </div>
 
       {/* ---------- Title + featured post (torn edge at the BOTTOM) ---------- */}
-      <div className="relative w-full overflow-hidden bg-white pb-24 text-black md:pb-36 lg:pb-44">
+      <div className="relative w-full overflow-hidden bg-black pb-24 text-white md:pb-36 lg:pb-44">
         <header className="mx-auto max-w-7xl px-6 pb-12 pt-32 md:pb-16 md:pt-44 lg:px-12">
           <div
             data-hero
             className="grid items-end gap-10 md:grid-cols-[1.7fr_1fr] md:gap-16"
           >
-            <h1 className="text-4xl font-semibold leading-[1.08] tracking-tight md:text-6xl">
+            <h1 className="text-4xl font-semibold leading-[1.08] tracking-tight md:text-6xl text-white">
               <T>Insights for smarter</T>{" "}
               <span
                 style={{ backgroundColor: PRIMARY_COLOR }}
@@ -145,7 +146,7 @@ export default function BlogPage() {
                 <T>healthcare.</T>
               </span>
             </h1>
-            <p className="max-w-sm text-sm leading-relaxed text-black/60 md:pb-2 md:text-base">
+            <p className="max-w-sm text-sm leading-relaxed text-white/60 md:pb-2 md:text-base">
               <T>
                 Practical guides on electronic records, billing, pharmacy and
                 running a modern hospital.
@@ -167,10 +168,10 @@ export default function BlogPage() {
             />
             <div>
               <PostMeta post={featured} locale={locale} tone="light" />
-              <h2 className="mt-4 text-3xl font-semibold leading-[1.1] tracking-tight transition-colors group-hover:text-black/70 md:text-5xl">
+              <h2 className="mt-4 text-3xl font-semibold leading-[1.1] tracking-tight transition-colors group-hover:text-white/80 md:text-5xl text-white">
                 {pick(featured.title, locale)}
               </h2>
-              <p className="mt-5 max-w-lg text-base leading-relaxed text-black/60">
+              <p className="mt-5 max-w-lg text-base leading-relaxed text-white/60">
                 {pick(featured.excerpt, locale)}
               </p>
               <span
@@ -194,7 +195,7 @@ export default function BlogPage() {
 
       {/* ---------- More posts ---------- */}
       <section className="mx-auto max-w-7xl px-4 pb-32 pt-16 md:pb-48 lg:px-12">
-        <h2 className="mb-10 text-2xl font-semibold tracking-tight md:text-3xl">
+        <h2 className="mb-10 text-2xl font-semibold tracking-tight md:text-3xl text-white">
           <T>Latest articles</T>
         </h2>
         <div className="grid gap-x-12 gap-y-24 md:grid-cols-2 lg:grid-cols-3">
@@ -211,7 +212,7 @@ export default function BlogPage() {
               />
               <div className="mt-6">
                 <PostMeta post={post} locale={locale} />
-                <h3 className="mt-3 text-2xl font-semibold leading-tight tracking-tight transition-colors group-hover:text-white/80">
+                <h3 className="mt-3 text-2xl font-semibold leading-tight tracking-tight transition-colors group-hover:text-white/80 text-white">
                   {pick(post.title, locale)}
                 </h3>
                 <p className="mt-3 max-w-md text-[15px] leading-relaxed text-white/60">
@@ -223,16 +224,20 @@ export default function BlogPage() {
         </div>
       </section>
 
+      <div className="relative w-full h-[320px] overflow-hidden bg-black">
+          <Cells />
+        </div>
+
       {/* ---------- CTA ---------- */}
-      <section
-        style={{ backgroundColor: "#fff", color: "#000" }}
-        className="relative w-full overflow-hidden pb-24 pt-28 text-white md:pb-32 md:pt-44"
+      {/* <section
+        style={{ backgroundColor: "#000", color: "#fff" }}
+        className="relative w-full overflow-hidden border-t border-white/10 pb-24 pt-28 text-white md:pb-32 md:pt-44"
       >
         <RoughEdge position="top" />
 
         <div className="relative z-10 mx-auto grid max-w-7xl items-center gap-14 px-6 lg:grid-cols-[1.25fr_1fr] lg:gap-20 lg:px-12">
           <div>
-            <h2 className="mt-6 text-4xl font-semibold leading-[1.05] tracking-tight md:text-6xl lg:text-7xl">
+            <h2 className="mt-6 text-4xl font-semibold leading-[1.05] tracking-tight md:text-6xl lg:text-7xl text-white">
               <T>See how</T>{" "}
               <span
                 className="inline-block -rotate-1 px-3 text-white"
@@ -246,12 +251,12 @@ export default function BlogPage() {
             <div className="mt-10 flex flex-wrap items-center gap-5">
               <Link
                 href="/get-started"
-                className="group inline-flex items-center gap-3 rounded-full bg-black py-2 pl-8 pr-2 text-base font-semibold text-white transition-transform hover:scale-105"
+                className="group inline-flex items-center gap-3 rounded-full bg-white py-2 pl-8 pr-2 text-base font-semibold text-black transition-transform hover:scale-105"
               >
                 <T>Get started</T>
                 <span
                   aria-hidden="true"
-                  className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-lg text-black transition-transform duration-200 group-hover:rotate-45"
+                  className="flex h-11 w-11 items-center justify-center rounded-full bg-black text-lg text-white transition-transform duration-200 group-hover:rotate-45"
                 >
                   →
                 </span>
@@ -276,7 +281,7 @@ export default function BlogPage() {
             </div>
           </div>
         </div>
-      </section>
+      </section> */}
     </div>
   );
 }
