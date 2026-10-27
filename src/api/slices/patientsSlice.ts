@@ -28,6 +28,20 @@ export interface IRecommendedDrug {
   instructions?: string;
 }
 
+export interface IConsultationAttachment {
+  _id?: string;
+  url: string;
+  name: string;
+  mimeType: string;
+  size: number;
+  uploadedAt: string | Date;
+  uploadedBy?: {
+    _id: string;
+    firstName?: string;
+    lastName?: string;
+  } | string;
+}
+
 export interface IConsultation {
   _id?: string;
   consultedAt: string | Date;
@@ -36,6 +50,12 @@ export interface IConsultation {
     firstName?: string;
     lastName?: string;
     email?: string;
+  } | string;
+  department?: {
+    _id: string;
+    name?: string;
+    code?: string;
+    description?: string;
   } | string;
   title: string;
   complaint: string;
@@ -56,8 +76,54 @@ export interface IConsultation {
   notes?: string;
   summary?: string;
   status: 'open' | 'completed';
+  attachments?: IConsultationAttachment[];
   createdAt?: string | Date;
   updatedAt?: Date;
+}
+
+export interface CompanyConsultationItem {
+  patientId: string;
+  patientMrn: string;
+  patientName: string;
+  patientPhone?: string;
+  consultation: IConsultation;
+}
+
+export interface VitalRecordItem {
+  _id?: string;
+  temperatureC?: number;
+  spo2?: number;
+  pulse?: number;
+  bpSystolic?: number;
+  bpDiastolic?: number;
+  respiratoryRate?: number;
+  bloodGlucose?: number;
+  painScore?: number;
+  notes?: string;
+  alert?: boolean;
+  alertReason?: string;
+  alertReasons?: string[];
+  recordedAt?: string | Date;
+}
+
+export interface CompanyVitalItem {
+  patientId: string;
+  patientName: string;
+  patientMrn: string;
+  patientPhone?: string;
+  patientGender?: string;
+  patientBloodGroup?: string;
+  vital: VitalRecordItem;
+}
+
+export interface PatientVitalsResponse {
+  patientId: string;
+  patientMrn: string;
+  patientName: string;
+  patientPhone?: string;
+  patientGender?: string;
+  patientBloodGroup?: string;
+  vitals: VitalRecordItem[];
 }
 
 export interface ActivityLog {
@@ -87,31 +153,49 @@ export interface ConsultationDetailResponse {
 export interface PatientsState {
   list: Patient[];
   current: (Patient & { activityLogs?: ActivityLog[]; consultations?: IConsultation[] }) | null;
+  companyConsultations: CompanyConsultationItem[];
+  companyVitals: CompanyVitalItem[];
+  patientVitals: PatientVitalsResponse | null;
   familyView: PatientFamilyResponse | null;
   families: FamilyGroup[];
   alerts: unknown[];
   listLoading: boolean;
+  companyConsultationsLoading: boolean;
+  companyVitalsLoading: boolean;
+  patientVitalsLoading: boolean;
   detailLoading: boolean;
   saving: boolean;
   error: string | null;
   message: string | null;
   meta: { page: number; limit: number; total: number } | null;
   consultationsMeta: { page: number; limit: number; total: number } | null;
+  companyConsultationsMeta: { page: number; limit: number; total: number } | null;
+  vitalsMeta: { page: number; limit: number; total: number } | null;
+  patientVitalsMeta: { page: number; limit: number; total: number } | null;
 }
 
 const initialState: PatientsState = {
   list: [],
   current: null,
+  companyConsultations: [],
+  companyVitals: [],
+  patientVitals: null,
   familyView: null,
   families: [],
   alerts: [],
   listLoading: false,
+  companyConsultationsLoading: false,
+  companyVitalsLoading: false,
+  patientVitalsLoading: false,
   detailLoading: false,
   saving: false,
   error: null,
   message: null,
   meta: null,
   consultationsMeta: null,
+  companyConsultationsMeta: null,
+  vitalsMeta: null,
+  patientVitalsMeta: null,
 };
 
 export const fetchPatients = createAsyncThunk(
@@ -371,6 +455,68 @@ export const removePatientVital = createAsyncThunk(
   },
 );
 
+export const fetchCompanyVitals = createAsyncThunk(
+  "patients/fetchCompanyVitals",
+  async (
+    {
+      facilityId,
+      alertOnly,
+      page,
+      limit,
+    }: {
+      facilityId: string;
+      alertOnly?: boolean;
+      page?: number;
+      limit?: number;
+    },
+    { rejectWithValue }
+  ) => {
+    try {
+      const { data } = await api.get<
+        ApiSuccess<CompanyVitalItem[]> & { role?: string; meta?: PatientsState["vitalsMeta"] }
+      >(`/companies/${facilityId}/patients/vitals`, {
+        params: {
+          alertOnly,
+          page,
+          limit: limit || 20,
+        },
+      });
+      return data;
+    } catch (err) {
+      return rejectWithValue(getErrorMessage(err, "Failed to load company vitals"));
+    }
+  }
+);
+
+export const fetchPatientVitals = createAsyncThunk(
+  "patients/fetchPatientVitals",
+  async (
+    {
+      facilityId,
+      patientId,
+      page,
+      limit,
+    }: {
+      facilityId: string;
+      patientId: string;
+      page?: number;
+      limit?: number;
+    },
+    { rejectWithValue }
+  ) => {
+    try {
+      const { data } = await api.get<
+        ApiSuccess<PatientVitalsResponse> & { role?: string; meta?: PatientsState["patientVitalsMeta"] }
+      >(`/companies/${facilityId}/patients/${patientId}/vitals`, {
+        params: { page, limit: limit || 20 },
+      });
+      return data;
+    } catch (err) {
+      return rejectWithValue(getErrorMessage(err, "Failed to load patient vitals"));
+    }
+  }
+);
+
 // --- CONSULTATION THUNKS ---
 
 export const fetchConsultations = createAsyncThunk(
@@ -392,6 +538,60 @@ export const fetchConsultations = createAsyncThunk(
       return data;
     } catch (err) {
       return rejectWithValue(getErrorMessage(err, "Failed to load consultations"));
+    }
+  },
+);
+
+export const fetchCompanyConsultations = createAsyncThunk(
+  "patients/fetchCompanyConsultations",
+  async (
+    {
+      facilityId,
+      active,
+      status,
+      hasTests,
+      hasXray,
+      hasSurgeries,
+      hasDrugs,
+      hasAnteNatal,
+      page,
+      limit,
+    }: {
+      facilityId: string;
+      active?: boolean;
+      status?: string;
+      hasTests?: boolean;
+      hasXray?: boolean;
+      hasSurgeries?: boolean;
+      hasDrugs?: boolean;
+      hasAnteNatal?: boolean;
+      page?: number;
+      limit?: number;
+    },
+    { rejectWithValue },
+  ) => {
+    try {
+      const { data } = await api.get<
+        ApiSuccess<CompanyConsultationItem[]> & {
+          role?: string;
+          meta?: PatientsState["companyConsultationsMeta"];
+        }
+      >(`/companies/${facilityId}/patients/company-consultations`, {
+        params: {
+          active,
+          status,
+          hasTests,
+          hasXray,
+          hasSurgeries,
+          hasDrugs,
+          hasAnteNatal,
+          page,
+          limit: limit || 20,
+        },
+      });
+      return data;
+    } catch (err) {
+      return rejectWithValue(getErrorMessage(err, "Failed to load company consultations"));
     }
   },
 );
@@ -424,6 +624,7 @@ export const addConsultation = createAsyncThunk(
       facilityId,
       patientId,
       payload,
+      files,
     }: {
       facilityId: string;
       patientId: string;
@@ -433,6 +634,7 @@ export const addConsultation = createAsyncThunk(
         complaint: string;
         diagnosis?: string;
         icdCode?: string;
+        department?: string;
         vitals?: Record<string, any>;
         allergies?: Array<{ substance: string; reaction?: string; severity?: string; notes?: string }>;
         recommendedTests?: Array<{
@@ -456,17 +658,120 @@ export const addConsultation = createAsyncThunk(
         summary?: string;
         status?: 'open' | 'completed';
       };
+      files?: File[] | FileList;
     },
     { rejectWithValue },
   ) => {
     try {
+      const formData = new FormData();
+
+      Object.entries(payload).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          formData.append(
+            key,
+            typeof value === "object" ? JSON.stringify(value) : (value as string)
+          );
+        }
+      });
+
+      if (files) {
+        const fileArray = Array.from(files);
+        fileArray.forEach((file) => {
+          formData.append("files", file);
+        });
+      }
+
       const { data } = await api.post<ApiSuccess<IConsultation> & { role?: string }>(
         `/companies/${facilityId}/patients/${patientId}/consultations`,
-        payload,
+        files && files.length > 0 ? formData : payload,
+        files && files.length > 0
+          ? { headers: { "Content-Type": "multipart/form-data" } }
+          : undefined,
       );
       return data;
     } catch (err) {
       return rejectWithValue(getErrorMessage(err, "Could not record consultation"));
+    }
+  },
+);
+
+export const addBatchConsultations = createAsyncThunk(
+  "patients/addBatchConsultations",
+  async (
+    {
+      facilityId,
+      consultations,
+    }: {
+      facilityId: string;
+      consultations: Array<{
+        patientId: string;
+        payload: {
+          consultedAt?: string | Date;
+          title: string;
+          complaint: string;
+          diagnosis?: string;
+          icdCode?: string;
+          department?: string;
+          vitals?: Record<string, any>;
+          recommendedTests?: Array<{
+            catalogId?: string;
+            code: string;
+            name: string;
+            price?: number;
+            reason?: string;
+            urgency?: string;
+          }>;
+          recommendedDrugs?: Array<{
+            name: string;
+            dosage?: string;
+            frequency?: string;
+            route?: string;
+            duration?: string;
+            instructions?: string;
+          }>;
+          notes?: string;
+          summary?: string;
+          status?: 'open' | 'completed';
+        };
+        files?: File[] | FileList;
+      }>;
+    },
+    { rejectWithValue },
+  ) => {
+    try {
+      const results = await Promise.all(
+        consultations.map(async ({ patientId, payload, files }) => {
+          const formData = new FormData();
+
+          Object.entries(payload).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+              formData.append(
+                key,
+                typeof value === "object" ? JSON.stringify(value) : (value as string)
+              );
+            }
+          });
+
+          if (files) {
+            const fileArray = Array.from(files);
+            fileArray.forEach((file) => {
+              formData.append("files", file);
+            });
+          }
+
+          const { data } = await api.post<ApiSuccess<IConsultation>>(
+            `/companies/${facilityId}/patients/${patientId}/consultations`,
+            files && files.length > 0 ? formData : payload,
+            files && files.length > 0
+              ? { headers: { "Content-Type": "multipart/form-data" } }
+              : undefined,
+          );
+          return { patientId, response: data };
+        }),
+      );
+      return { success: true, results, message: "Batch consultations recorded successfully" };
+    } catch (err) {
+      return rejectWithValue(getErrorMessage(err, "Could not record batch consultations"));
     }
   },
 );
@@ -490,7 +795,7 @@ export const updateConsultation = createAsyncThunk(
     try {
       const { data } = await api.patch<ApiSuccess<IConsultation> & { role?: string }>(
         `/companies/${facilityId}/patients/${patientId}/consultations/${consultationId}`,
-        payload,
+        payload, // <-- This sends 'payload' directly as the request body!
       );
       return data;
     } catch (err) {
@@ -498,7 +803,6 @@ export const updateConsultation = createAsyncThunk(
     }
   },
 );
-
 export const removeConsultation = createAsyncThunk(
   "patients/removeConsultation",
   async (
@@ -520,7 +824,46 @@ export const removeConsultation = createAsyncThunk(
   },
 );
 
-// --- END CONSULTATION THUNKS ---
+export const uploadConsultationAttachments = createAsyncThunk(
+  "patients/uploadConsultationAttachments",
+  async (
+    {
+      facilityId,
+      patientId,
+      consultationId,
+      files,
+    }: {
+      facilityId: string;
+      patientId: string;
+      consultationId: string;
+      files: File[] | FileList;
+    },
+    { rejectWithValue },
+  ) => {
+    try {
+      const formData = new FormData();
+      const fileArray = Array.from(files);
+
+      fileArray.forEach((file) => {
+        formData.append("files", file);
+      });
+
+      const { data } = await api.post<ApiSuccess<IConsultation> & { role?: string }>(
+        `/companies/${facilityId}/patients/${patientId}/consultations/${consultationId}/attachments`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        },
+      );
+
+      return data;
+    } catch (err) {
+      return rejectWithValue(getErrorMessage(err, "Could not upload consultation attachments"));
+    }
+  },
+);
 
 export const addPatientFamily = createAsyncThunk(
   "patients/addFamily",
@@ -615,7 +958,6 @@ export const linkPatientsAsFamily = createAsyncThunk(
   },
 );
 
-/** Alias used by patient detail page */
 export const linkFamily = linkPatientsAsFamily;
 
 export const fetchFamilies = createAsyncThunk(
@@ -668,6 +1010,9 @@ const patientsSlice = createSlice({
   extraReducers: (b) => {
     const fail = (s: PatientsState, a: { payload?: unknown }) => {
       s.listLoading = false;
+      s.companyConsultationsLoading = false;
+      s.companyVitalsLoading = false;
+      s.patientVitalsLoading = false;
       s.detailLoading = false;
       s.saving = false;
       s.error = (a.payload as string) || "Request failed";
@@ -771,6 +1116,31 @@ const patientsSlice = createSlice({
         updateAuthRole(s, a);
       });
 
+    // --- COMPANY & PATIENT VITALS EXTRA REDUCERS ---
+    b.addCase(fetchCompanyVitals.pending, (s) => {
+      s.companyVitalsLoading = true;
+      s.error = null;
+    })
+      .addCase(fetchCompanyVitals.fulfilled, (s, a) => {
+        s.companyVitalsLoading = false;
+        s.companyVitals = a.payload.data || [];
+        s.vitalsMeta = (a.payload as any).meta || null;
+        updateAuthRole(s, a);
+      })
+      .addCase(fetchCompanyVitals.rejected, fail);
+
+    b.addCase(fetchPatientVitals.pending, (s) => {
+      s.patientVitalsLoading = true;
+      s.error = null;
+    })
+      .addCase(fetchPatientVitals.fulfilled, (s, a) => {
+        s.patientVitalsLoading = false;
+        s.patientVitals = a.payload.data || null;
+        s.patientVitalsMeta = (a.payload as any).meta || null;
+        updateAuthRole(s, a);
+      })
+      .addCase(fetchPatientVitals.rejected, fail);
+
     // --- CONSULTATION EXTRA REDUCERS ---
     b.addCase(fetchConsultations.fulfilled, (s, a) => {
       if (s.current) {
@@ -779,6 +1149,17 @@ const patientsSlice = createSlice({
       s.consultationsMeta = (a.payload as any).meta || null;
       updateAuthRole(s, a);
     })
+      .addCase(fetchCompanyConsultations.pending, (s) => {
+        s.companyConsultationsLoading = true;
+        s.error = null;
+      })
+      .addCase(fetchCompanyConsultations.fulfilled, (s, a) => {
+        s.companyConsultationsLoading = false;
+        s.companyConsultations = a.payload.data || [];
+        s.companyConsultationsMeta = (a.payload as any).meta || null;
+        updateAuthRole(s, a);
+      })
+      .addCase(fetchCompanyConsultations.rejected, fail)
       .addCase(fetchConsultationbyId.pending, (s) => {
         s.detailLoading = true;
       })
@@ -816,6 +1197,16 @@ const patientsSlice = createSlice({
         updateAuthRole(s, a);
       })
       .addCase(addConsultation.rejected, fail)
+      .addCase(addBatchConsultations.pending, (s) => {
+        s.saving = true;
+        s.error = null;
+      })
+      .addCase(addBatchConsultations.fulfilled, (s, a) => {
+        s.saving = false;
+        s.message = (a.payload as any).message || "Batch consultations recorded";
+        updateAuthRole(s, a);
+      })
+      .addCase(addBatchConsultations.rejected, fail)
       .addCase(updateConsultation.pending, (s) => {
         s.saving = true;
       })
@@ -841,8 +1232,23 @@ const patientsSlice = createSlice({
           );
         }
         updateAuthRole(s, a);
-      });
-    // --- END CONSULTATION EXTRA REDUCERS ---
+      })
+      .addCase(uploadConsultationAttachments.pending, (s) => {
+        s.saving = true;
+        s.error = null;
+      })
+      .addCase(uploadConsultationAttachments.fulfilled, (s, a) => {
+        s.saving = false;
+        s.message = (a.payload as any).message || "Attachments uploaded";
+        if (s.current && s.current.consultations && a.payload.data) {
+          const updated = a.payload.data;
+          s.current.consultations = s.current.consultations.map((c) =>
+            c._id === updated._id ? updated : c
+          );
+        }
+        updateAuthRole(s, a);
+      })
+      .addCase(uploadConsultationAttachments.rejected, fail);
 
     b.addCase(fetchVitalAlerts.fulfilled, (s, a) => {
       s.alerts = (a.payload as any).data || [];

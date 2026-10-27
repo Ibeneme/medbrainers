@@ -1,7 +1,7 @@
 "use client";
 
 import { PRIMARY_COLOR } from "@/constants/colors";
-import { T } from "@/i18n/provider";
+import { T, useT } from "@/i18n/provider";
 import { productName } from "@/constants/site";
 import React, { useEffect, useRef, useState } from "react";
 
@@ -61,6 +61,7 @@ function ArrowNE() {
 }
 
 export default function MacShowcase() {
+  const t = useT();
   const [index, setIndex] = useState(0);
   const [revealed, setRevealed] = useState(false);
   const [inView, setInView] = useState(false);
@@ -192,7 +193,7 @@ export default function MacShowcase() {
             ref={stageRef}
             role="region"
             aria-roledescription="carousel"
-            aria-label="Product tour"
+            aria-label={t("Product tour")}
             tabIndex={0}
             onMouseMove={onMove}
             onMouseLeave={onLeave}
@@ -288,7 +289,7 @@ export default function MacShowcase() {
             <button
               type="button"
               onClick={() => go(-1)}
-              aria-label="Previous"
+              aria-label={t("Previous")}
               className="absolute left-3 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-neutral-300 bg-white text-neutral-950 transition-colors hover:border-neutral-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 md:left-6 md:h-14 md:w-14"
             >
               <Chevron dir="left" />
@@ -298,7 +299,7 @@ export default function MacShowcase() {
             <button
               type="button"
               onClick={() => go(1)}
-              aria-label="Next"
+              aria-label={t("Next")}
               className="absolute right-3 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full text-white transition-opacity hover:opacity-85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 md:right-6 md:h-14 md:w-14"
               style={{ backgroundColor: PRIMARY_COLOR }}
             >
@@ -309,7 +310,7 @@ export default function MacShowcase() {
           {/* Title + description cards; the active one fills as autoplay runs */}
           <div
             role="tablist"
-            aria-label="Tour steps"
+            aria-label={t("Tour steps")}
             className="mt-4 grid gap-3 md:grid-cols-2"
           >
             {SLIDES.map((s, i) => {

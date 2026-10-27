@@ -41,6 +41,7 @@ import {
   personLabel,
 } from "@/components/ui/items";
 import DarkBlurOverlayLoader from "@/components/atoms/loaders/DarkBlurOverlayLoader";
+import { useFacilityId } from "@/hooks/useFacilityId";
 
 const PRIORITY_COLORS: Record<string, string> = {
   low: "#64748b",
@@ -64,9 +65,9 @@ export default function AllTasksPage() {
   const border = isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.12)";
 
   const { user } = useAppSelector((s) => s.auth);
-  const { activeFacilityId, activeFacility, members } = useAppSelector(
-    (s) => s.facilities
-  );
+
+  // Use the comprehensive useFacilityId hook
+  const { facilityId, activeFacility, members } = useFacilityId();
   const { all, allLoading, saving } = useAppSelector((s) => s.tasks);
 
   // Set Kanban as default view mode
@@ -109,15 +110,15 @@ export default function AllTasksPage() {
   }, [dispatch]);
 
   useEffect(() => {
-    if (!activeFacilityId) return;
-    dispatch(fetchFacilityMembers(activeFacilityId));
+    if (!facilityId) return;
+    dispatch(fetchFacilityMembers(facilityId));
     dispatch(
       fetchAllTasks({
-        facilityId: activeFacilityId,
+        facilityId,
         status: viewMode === "list" && statusFilter ? statusFilter : undefined,
       })
     );
-  }, [dispatch, activeFacilityId, statusFilter, viewMode]);
+  }, [dispatch, facilityId, statusFilter, viewMode]);
 
   const notify = (msg: string, err = false) => {
     setToast(msg);
@@ -132,7 +133,7 @@ export default function AllTasksPage() {
 
   const onCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!activeFacilityId) return;
+    if (!facilityId) return;
     if (!form.assignedTo.length) {
       notify("Select at least one assignee", true);
       return;
@@ -140,7 +141,7 @@ export default function AllTasksPage() {
     try {
       await dispatch(
         createTask({
-          facilityId: activeFacilityId,
+          facilityId,
           payload: {
             title: form.title.trim(),
             description: form.description.trim() || undefined,
@@ -161,14 +162,14 @@ export default function AllTasksPage() {
         dueAt: "",
         department: "",
       });
-      dispatch(fetchAllTasks({ facilityId: activeFacilityId }));
+      dispatch(fetchAllTasks({ facilityId }));
     } catch (err: unknown) {
       notify(typeof err === "string" ? err : "Create failed", true);
     }
   };
 
   const setStatus = async (taskId: string, status: TaskStatus) => {
-    if (!activeFacilityId) return;
+    if (!facilityId) return;
     try {
       setLocalTasks((prev) =>
         prev.map((t) =>
@@ -178,7 +179,7 @@ export default function AllTasksPage() {
 
       await dispatch(
         updateTask({
-          facilityId: activeFacilityId,
+          facilityId,
           taskId,
           payload: { status },
         })
@@ -186,7 +187,7 @@ export default function AllTasksPage() {
       notify(`Marked ${status.replace(/_/g, " ")}`);
     } catch (err: unknown) {
       notify(typeof err === "string" ? err : "Update failed", true);
-      dispatch(fetchAllTasks({ facilityId: activeFacilityId }));
+      dispatch(fetchAllTasks({ facilityId }));
     }
   };
 
@@ -208,7 +209,7 @@ export default function AllTasksPage() {
     setStatus(taskId, targetStatus);
   };
 
-  if (!activeFacilityId) {
+  if (!facilityId) {
     return (
       <div
         className="max-w-lg mx-auto px-4 py-16 text-center"
@@ -546,7 +547,7 @@ export default function AllTasksPage() {
                           try {
                             await dispatch(
                               deleteTask({
-                                facilityId: activeFacilityId,
+                                facilityId,
                                 taskId: id,
                               })
                             ).unwrap();
@@ -684,7 +685,7 @@ export default function AllTasksPage() {
                                 try {
                                   await dispatch(
                                     deleteTask({
-                                      facilityId: activeFacilityId,
+                                      facilityId,
                                       taskId: id,
                                     })
                                   ).unwrap();

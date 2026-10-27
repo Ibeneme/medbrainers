@@ -9,6 +9,7 @@ export const API_CONFIG = {
   ACCESS_TOKEN_KEY: "mb_access_token",
   REFRESH_TOKEN_KEY: "mb_refresh_token",
   USER_KEY: "mb_user",
+  ACTIVE_FACILITY_KEY: "mb_active_facility",
 } as const;
 
 export default API_CONFIG;

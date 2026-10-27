@@ -776,7 +776,42 @@ export default function LandingPageNavbar({
 
         {/* Right side actions */}
         <div className="flex shrink-0 items-center gap-2 sm:gap-3 md:gap-4">
-          <div className="relative hidden lg:block" ref={langDropdownRef}></div>
+          {/* Desktop Language Switcher Dropdown */}
+          <div className="relative hidden lg:block" ref={langDropdownRef}>
+            <button
+              type="button"
+              onClick={() => setIsLangOpen((prev) => !prev)}
+              aria-expanded={isLangOpen}
+              className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
+                !isHome || isScrolled
+                  ? "border-white/15 bg-white/5 text-white hover:bg-white/10"
+                  : "border-neutral-200 bg-neutral-100 text-black hover:bg-neutral-200"
+              }`}
+            >
+              <Flag
+                locale={currentLocale}
+                className="h-4 w-5 rounded-sm object-cover shadow-sm"
+              />
+              <span>
+                {localeMeta[currentLocale]?.nativeName ||
+                  currentLocale.toUpperCase()}
+              </span>
+              <Chevron
+                className={`h-3 w-3 transition-transform duration-200 ${
+                  isLangOpen ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+
+            {isLangOpen && (
+              <div className="absolute right-0 top-full mt-2 w-48 rounded-2xl border border-white/10 bg-[#0d0d0f] p-2 shadow-xl">
+                <LanguageSwitcher
+                  onSelect={() => setIsLangOpen(false)}
+                  className="flex flex-col gap-1"
+                />
+              </div>
+            )}
+          </div>
 
           <div className="hidden sm:block">{renderActionButtons(true)}</div>
 
@@ -991,6 +1026,19 @@ export default function LandingPageNavbar({
           >
             <T>Blog</T>
           </Link>
+
+          {/* Mobile Language Switcher Section */}
+          <div className="border-t border-white/15 pt-4 pb-2">
+            <span className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white/45">
+              <T>Language</T>
+            </span>
+            <div className="rounded-xl border border-white/10 bg-white/5 p-2">
+              <LanguageSwitcher
+                onSelect={() => setIsMobileMenuOpen(false)}
+                className="flex flex-col gap-1"
+              />
+            </div>
+          </div>
 
           <div className="mt-3 border-t border-white/10 pt-4 sm:hidden">
             {renderActionButtons()}

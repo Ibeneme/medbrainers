@@ -12,15 +12,65 @@ import {
   X,
   AlertTriangle,
   FlaskConical,
+  Paperclip,
+  Upload,
+  Eye,
+  ExternalLink,
+  CheckCircle2,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/api/hooks";
-import { addConsultation, fetchPatient, fetchLabCatalog } from "@/api/slices";
+import {
+  addConsultation,
+  fetchPatient,
+  fetchLabCatalog,
+  uploadConsultationAttachments,
+} from "@/api/slices";
 import { useTheme } from "@/contexts/theme-context";
 import { PRIMARY_COLOR, getUI } from "@/constants/colors";
 import { CustomDropdown } from "@/components/ui";
+import {
+  saveAttachments,
+  loadAttachments,
+  deleteAttachments,
+} from "@/lib/attachment-store";
 
 const inputCls =
   "w-full rounded-2xl border px-4 py-3 text-sm outline-none focus:outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/20";
+
+/* ------------------------------ attachments ------------------------------ */
+/* Each selected file gets ONE object URL, created when it is added and
+   revoked when it is removed (or the page unmounts). */
+type AttachedFile = {
+  id: string;
+  file: File;
+  url: string;
+  isImage: boolean;
+  isPdf: boolean;
+};
+
+type Draft = {
+  id: string;
+  title: string;
+  updatedAt: string;
+  data: any;
+  attachmentCount?: number;
+};
+
+const isPdfFile = (f: File) =>
+  f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf");
+const isImageFile = (f: File) => f.type.startsWith("image/");
+const formatSize = (b: number) =>
+  b >= 1024 * 1024
+    ? `${(b / (1024 * 1024)).toFixed(1)} MB`
+    : `${(b / 1024).toFixed(1)} KB`;
+const fileKey = (f: File) => `${f.name}-${f.size}-${f.lastModified}`;
+const toAttached = (file: File): AttachedFile => ({
+  id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+  file,
+  url: URL.createObjectURL(file),
+  isImage: isImageFile(file),
+  isPdf: isPdfFile(file),
+});
 
 export default function NewConsultationPage() {
   const params = useParams();
@@ -33,7 +83,7 @@ export default function NewConsultationPage() {
   const ui = getUI(isDark, colors, border);
 
   const { activeFacilityId } = useAppSelector((s) => s.facilities);
-  const { current } = useAppSelector((s) => s.patients);
+  const { current, saving } = useAppSelector((s) => s.patients);
   const { catalog: labCatalog } = useAppSelector((s) => s.labs);
 
   const [conTitle, setConTitle] = useState("");
@@ -43,6 +93,7 @@ export default function NewConsultationPage() {
   const [conNotes, setConNotes] = useState("");
   const [conSummary, setConSummary] = useState("");
   const [conStatus, setConStatus] = useState<"open" | "completed">("open");
+
   const [conTemp, setConTemp] = useState("");
   const [conSpo2, setConSpo2] = useState("");
   const [conPulse, setConPulse] = useState("");
@@ -51,7 +102,7 @@ export default function NewConsultationPage() {
 
   const [conTests, setConTests] = useState<
     Array<{
-      catalogId?: string;
+      catalogId: string;
       code: string;
       name: string;
       price: number;
@@ -71,8 +122,22 @@ export default function NewConsultationPage() {
     }>
   >([]);
 
+  // Files attached to this consultation (also persisted in IndexedDB)
+  const [attachments, setAttachments] = useState<AttachedFile[]>([]);
+  const attachmentsRef = useRef<AttachedFile[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  // true once the autosaved files have been read back from IndexedDB
+  const [hydrated, setHydrated] = useState(false);
+
+  // Drag and drop active state
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+
+  // File currently open in the preview modal (image or PDF)
+  const [previewFile, setPreviewFile] = useState<AttachedFile | null>(null);
+
   const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const [draftNotice, setDraftNotice] = useState<string | null>(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [draftToDelete, setDraftToDelete] = useState<{
     id: string;
@@ -80,12 +145,13 @@ export default function NewConsultationPage() {
   } | null>(null);
   const [lastAutoSaved, setLastAutoSaved] = useState<string | null>(null);
 
-  const [drafts, setDrafts] = useState<
-    Array<{ id: string; title: string; updatedAt: string; data: any }>
-  >([]);
+  const [drafts, setDrafts] = useState<Draft[]>([]);
 
   const STORAGE_KEY = `consultation_drafts_${patientId}`;
   const AUTO_SAVE_KEY = `consultation_autosave_${patientId}`;
+  /* IndexedDB buckets that hold the attached files */
+  const AUTO_BUCKET = `autosave_${patientId}`;
+  const draftBucket = (id: string) => `draft_${id}`;
   const isInitialMount = useRef(true);
 
   useEffect(() => {
@@ -102,6 +168,7 @@ export default function NewConsultationPage() {
     }
   }, [dispatch, activeFacilityId, patientId, current]);
 
+  /* restore drafts list, the text autosave AND the autosaved attachments */
   useEffect(() => {
     const savedDrafts = localStorage.getItem(STORAGE_KEY);
     if (savedDrafts) {
@@ -111,7 +178,6 @@ export default function NewConsultationPage() {
         console.error("Failed to parse consultation drafts", e);
       }
     }
-
     const savedAutosave = localStorage.getItem(AUTO_SAVE_KEY);
     if (savedAutosave) {
       try {
@@ -121,14 +187,28 @@ export default function NewConsultationPage() {
         console.error("Failed to parse consultation autosave", e);
       }
     }
-  }, [STORAGE_KEY, AUTO_SAVE_KEY]);
 
+    let cancelled = false;
+    loadAttachments(AUTO_BUCKET)
+      .then((files) => {
+        if (!cancelled && files.length > 0) replaceAttachments(files);
+      })
+      .catch((e) => console.error("Failed to restore attachments", e))
+      .finally(() => {
+        if (!cancelled) setHydrated(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [STORAGE_KEY, AUTO_SAVE_KEY, AUTO_BUCKET]);
+
+  /* text autosave */
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false;
       return;
     }
-
     const currentFormData = {
       conTitle,
       conComplaint,
@@ -145,12 +225,10 @@ export default function NewConsultationPage() {
       conTests,
       conDrugs,
     };
-
     const handler = setTimeout(() => {
       localStorage.setItem(AUTO_SAVE_KEY, JSON.stringify(currentFormData));
       setLastAutoSaved(new Date().toLocaleTimeString());
     }, 1000);
-
     return () => clearTimeout(handler);
   }, [
     conTitle,
@@ -170,18 +248,57 @@ export default function NewConsultationPage() {
     AUTO_SAVE_KEY,
   ]);
 
+  /* attachment autosave (only after restore finished, so an empty list can
+     never overwrite files that are still being loaded) */
+  useEffect(() => {
+    if (!hydrated) return;
+    const handler = setTimeout(() => {
+      saveAttachments(
+        AUTO_BUCKET,
+        attachments.map((a) => a.file)
+      )
+        .then(() => setLastAutoSaved(new Date().toLocaleTimeString()))
+        .catch((e) => console.error("Failed to autosave attachments", e));
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [attachments, hydrated, AUTO_BUCKET]);
+
+  /* free every object URL when leaving the page */
+  useEffect(() => {
+    return () => {
+      attachmentsRef.current.forEach((a) => URL.revokeObjectURL(a.url));
+    };
+  }, []);
+
+  /* Esc closes the file preview */
+  useEffect(() => {
+    if (!previewFile) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPreviewFile(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [previewFile]);
+
   const handleAddCatalogTest = (testId: string) => {
     if (!testId) return;
-    const catalogItem = labCatalog.find((item) => item._id === testId);
-    if (!catalogItem) return;
-
-    if (conTests.some((t) => t.catalogId === catalogItem._id)) return;
-
+    const catalogItem = (labCatalog || []).find(
+      (item) => String(item._id) === String(testId)
+    );
+    if (!catalogItem) {
+      setSubmissionError(
+        "Selected lab test could not be found in the catalog."
+      );
+      return;
+    }
+    if (conTests.some((t) => String(t.catalogId) === String(catalogItem._id))) {
+      return;
+    }
     setConTests([
       ...conTests,
       {
-        catalogId: catalogItem._id,
-        code: catalogItem.code,
+        catalogId: String(catalogItem._id),
+        code: catalogItem.code || "LAB",
         name: catalogItem.name,
         price: catalogItem.price || 0,
         urgency: "routine",
@@ -193,7 +310,72 @@ export default function NewConsultationPage() {
     return conTests.reduce((sum, t) => sum + (Number(t.price) || 0), 0);
   };
 
-  const handleSaveToDrafts = () => {
+  /* ---------------------------- attachment logic --------------------------- */
+  /** Swap the whole attachment list (used when restoring autosave / a draft). */
+  const replaceAttachments = (files: File[]) => {
+    attachmentsRef.current.forEach((a) => URL.revokeObjectURL(a.url));
+    const next = files.map(toAttached);
+    attachmentsRef.current = next;
+    setAttachments(next);
+    setPreviewFile(null);
+  };
+
+  const addFiles = (incoming: File[]) => {
+    const valid = incoming.filter((f) => isImageFile(f) || isPdfFile(f));
+    if (valid.length === 0) {
+      if (incoming.length > 0) {
+        setSubmissionError("Only images and PDF files can be attached.");
+      }
+      return;
+    }
+    const existing = new Set(
+      attachmentsRef.current.map((a) => fileKey(a.file))
+    );
+    const added = valid
+      .filter((f) => !existing.has(fileKey(f)))
+      .map(toAttached);
+    if (added.length === 0) return;
+    attachmentsRef.current = [...attachmentsRef.current, ...added];
+    setAttachments(attachmentsRef.current);
+  };
+
+  const removeAttachment = (id: string) => {
+    const target = attachmentsRef.current.find((a) => a.id === id);
+    if (target) URL.revokeObjectURL(target.url);
+    attachmentsRef.current = attachmentsRef.current.filter((a) => a.id !== id);
+    setAttachments(attachmentsRef.current);
+    setPreviewFile((p) => (p && p.id === id ? null : p));
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    addFiles(Array.from(files));
+    // reset so the same file can be picked again later
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleDropFiles = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDraggingOver(false);
+    const files = e.dataTransfer.files;
+    if (!files || files.length === 0) return;
+    addFiles(Array.from(files));
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDraggingOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDraggingOver(false);
+  };
+
+  /* -------------------------------- drafts --------------------------------- */
+  const handleSaveToDrafts = async () => {
+    setSubmissionError(null);
     const draftData = {
       conTitle,
       conComplaint,
@@ -211,33 +393,42 @@ export default function NewConsultationPage() {
       conDrugs,
     };
 
-    let updatedDrafts = [...drafts];
+    const id = activeDraftId || Date.now().toString();
+    const entry: Draft = {
+      id,
+      title: conTitle.trim() || "Untitled Consultation Draft",
+      updatedAt: new Date().toLocaleString(),
+      data: draftData,
+      attachmentCount: attachments.length,
+    };
+    const updatedDrafts = activeDraftId
+      ? drafts.map((d) => (d.id === id ? entry : d))
+      : [entry, ...drafts];
 
-    if (activeDraftId) {
-      updatedDrafts = updatedDrafts.map((d) =>
-        d.id === activeDraftId
-          ? {
-              ...d,
-              title: conTitle.trim() || "Untitled Consultation Draft",
-              updatedAt: new Date().toLocaleString(),
-              data: draftData,
-            }
-          : d
-      );
-    } else {
-      const newId = Date.now().toString();
-      const newDraft = {
-        id: newId,
-        title: conTitle.trim() || "Untitled Consultation Draft",
-        updatedAt: new Date().toLocaleString(),
-        data: draftData,
-      };
-      updatedDrafts = [newDraft, ...updatedDrafts];
-      setActiveDraftId(newId);
-    }
-
+    setActiveDraftId(id);
     setDrafts(updatedDrafts);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedDrafts));
+
+    /* the files themselves go to IndexedDB (localStorage can't hold files) */
+    try {
+      await saveAttachments(
+        draftBucket(id),
+        attachments.map((a) => a.file)
+      );
+      setDraftNotice(
+        attachments.length > 0
+          ? `Draft saved with ${attachments.length} attachment${
+              attachments.length === 1 ? "" : "s"
+            }.`
+          : "Draft saved."
+      );
+    } catch (e) {
+      console.error("Failed to save draft attachments", e);
+      setSubmissionError(
+        "Draft text was saved, but the attachments couldn't be stored on this device (storage may be full, or the browser is in private mode)."
+      );
+    }
+    window.setTimeout(() => setDraftNotice(null), 3500);
   };
 
   const handleLoadDraft = (draft: { id?: string; data: any }) => {
@@ -257,6 +448,14 @@ export default function NewConsultationPage() {
     setConDia(draftData.conDia || "");
     setConTests(draftData.conTests || []);
     setConDrugs(draftData.conDrugs || []);
+
+    /* resuming a saved draft also brings back its attachments
+       (the autosave restore on mount is handled separately) */
+    if (draft.id) {
+      loadAttachments(draftBucket(draft.id))
+        .then((files) => replaceAttachments(files))
+        .catch((e) => console.error("Failed to load draft attachments", e));
+    }
   };
 
   const confirmDeleteDraft = (
@@ -273,6 +472,7 @@ export default function NewConsultationPage() {
     const filtered = drafts.filter((d) => d.id !== draftToDelete.id);
     setDrafts(filtered);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+    deleteAttachments(draftBucket(draftToDelete.id)).catch(() => {});
     if (activeDraftId === draftToDelete.id) {
       setActiveDraftId(null);
     }
@@ -282,26 +482,31 @@ export default function NewConsultationPage() {
   const handleOpenPreview = (e: React.FormEvent) => {
     e.preventDefault();
     setSubmissionError(null);
+    const missingCatalogId = conTests.some((t) => !t.catalogId);
+    if (missingCatalogId) {
+      setSubmissionError(
+        "One or more selected lab tests are missing a catalog ID. Please re-select the test from the catalog dropdown."
+      );
+      return;
+    }
     setShowPreviewModal(true);
   };
 
   const handleConfirmFinalSubmit = async () => {
     if (!activeFacilityId || !patientId) return;
     setSubmissionError(null);
-
     const vitalsObj: Record<string, number> = {};
     if (conTemp) vitalsObj.temperatureC = Number(conTemp);
     if (conSpo2) vitalsObj.spo2 = Number(conSpo2);
     if (conPulse) vitalsObj.pulse = Number(conPulse);
     if (conSys) vitalsObj.bpSystolic = Number(conSys);
     if (conDia) vitalsObj.bpDiastolic = Number(conDia);
-
     const cleanedVitals = Object.keys(vitalsObj).length ? vitalsObj : undefined;
 
     const cleanedTests = conTests
-      .filter((t) => t.name && t.name.trim().length > 0)
+      .filter((t) => t.catalogId && t.name && t.name.trim().length > 0)
       .map((t) => ({
-        catalogId: t.catalogId,
+        catalogId: String(t.catalogId),
         code: t.code || "LAB",
         name: t.name.trim(),
         price: Number(t.price) || 0,
@@ -309,6 +514,14 @@ export default function NewConsultationPage() {
         reason: t.reason,
         status: "ordered" as const,
       }));
+
+    if (conTests.length > 0 && cleanedTests.length !== conTests.length) {
+      setSubmissionError(
+        "One or more lab tests have invalid or missing catalog IDs."
+      );
+      setShowPreviewModal(false);
+      return;
+    }
 
     const cleanedDrugs = conDrugs
       .map((d) => ({ ...d, name: d.name ? d.name.trim() : "" }))
@@ -331,17 +544,31 @@ export default function NewConsultationPage() {
     };
 
     try {
-      await dispatch(
+      const result = await dispatch(
         addConsultation({ facilityId: activeFacilityId, patientId, payload })
       ).unwrap();
+      const newConsultationId = result.data?._id;
 
+      if (attachments.length > 0 && newConsultationId) {
+        await dispatch(
+          uploadConsultationAttachments({
+            facilityId: activeFacilityId,
+            patientId,
+            consultationId: newConsultationId,
+            files: attachments.map((a) => a.file),
+          })
+        ).unwrap();
+      }
+
+      /* submitted: clear the autosave + the used draft (text AND files) */
       localStorage.removeItem(AUTO_SAVE_KEY);
+      deleteAttachments(AUTO_BUCKET).catch(() => {});
       if (activeDraftId) {
         const filtered = drafts.filter((d) => d.id !== activeDraftId);
         setDrafts(filtered);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+        deleteAttachments(draftBucket(activeDraftId)).catch(() => {});
       }
-
       setShowPreviewModal(false);
       router.push(`/dashboard/patients/${patientId}`);
     } catch (err: any) {
@@ -414,11 +641,19 @@ export default function NewConsultationPage() {
               <p>{submissionError}</p>
             </div>
             <button
+              type="button"
               onClick={() => setSubmissionError(null)}
               className="opacity-70 hover:opacity-100"
             >
               <X size={14} />
             </button>
+          </div>
+        )}
+
+        {draftNotice && (
+          <div className="rounded-2xl p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-xs flex items-center gap-2">
+            <CheckCircle2 size={14} className="shrink-0" />
+            <span>{draftNotice}</span>
           </div>
         )}
 
@@ -460,7 +695,6 @@ export default function NewConsultationPage() {
                 <p className="text-xs opacity-60">MRN: {current.mrn || "—"}</p>
               </div>
             </div>
-
             <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-xs">
               <div>
                 <span className="opacity-50 block">Gender</span>
@@ -512,7 +746,15 @@ export default function NewConsultationPage() {
                 >
                   <div className="truncate">
                     <p className="font-semibold truncate">{draft.title}</p>
-                    <p className="text-[10px] opacity-50">{draft.updatedAt}</p>
+                    <p className="text-[10px] opacity-50 flex items-center gap-1.5">
+                      <span>{draft.updatedAt}</span>
+                      {!!draft.attachmentCount && (
+                        <span className="inline-flex items-center gap-0.5">
+                          <Paperclip size={9} />
+                          {draft.attachmentCount}
+                        </span>
+                      )}
+                    </p>
                   </div>
                   <button
                     type="button"
@@ -673,7 +915,7 @@ export default function NewConsultationPage() {
                   value=""
                   options={[
                     { value: "", label: "+ Select test from lab catalog..." },
-                    ...labCatalog.map((item) => ({
+                    ...(labCatalog || []).map((item) => ({
                       value: item._id,
                       label: `${item.code} - ${item.name} (₦${
                         item.price?.toLocaleString() || 0
@@ -690,7 +932,6 @@ export default function NewConsultationPage() {
                 />
               </div>
             </div>
-
             {conTests.length === 0 ? (
               <div
                 className="rounded-2xl p-6 text-center text-xs opacity-50 border border-dashed"
@@ -727,7 +968,6 @@ export default function NewConsultationPage() {
                         Cost: ₦{t.price?.toLocaleString() || 0}
                       </p>
                     </div>
-
                     <div className="flex items-center gap-3">
                       <div className="w-36">
                         <CustomDropdown
@@ -747,7 +987,6 @@ export default function NewConsultationPage() {
                           border={border}
                         />
                       </div>
-
                       <button
                         type="button"
                         onClick={() =>
@@ -760,7 +999,6 @@ export default function NewConsultationPage() {
                     </div>
                   </div>
                 ))}
-
                 <div
                   className="flex items-center justify-between rounded-2xl p-4 font-semibold text-xs mt-2"
                   style={{ backgroundColor: ui.inner }}
@@ -861,6 +1099,139 @@ export default function NewConsultationPage() {
             ))}
           </div>
 
+          {/* Attachments Section with thumbnails + image/PDF preview */}
+          <div
+            className="rounded-none sm:rounded-[28px] p-4 sm:p-6 space-y-4 -mx-4 sm:mx-0"
+            style={{ backgroundColor: ui.card }}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-sm font-semibold flex items-center gap-2">
+                <Paperclip size={16} /> Attachments (Images / PDFs)
+                {attachments.length > 0 && (
+                  <span className="text-[11px] font-normal opacity-60">
+                    ({attachments.length})
+                  </span>
+                )}
+              </h2>
+              <label
+                className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold text-white cursor-pointer hover:opacity-90 transition shrink-0"
+                style={{ backgroundColor: PRIMARY_COLOR }}
+              >
+                <Upload size={14} />
+                Select Files
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept="image/*,application/pdf,.pdf"
+                  className="hidden"
+                  onChange={handleFileSelect}
+                />
+              </label>
+            </div>
+
+            {/* Drag and Drop Zone */}
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDropFiles}
+              className={`rounded-2xl p-6 text-center text-xs border-2 border-dashed transition-all flex flex-col items-center justify-center gap-2 cursor-pointer ${
+                isDraggingOver ? "opacity-100 scale-[1.01]" : "opacity-70"
+              }`}
+              style={{
+                borderColor: isDraggingOver ? PRIMARY_COLOR : ui.border,
+                backgroundColor: isDraggingOver
+                  ? `${PRIMARY_COLOR}10`
+                  : ui.inner,
+              }}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Upload size={24} style={{ color: PRIMARY_COLOR }} />
+              <p className="font-semibold">
+                Drag & drop files here, or tap to browse
+              </p>
+              <p className="text-[10px] opacity-60">
+                Supports images (JPEG, PNG, WEBP, GIF) and PDF
+              </p>
+            </div>
+
+            {attachments.length === 0 ? (
+              <div className="text-center text-xs opacity-50 pt-1">
+                No files selected yet.
+              </div>
+            ) : (
+              <div className="space-y-2 pt-2">
+                {attachments.map((a) => (
+                  <div
+                    key={a.id}
+                    className="flex items-center justify-between gap-3 p-2.5 rounded-2xl border"
+                    style={{
+                      backgroundColor: ui.inner,
+                      borderColor: ui.border,
+                    }}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      {/* thumbnail: tap to open the preview */}
+                      <button
+                        type="button"
+                        onClick={() => setPreviewFile(a)}
+                        aria-label={`Preview ${a.file.name}`}
+                        className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border flex items-center justify-center"
+                        style={{
+                          borderColor: ui.border,
+                          backgroundColor: ui.card,
+                        }}
+                      >
+                        {a.isImage ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={a.url}
+                            alt={a.file.name}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div
+                            className="flex flex-col items-center gap-0.5"
+                            style={{ color: PRIMARY_COLOR }}
+                          >
+                            <FileText size={22} />
+                            <span className="text-[9px] font-bold">PDF</span>
+                          </div>
+                        )}
+                      </button>
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium truncate">
+                          {a.file.name}
+                        </p>
+                        <p className="text-[10px] opacity-50">
+                          {a.isPdf ? "PDF" : "Image"} ·{" "}
+                          {formatSize(a.file.size)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setPreviewFile(a)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-semibold rounded-lg bg-black/5 dark:bg-white/10 hover:opacity-80"
+                      >
+                        <Eye size={13} /> Preview
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeAttachment(a.id)}
+                        aria-label={`Remove ${a.file.name}`}
+                        className="text-red-500 p-1.5 hover:bg-red-500/10 rounded-lg"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div
             className="rounded-none sm:rounded-[28px] p-4 sm:p-6 space-y-4 -mx-4 sm:mx-0"
             style={{ backgroundColor: ui.card }}
@@ -901,7 +1272,6 @@ export default function NewConsultationPage() {
             >
               Cancel
             </Link>
-
             <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
               <button
                 type="button"
@@ -911,7 +1281,6 @@ export default function NewConsultationPage() {
               >
                 <FileText size={14} /> Save to Drafts
               </button>
-
               <button
                 type="submit"
                 className="w-full sm:w-auto rounded-full px-6 py-3 text-xs font-semibold text-white transition hover:opacity-90"
@@ -924,6 +1293,90 @@ export default function NewConsultationPage() {
         </form>
       </div>
 
+      {/* File Preview Modal (image or PDF). z-[60] so it also opens on top of
+          the consultation preview modal. */}
+      {previewFile && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/75 p-3 sm:p-4"
+          onClick={() => setPreviewFile(null)}
+        >
+          <div
+            className="w-full max-w-3xl rounded-3xl p-4 sm:p-6 space-y-3 shadow-2xl relative"
+            style={{ backgroundColor: colors.shadeBgSecond, color: ui.text }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="flex items-center justify-between gap-3 border-b pb-3"
+              style={{ borderColor: ui.border }}
+            >
+              <div className="min-w-0">
+                <h3 className="text-sm font-semibold truncate">
+                  {previewFile.file.name}
+                </h3>
+                <p className="text-[10px] opacity-50">
+                  {previewFile.isPdf ? "PDF" : "Image"} ·{" "}
+                  {formatSize(previewFile.file.size)}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewFile(null)}
+                aria-label="Close preview"
+                className="opacity-70 hover:opacity-100 shrink-0"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {previewFile.isImage ? (
+              <div className="flex items-center justify-center max-h-[70vh] overflow-auto">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={previewFile.url}
+                  alt={previewFile.file.name}
+                  className="max-h-[68vh] w-auto max-w-full object-contain rounded-xl"
+                />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <iframe
+                  src={previewFile.url}
+                  title={previewFile.file.name}
+                  className="h-[65vh] w-full rounded-xl border bg-white"
+                  style={{ borderColor: ui.border }}
+                />
+                <p className="text-[11px] opacity-60 text-center">
+                  PDF not showing (common on phones)? Use “Open in new tab”.
+                </p>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 pt-1">
+              {previewFile.isPdf && (
+                <a
+                  href={previewFile.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold border"
+                  style={{ borderColor: ui.border }}
+                >
+                  <ExternalLink size={13} /> Open in new tab
+                </a>
+              )}
+              <button
+                type="button"
+                onClick={() => setPreviewFile(null)}
+                className="px-5 py-2 rounded-full text-xs font-semibold text-white"
+                style={{ backgroundColor: PRIMARY_COLOR }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Consultation Preview Modal */}
       {showPreviewModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div
@@ -933,6 +1386,7 @@ export default function NewConsultationPage() {
             <div className="flex items-center justify-between">
               <h3 className="text-base font-semibold">Consultation Preview</h3>
               <button
+                type="button"
                 onClick={() => setShowPreviewModal(false)}
                 className="opacity-70 hover:opacity-100"
               >
@@ -986,6 +1440,55 @@ export default function NewConsultationPage() {
                   </ul>
                 )}
               </div>
+              {attachments.length > 0 && (
+                <div>
+                  <span className="opacity-60 block mb-1">
+                    Attachments ({attachments.length})
+                  </span>
+                  <div className="space-y-2">
+                    {attachments.map((a) => (
+                      <button
+                        key={a.id}
+                        type="button"
+                        onClick={() => setPreviewFile(a)}
+                        className="flex w-full items-center gap-3 rounded-xl border p-2 text-left hover:opacity-80"
+                        style={{
+                          backgroundColor: ui.inner,
+                          borderColor: ui.border,
+                        }}
+                      >
+                        <span
+                          className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg"
+                          style={{
+                            backgroundColor: ui.card,
+                            color: PRIMARY_COLOR,
+                          }}
+                        >
+                          {a.isImage ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={a.url}
+                              alt={a.file.name}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <FileText size={18} />
+                          )}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate font-medium">
+                            {a.file.name}
+                          </span>
+                          <span className="block text-[10px] opacity-50">
+                            {formatSize(a.file.size)}
+                          </span>
+                        </span>
+                        <Eye size={14} className="shrink-0 opacity-60" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
             <div
               className="flex justify-end gap-3 pt-2 border-t"
@@ -1002,17 +1505,18 @@ export default function NewConsultationPage() {
               <button
                 type="button"
                 onClick={handleConfirmFinalSubmit}
-                disabled={current?.saving}
+                disabled={saving}
                 className="px-5 py-2 rounded-full text-xs font-semibold text-white"
                 style={{ backgroundColor: PRIMARY_COLOR }}
               >
-                {current?.saving ? "Submitting..." : "Confirm & Submit"}
+                {saving ? "Submitting..." : "Confirm & Submit"}
               </button>
             </div>
           </div>
         </div>
       )}
 
+      {/* Delete Draft Modal */}
       {draftToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div

@@ -1,4 +1,5 @@
 import React, { useId } from "react";
+import { PRIMARY_COLOR } from "@/constants/colors";
 
 export interface MedbrainersLoaderProps {
   /** Show the "medbrainers" wordmark under the logo. Default: true */
@@ -7,7 +8,7 @@ export interface MedbrainersLoaderProps {
   text?: string;
   /** Width in px (height follows the aspect ratio). Default: 160 */
   size?: number;
-  /** Logo tile colour. Default: #830CFA */
+  /** Logo tile colour. Default: PRIMARY_COLOR */
   tileColor?: string;
   /** Colour of the white shapes. Default: #fff */
   markColor?: string;
@@ -26,7 +27,7 @@ export default function MedbrainersLoader({
   showText = true,
   text = "medbrainers",
   size = 160,
-  tileColor = "#830CFA",
+  tileColor = PRIMARY_COLOR,
   markColor = "#ffffff",
   textColor,
   duration,

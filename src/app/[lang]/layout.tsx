@@ -139,7 +139,7 @@ export default async function LangLayout({ children, params }: LayoutProps) {
         }}
       />
       <ReduxProvider>
-        <I18nProvider locale={lang} dict={getDictionary(lang)}>
+        <I18nProvider locale={lang} dict={getDictionary(lang)} persist>
           <ThemeProvider>
             <ConditionalLayout>{children}</ConditionalLayout>
           </ThemeProvider>

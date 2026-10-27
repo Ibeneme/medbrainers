@@ -616,7 +616,7 @@ export default function Testimonials() {
               type="button"
               onClick={() => scrollByCard(-1)}
               disabled={!canScrollLeft}
-              aria-label="Previous"
+              aria-label={t("Previous")}
               className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition enabled:hover:border-white/30 enabled:hover:bg-white/10 disabled:opacity-30"
             >
               <svg
@@ -636,7 +636,7 @@ export default function Testimonials() {
               type="button"
               onClick={() => scrollByCard(1)}
               disabled={!canScrollRight}
-              aria-label="Next"
+              aria-label={t("Next")}
               className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition enabled:hover:border-white/30 enabled:hover:bg-white/10 disabled:opacity-30"
             >
               <svg

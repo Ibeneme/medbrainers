@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { PRIMARY_COLOR } from "@/constants/colors";
 import { useAppDispatch, useAppSelector } from "@/api/hooks";
+import type { Gender } from "@/api/types";
 import {
   fetchMe,
   updateMe,
@@ -164,7 +165,7 @@ export default function SettingsPage() {
       countryCode: profile.countryCode || "+234",
       title: profile.title || "",
       specialty: profile.specialty || "",
-      license: profile.license || "",
+      license: profile.licenseNumber || "",
       gender: profile.gender || "",
       bio: profile.bio || "",
     });
@@ -190,8 +191,8 @@ export default function SettingsPage() {
       countryCode: form.countryCode.trim(),
       title: form.title.trim() || undefined,
       specialty: form.specialty.trim() || undefined,
-      license: form.license.trim() || undefined,
-      gender: form.gender.trim() || undefined,
+      licenseNumber: form.license.trim() || undefined,
+      gender: (form.gender.trim() || undefined) as Gender | undefined,
       bio: form.bio.trim() || undefined,
     };
     try {

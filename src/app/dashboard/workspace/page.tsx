@@ -63,6 +63,7 @@ import {
 } from "@/api/types";
 import { useTheme } from "@/contexts/theme-context";
 import DarkBlurOverlayLoader from "@/components/atoms/loaders/DarkBlurOverlayLoader";
+import { CustomDropdown } from "@/components/ui/items";
 
 const MEDICAL_DEPARTMENTS = [
   "Cardiology",
@@ -105,110 +106,7 @@ function sanitizeWebsite(urlStr: string): string {
   return `https://${trimmed}`;
 }
 
-function CustomDropdown({
-  label,
-  value,
-  options,
-  onChange,
-  placeholder = "Select...",
-  isDark,
-  colors,
-}: {
-  label?: string;
-  value: string;
-  options: { label: string; value: string }[];
-  onChange: (val: string) => void;
-  placeholder?: string;
-  isDark: boolean;
-  colors: any;
-}) {
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node)
-      ) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const selectedOption = options.find((o) => o.value === value);
-
-  return (
-    <div className="relative flex flex-col gap-1.5" ref={dropdownRef}>
-      {label && (
-        <label className="text-xs font-semibold opacity-60">{label}</label>
-      )}
-      <button
-        type="button"
-        onClick={() => setIsOpen((prev) => !prev)}
-        className={`flex w-full items-center justify-between rounded-xl border px-3.5 py-2.5 text-sm focus:outline-none transition ${
-          isDark ? "border-white/[0.08]" : "border-black/[0.08]"
-        }`}
-        style={{
-          backgroundColor: colors.shadeBgSecond || "transparent",
-          color: colors.text,
-        }}
-      >
-        <span className={selectedOption ? "font-medium" : "opacity-40"}>
-          {selectedOption ? selectedOption.label : placeholder}
-        </span>
-        <ChevronDown
-          className={`h-4 w-4 opacity-60 transition-transform ${
-            isOpen ? "rotate-180" : ""
-          }`}
-        />
-      </button>
-      {isOpen && (
-        <div
-          className={`absolute top-full left-0 z-50 mt-1.5 max-h-60 w-full overflow-y-auto rounded-xl border shadow-xl ${
-            isDark ? "border-white/[0.12]" : "border-black/[0.12]"
-          }`}
-          style={{
-            backgroundColor: colors.shadeBg,
-          }}
-        >
-          {options.map((opt) => {
-            const isSelected = opt.value === value;
-            return (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => {
-                  onChange(opt.value);
-                  setIsOpen(false);
-                }}
-                className="flex w-full items-center justify-between px-3.5 py-2.5 text-left text-xs font-semibold transition hover:opacity-80"
-                style={{
-                  backgroundColor: isSelected
-                    ? isDark
-                      ? "rgba(255,255,255,0.08)"
-                      : "rgba(0,0,0,0.05)"
-                    : "transparent",
-                  color: colors.text,
-                }}
-              >
-                <span>{opt.label}</span>
-                {isSelected && (
-                  <Check
-                    className="h-3.5 w-3.5"
-                    style={{ color: colors.primaryShade }}
-                  />
-                )}
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
 
 function LogoCropModal({
   isOpen,

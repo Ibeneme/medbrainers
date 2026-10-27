@@ -6,7 +6,7 @@ import { PRIMARY_COLOR, PRIMARY_DEEP, PRIMARY_HOVER, PRIMARY_LIGHT, PRIMARY_TINT
 
 type Theme = "dark" | "light";
 
-interface ThemeColors {
+export interface ThemeColors {
   bg: string;
   shadeBg: string;
   text: string;
@@ -14,8 +14,9 @@ interface ThemeColors {
   primary: string;
   primaryShade: string;
   navy: string;
-  shadeBgSecond?: string;
+  shadeBgSecond: string;
   darkBlue?: string;
+  border: string;
 }
 
 // Pass the click event (or any {clientX, clientY}) so the reveal starts at the button

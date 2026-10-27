@@ -27,6 +27,7 @@ export function clearTokens() {
   localStorage.removeItem(API_CONFIG.ACCESS_TOKEN_KEY);
   localStorage.removeItem(API_CONFIG.REFRESH_TOKEN_KEY);
   localStorage.removeItem(API_CONFIG.USER_KEY);
+  localStorage.removeItem(API_CONFIG.ACTIVE_FACILITY_KEY);
 }
 
 /* ── axios instance ────────────────────────────────────────── */

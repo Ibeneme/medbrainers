@@ -1,11 +1,13 @@
 import type { Dictionary } from "../translate";
 import { productName } from "@/constants/site";
+import frExtra from "./fr.extra";
 
 /**
 * French (fr). Keys are the exact English text used in the site; values are the French.
 * A missing key simply falls back to English. Keep this file as the template for new languages.
 */
 const fr: Dictionary = {
+  ...frExtra,
   // ---- Blog ----
   "Blog": "Blog",
   "Insights for smarter": "Des idées pour une santé plus",

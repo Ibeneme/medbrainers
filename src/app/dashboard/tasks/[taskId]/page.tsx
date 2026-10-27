@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -41,6 +41,7 @@ import {
   UserAvatar,
   personLabel,
 } from "@/components/ui/items";
+import { useFacilityId } from "@/hooks/useFacilityId";
 
 function ConfirmModal({
   open,
@@ -134,9 +135,9 @@ export default function TaskDetailPage() {
   const border = isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.12)";
 
   const { user } = useAppSelector((s) => s.auth);
-  const { activeFacilityId, activeFacility, members } = useAppSelector(
-    (s) => s.facilities
-  );
+
+  // Use the comprehensive useFacilityId hook
+  const { facilityId, activeFacility, members } = useFacilityId();
   const { current, detailLoading, saving } = useAppSelector((s) => s.tasks);
 
   const [isEditing, setIsEditing] = useState(false);
@@ -172,7 +173,7 @@ export default function TaskDetailPage() {
       membership &&
       (membership.role === "admin" ||
         membership.role === "manager" ||
-        membership.role === "owner")
+        (membership.role as string) === "owner")
     ) {
       return true;
     }
@@ -187,10 +188,10 @@ export default function TaskDetailPage() {
   }, [dispatch]);
 
   useEffect(() => {
-    if (!activeFacilityId || !taskId) return;
-    dispatch(fetchFacilityMembers(activeFacilityId));
-    dispatch(fetchTaskDetail({ facilityId: activeFacilityId, taskId }));
-  }, [dispatch, activeFacilityId, taskId]);
+    if (!facilityId || !taskId) return;
+    dispatch(fetchFacilityMembers(facilityId));
+    dispatch(fetchTaskDetail({ facilityId, taskId }));
+  }, [dispatch, facilityId, taskId]);
 
   useEffect(() => {
     if (!current) return;
@@ -215,11 +216,11 @@ export default function TaskDetailPage() {
   const activity = useMemo(() => current?.activityLog || [], [current]);
 
   const onSave = async () => {
-    if (!activeFacilityId || !taskId) return;
+    if (!facilityId || !taskId) return;
     try {
       await dispatch(
         updateTask({
-          facilityId: activeFacilityId,
+          facilityId,
           taskId,
           payload: {
             title: title.trim(),
@@ -234,18 +235,16 @@ export default function TaskDetailPage() {
       ).unwrap();
       notify("Task saved — change logged");
       setIsEditing(false);
-      dispatch(fetchTaskDetail({ facilityId: activeFacilityId, taskId }));
+      dispatch(fetchTaskDetail({ facilityId, taskId }));
     } catch (err: unknown) {
       notify(typeof err === "string" ? err : "Save failed", true);
     }
   };
 
   const onDelete = async () => {
-    if (!activeFacilityId || !taskId) return;
+    if (!facilityId || !taskId) return;
     try {
-      await dispatch(
-        deleteTask({ facilityId: activeFacilityId, taskId })
-      ).unwrap();
+      await dispatch(deleteTask({ facilityId, taskId })).unwrap();
       router.push("/dashboard/tasks");
     } catch (err: unknown) {
       notify(typeof err === "string" ? err : "Delete failed", true);
@@ -253,7 +252,7 @@ export default function TaskDetailPage() {
     }
   };
 
-  if (!activeFacilityId) {
+  if (!facilityId) {
     return (
       <div
         className="max-w-lg mx-auto px-4 py-16 text-center"

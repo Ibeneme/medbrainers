@@ -3,12 +3,20 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronRight, Plus, Trash2, Save, FlaskConical } from "lucide-react";
+import {
+  ChevronRight,
+  Plus,
+  Trash2,
+  Save,
+  FlaskConical,
+  Info,
+} from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/api/hooks";
 import { fetchLaboratory, upsertLaboratory } from "@/api/slices";
 import { useTheme } from "@/contexts/theme-context";
 import { PRIMARY_COLOR, getUI } from "@/constants/colors";
 import DarkBlurOverlayLoader from "@/components/atoms/loaders/DarkBlurOverlayLoader";
+import { useFacilityId } from "@/hooks/useFacilityId";
 
 export default function LabSetupPage() {
   const router = useRouter();
@@ -18,10 +26,8 @@ export default function LabSetupPage() {
 
   const ui = getUI(isDark, colors, colors?.border);
 
-  // Extract facility ID correctly from the Redux store
-  const { activeFacilityId, activeFacility, facilitiesLoading } =
-    useAppSelector((s) => s.facilities);
-  const facilityId = activeFacilityId || activeFacility?._id || "";
+  // Use the comprehensive useFacilityId hook
+  const { facilityId, activeFacility, facilitiesLoading } = useFacilityId();
 
   const { laboratory, listLoading } = useAppSelector((s) => s.labs);
 
@@ -29,6 +35,7 @@ export default function LabSetupPage() {
   const [departments, setDepartments] = useState<
     Array<{ name: string; code: string; description?: string }>
   >([]);
+  const [showGuide, setShowGuide] = useState(false);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -72,10 +79,7 @@ export default function LabSetupPage() {
         })
       ).unwrap();
       notify("Laboratory setup saved successfully");
-      setTimeout(
-        () => router.push(`/dashboard/labs`),
-        1000
-      );
+      setTimeout(() => router.push(`/dashboard/labs`), 1000);
     } catch (e: unknown) {
       notify(typeof e === "string" ? e : "Failed to save setup", true);
     } finally {
@@ -104,11 +108,7 @@ export default function LabSetupPage() {
       {/* Breadcrumb */}
       <div className="flex items-center gap-1.5 text-xs opacity-70">
         <Link
-          href={
-            facilityId
-              ? `/dashboard/labs`
-              : `/dashboard`
-          }
+          href={facilityId ? `/dashboard/labs` : `/dashboard`}
           className="hover:opacity-100"
         >
           Laboratory Home
@@ -136,9 +136,79 @@ export default function LabSetupPage() {
               Configure Laboratory ({companyDisplayName})
             </h1>
             <p className="text-xs opacity-60">
-              Manage your company's laboratory name and active departments.
+              Manage your company&apos;s laboratory name and active departments.
             </p>
           </div>
+        </div>
+
+        {/* Guide & Tips Box with Faint Red Theme */}
+        <div
+          className="rounded-[24px] p-4 border text-xs space-y-3 transition-all"
+          style={{
+            backgroundColor: isDark ? "rgba(127, 29, 29, 0.2)" : "#fef2f2",
+            borderColor: isDark ? "rgba(239, 68, 68, 0.3)" : "#fecaca",
+            color: isDark ? "#fca5a5" : "#991b1b",
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 font-semibold">
+              <Info
+                size={15}
+                style={{ color: isDark ? "#f87171" : "#dc2626" }}
+              />
+              <span>Lab Setup Guide & Configuration Tips</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowGuide(!showGuide)}
+              className="text-[11px] font-medium opacity-80 hover:opacity-100 transition underline"
+            >
+              {showGuide ? "Hide Guide" : "Show Guide"}
+            </button>
+          </div>
+
+          <p className="opacity-90 leading-relaxed">
+            Define your main laboratory name and organize clinical workflows by
+            configuring separate diagnostic departments and short unit codes.
+          </p>
+
+          {showGuide && (
+            <div
+              className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t text-[11px]"
+              style={{
+                borderColor: isDark ? "rgba(239, 68, 68, 0.2)" : "#fee2e2",
+              }}
+            >
+              <div className="space-y-1.5">
+                <p className="font-semibold opacity-100">Laboratory Naming</p>
+                <ul className="list-disc list-inside opacity-90 space-y-1">
+                  <li>
+                    Enter the official facility or diagnostic laboratory name.
+                  </li>
+                  <li>
+                    Used across patient request headers and report outputs.
+                  </li>
+                </ul>
+              </div>
+              <div className="space-y-1.5">
+                <p className="font-semibold opacity-100">Departments & Codes</p>
+                <ul className="list-disc list-inside opacity-90 space-y-1">
+                  <li>
+                    <strong>Department Name:</strong> E.g., Hematology,
+                    Chemistry, Microbiology.
+                  </li>
+                  <li>
+                    <strong>Department Code:</strong> Short unique identifier
+                    (e.g., HEM, BIO).
+                  </li>
+                  <li>
+                    <strong>Scope:</strong> Add detailed descriptions or testing
+                    guidelines.
+                  </li>
+                </ul>
+              </div>
+            </div>
+          )}
         </div>
 
         <form onSubmit={handleSave} className="space-y-6">
@@ -263,11 +333,7 @@ export default function LabSetupPage() {
 
           <div className="flex justify-end gap-3 pt-4">
             <Link
-              href={
-                facilityId
-                  ? `/dashboard/labs`
-                  : `/dashboard`
-              }
+              href={facilityId ? `/dashboard/labs` : `/dashboard`}
               className="rounded-full px-6 py-3 text-xs font-semibold"
               style={{ backgroundColor: ui.inner }}
             >

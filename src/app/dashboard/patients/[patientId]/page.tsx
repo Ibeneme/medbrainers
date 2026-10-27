@@ -59,7 +59,7 @@ import {
   addPatientFamily,
   linkFamily,
   removeFromFamilyGroup,
-  fetchConsultations,
+  fetchPatientConsultations as fetchConsultations,
   removeConsultation,
 } from "@/api/slices";
 import { useTheme } from "@/contexts/theme-context";
@@ -989,8 +989,13 @@ export default function PatientDetailPage() {
   const { activeFacilityId, activeFacility } = useAppSelector(
     (s) => s.facilities
   );
-  const { list, current, familyOf, detailLoading, consultationsMeta } =
-    useAppSelector((s) => s.patients);
+  const {
+    list,
+    current,
+    familyView: familyOf,
+    detailLoading,
+    consultationsMeta,
+  } = useAppSelector((s) => s.patients);
 
   const currentUser = useAppSelector((s: any) => s.auth?.user);
 
@@ -1067,6 +1072,7 @@ export default function PatientDetailPage() {
   const [familyModalOpen, setFamilyModalOpen] = useState(false);
   const [chartModalOpen, setChartModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+
   // Allergy form
   const [substance, setSubstance] = useState("");
   const [severity, setSeverity] = useState("moderate");
@@ -1226,7 +1232,7 @@ export default function PatientDetailPage() {
 
   // Sorted latest-first for vitals table/list
   const filteredVitalsList = useMemo(() => {
-    const list = validVitals; // Already sorted latest first
+    const list = validVitals;
     if (!vitalsSearch.trim()) return list;
     const q = vitalsSearch.toLowerCase();
     return list.filter((v: any) => {
@@ -1661,7 +1667,7 @@ export default function PatientDetailPage() {
     { id: "consultations" as const, label: "Consultations" },
     { id: "chart" as const, label: "Chart & trends" },
     { id: "vitals" as const, label: "Vitals & alerts" },
-    { id: "allergies" as const, label: "Allergies" },
+    // { id: "allergies" as const, label: "Allergies" },
     { id: "family" as const, label: "Family" },
     { id: "audit" as const, label: "Audit Trail" },
   ];
@@ -1679,14 +1685,14 @@ export default function PatientDetailPage() {
   const tabAction =
     tab === "overview" || tab === "vitals"
       ? { label: "Record vitals", onClick: openAddVital }
-      : tab === "allergies" && canManageAllergies
-      ? { label: "Add allergy", onClick: openAddAllergy }
-      : tab === "consultations"
-      ? {
-          label: "New consultation",
-          onClick: () =>
-            router.push(`/dashboard/patients/${patientId}/consultations/new`),
-        }
+      // : tab === "allergies" && canManageAllergies
+      // ? { label: "Add allergy", onClick: openAddAllergy }
+      // : tab === "consultations"
+      // ? {
+      //     label: "New consultation",
+      //     onClick: () =>
+      //       router.push(`/dashboard/patients/${patientId}/consultations/new`),
+      //   }
       : tab === "family"
       ? { label: "Manage family", onClick: () => setFamilyModalOpen(true) }
       : tab === "chart"

@@ -35,13 +35,13 @@ export type UI = {
  * Helper function to generate UI color tokens dynamically based on the current theme.
  * Call this inside components using `const ui = getUI(isDark, colors, border);`
  */
-export const getUI = (isDark: boolean, colors: any,): UI => ({
+export const getUI = (isDark: boolean, colors: any, border?: string): UI => ({
   isDark,
   page: colors.bg,
   card: colors.shadeBg,
   inner: colors.shadeBgSecond,
   text: colors.text,
-  border: isDark ? colors?.text + 12 : colors?.text + 45,
+  border: border ?? colors?.border ?? (isDark ? colors?.text + 12 : colors?.text + 45),
 });
 
 /**

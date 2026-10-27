@@ -15,6 +15,7 @@ import { useTheme } from "@/contexts/theme-context";
 import { PRIMARY_COLOR } from "@/constants/colors";
 import { ConfirmModal } from "@/components/ui";
 import DarkBlurOverlayLoader from "@/components/atoms/loaders/DarkBlurOverlayLoader";
+import { useFacilityId } from "@/hooks/useFacilityId";
 
 function personLabel(u: unknown): string {
   if (!u) return "—";
@@ -45,9 +46,9 @@ export default function HandoverDetailPage() {
   const border = isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.12)";
 
   const { user } = useAppSelector((s) => s.auth);
-  const { activeFacilityId, activeFacility } = useAppSelector(
-    (s) => s.facilities
-  );
+
+  // Use the comprehensive useFacilityId hook
+  const { facilityId, activeFacility } = useFacilityId();
   const { currentHandover, detailLoading, saving } = useAppSelector(
     (s) => s.tasks
   );
@@ -66,9 +67,9 @@ export default function HandoverDetailPage() {
   }, [dispatch]);
 
   useEffect(() => {
-    if (!activeFacilityId || !handoverId) return;
-    dispatch(fetchHandoverDetail({ facilityId: activeFacilityId, handoverId }));
-  }, [dispatch, activeFacilityId, handoverId]);
+    if (!facilityId || !handoverId) return;
+    dispatch(fetchHandoverDetail({ facilityId, handoverId }));
+  }, [dispatch, facilityId, handoverId]);
 
   const h = currentHandover;
   const toId =
@@ -81,17 +82,13 @@ export default function HandoverDetailPage() {
     h && h.status === "submitted" && myId && String(toId) === String(myId);
 
   const onAck = async () => {
-    if (!activeFacilityId || !handoverId) return;
+    if (!facilityId || !handoverId) return;
     try {
-      await dispatch(
-        acknowledgeHandover({ facilityId: activeFacilityId, handoverId })
-      ).unwrap();
+      await dispatch(acknowledgeHandover({ facilityId, handoverId })).unwrap();
       setAckOpen(false);
       setToast("Handover acknowledged");
       setTimeout(() => setToast(null), 2500);
-      dispatch(
-        fetchHandoverDetail({ facilityId: activeFacilityId, handoverId })
-      );
+      dispatch(fetchHandoverDetail({ facilityId, handoverId }));
     } catch (err: unknown) {
       setToastErr(true);
       setToast(typeof err === "string" ? err : "Acknowledge failed");
@@ -103,7 +100,7 @@ export default function HandoverDetailPage() {
     }
   };
 
-  if (!activeFacilityId) {
+  if (!facilityId) {
     return (
       <div
         className="max-w-lg mx-auto px-4 py-16 text-center"

@@ -51,6 +51,9 @@ import {
 } from "@/api/slices";
 import { facilityIdOf, facilityNameOf } from "@/api/types";
 import { productName } from "@/constants/site";
+import { T, useT } from "@/i18n/provider";
+import { DashboardLanguageToggle } from "@/i18n/dashboard-provider";
+import MedbrainersLoader from "@/components/atoms/loaders/Medbrainersloader";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -79,6 +82,27 @@ const NAV_ITEMS: NavItem[] = [
     label: "Dashboard",
     href: "/dashboard/dashboard",
     icon: <LayoutDashboard size={16} />,
+  },
+  {
+    label: "Telemedicine & Virtual",
+    icon: <Video size={16} />,
+    children: [
+      { label: "Virtual Consultations", href: "/dashboard/telemedicine" },
+      {
+        label: "Remote Patient Monitoring",
+        href: "/dashboard/telemedicine/rpm",
+      },
+    ],
+  },
+  {
+    label: "AI Clinical Analysis",
+    icon: <Sparkles size={16} />,
+    children: [
+      { label: "AI Diagnostic Support", href: "/dashboard/ai/diagnostics" },
+      { label: "Automated Chart Summary", href: "/dashboard/ai/summary" },
+      { label: "Predictive Risk Scoring", href: "/dashboard/ai/risk-scoring" },
+      { label: "Drug Interaction Checker", href: "/dashboard/ai/interactions" },
+    ],
   },
 
   // ─── Clinical Care ─────────────────────────────────────
@@ -119,31 +143,9 @@ const NAV_ITEMS: NavItem[] = [
     label: "Consultation & SOAP",
     icon: <Stethoscope size={16} />,
     children: [
-      { label: "Active Consultations", href: "/dashboard/clinical/notes" },
-      { label: "Vitals & Biometrics", href: "/dashboard/clinical/vitals" },
+      { label: "Active Consultations", href: "/dashboard/consultations" },
+      { label: "Vitals & Biometrics", href: "/dashboard/consultations/vitals" },
       { label: "Diagnoses & ICD-11", href: "/dashboard/clinical/diagnoses" },
-      { label: "Clinical Procedures", href: "/dashboard/clinical/procedures" },
-    ],
-  },
-  {
-    label: "Emergency & ER",
-    icon: <Siren size={16} />,
-    children: [
-      { label: "ER Trauma Board", href: "/dashboard/emergency" },
-      { label: "Ambulance Dispatch", href: "/dashboard/emergency/ambulance" },
-      { label: "Critical Care Monitor", href: "/dashboard/emergency/critical" },
-    ],
-  },
-  {
-    label: "Surgical Theater",
-    icon: <Scissors size={16} />,
-    children: [
-      { label: "OR Schedule", href: "/dashboard/theater/schedule" },
-      {
-        label: "Surgical Safety Checklists",
-        href: "/dashboard/theater/checklist",
-      },
-      { label: "Post-Op Recovery", href: "/dashboard/theater/recovery" },
     ],
   },
 
@@ -154,8 +156,7 @@ const NAV_ITEMS: NavItem[] = [
     icon: <FlaskConical size={16} />,
     children: [
       { label: "Laboratory", href: "/dashboard/labs" },
-    //   { label: "Laboratory Setup", href: "/dashboard/labs/setup" },
-    //   { label: "Catalog Setup", href: "/dashboard/labs/catalog/new" },
+      { label: "Lab Requests", href: "/dashboard/labs/requests" },
       { label: "Specimen Tracking", href: "/dashboard/labs/specimens" },
       { label: "Results Verification", href: "/dashboard/labs/results" },
       { label: "Pathology Catalog", href: "/dashboard/labs/catalog" },
@@ -165,9 +166,115 @@ const NAV_ITEMS: NavItem[] = [
     label: "Radiology & PACS",
     icon: <FileScan size={16} />,
     children: [
-      { label: "Imaging Worklist", href: "/dashboard/radiology" },
-      { label: "DICOM Viewer & Reports", href: "/dashboard/radiology/viewer" },
-      { label: "X-Ray / MRI Requests", href: "/dashboard/radiology/requests" },
+      {
+        label: "X-Ray / MRI Requests",
+        href: "/dashboard/radiology/requests",
+        children: [
+          {
+            label: "Modality Specific Order Entry",
+            href: "/dashboard/radiology/requests/order-entry",
+            children: [
+              {
+                label: "X-Ray Orders",
+                href: "/dashboard/radiology/requests/xray",
+              },
+              {
+                label: "MRI Orders",
+                href: "/dashboard/radiology/requests/mri",
+              },
+              { label: "CT Orders", href: "/dashboard/radiology/requests/ct" },
+              {
+                label: "Ultrasound Orders",
+                href: "/dashboard/radiology/requests/ultrasound",
+              },
+              {
+                label: "Mammography Orders",
+                href: "/dashboard/radiology/requests/mammography",
+              },
+            ],
+          },
+          {
+            label: "Clinical Indication & ICD-10",
+            href: "/dashboard/radiology/requests/icd10",
+          },
+          {
+            label: "Priority Triage Management",
+            href: "/dashboard/radiology/requests/triage",
+          },
+          {
+            label: "Contrast & Allergy Checkpoints",
+            href: "/dashboard/radiology/requests/contrast-screening",
+          },
+          {
+            label: "Referring Physician Portal",
+            href: "/dashboard/radiology/requests/physician-portal",
+          },
+          {
+            label: "Pre-Auth & Insurance Tracking",
+            href: "/dashboard/radiology/requests/insurance",
+          },
+        ],
+      },
+      {
+        label: "Imaging Worklist",
+        href: "/dashboard/radiology/worklist",
+        children: [
+          {
+            label: "Real-Time Modality Status Queues",
+            href: "/dashboard/radiology/worklist/status-queues",
+          },
+          {
+            label: "Technologist Task Allocation",
+            href: "/dashboard/radiology/worklist/tasks",
+          },
+          {
+            label: "Patient Appointment & Arrival",
+            href: "/dashboard/radiology/worklist/scheduling",
+          },
+          {
+            label: "Preparation Instruction Logs",
+            href: "/dashboard/radiology/worklist/preparations",
+          },
+          {
+            label: "Automated Accession Generation",
+            href: "/dashboard/radiology/worklist/accession",
+          },
+        ],
+      },
+      {
+        label: "DICOM Viewer & Reports",
+        href: "/dashboard/radiology/viewer",
+        children: [
+          {
+            label: "OHIF / Cornerstone Web Viewer",
+            href: "/dashboard/radiology/viewer/ohif",
+          },
+          {
+            label: "MPR & 3D Visualization Controls",
+            href: "/dashboard/radiology/viewer/mpr-3d",
+          },
+          {
+            label: "Window/Level, Zoom, Pan & Measure",
+            href: "/dashboard/radiology/viewer/tools",
+          },
+          {
+            label: "Backblaze B2 Streaming Storage",
+            href: "/dashboard/radiology/viewer/backblaze-b2",
+          },
+          {
+            label: "Specialty Structured Templates",
+            href: "/dashboard/radiology/viewer/templates",
+          },
+          {
+            label: "Voice-to-Text Dictation",
+            href: "/dashboard/radiology/viewer/dictation",
+          },
+          {
+            label: "Signoff & Signature Workflow",
+            href: "/dashboard/radiology/viewer/workflow",
+          },
+        ],
+      },
     ],
   },
   {
@@ -227,24 +334,24 @@ const NAV_ITEMS: NavItem[] = [
     ],
   },
   {
-    label: "Telemedicine & Virtual",
-    icon: <Video size={16} />,
+    label: "Emergency & ER",
+    icon: <Siren size={16} />,
     children: [
-      { label: "Virtual Consultations", href: "/dashboard/telemedicine" },
-      {
-        label: "Remote Patient Monitoring",
-        href: "/dashboard/telemedicine/rpm",
-      },
+      { label: "ER Trauma Board", href: "/dashboard/emergency" },
+      { label: "Ambulance Dispatch", href: "/dashboard/emergency/ambulance" },
+      { label: "Critical Care Monitor", href: "/dashboard/emergency/critical" },
     ],
   },
   {
-    label: "AI Clinical Analysis",
-    icon: <Sparkles size={16} />,
+    label: "Surgical Theater",
+    icon: <Scissors size={16} />,
     children: [
-      { label: "AI Diagnostic Support", href: "/dashboard/ai/diagnostics" },
-      { label: "Automated Chart Summary", href: "/dashboard/ai/summary" },
-      { label: "Predictive Risk Scoring", href: "/dashboard/ai/risk-scoring" },
-      { label: "Drug Interaction Checker", href: "/dashboard/ai/interactions" },
+      { label: "OR Schedule", href: "/dashboard/theater/schedule" },
+      {
+        label: "Surgical Safety Checklists",
+        href: "/dashboard/theater/checklist",
+      },
+      { label: "Post-Op Recovery", href: "/dashboard/theater/recovery" },
     ],
   },
 
@@ -265,8 +372,16 @@ const NAV_ITEMS: NavItem[] = [
     icon: <Building2 size={16} />,
     children: [
       { label: "Active Facility", href: "/dashboard/workspace" },
+      { label: "Departments", href: "/dashboard/workspace/departments" },
+      {
+        label: "Facility Invitations",
+        href: "/dashboard/workspace/invitations",
+      },
       { label: "Create Facility", href: "/dashboard/workspace/create" },
-      { label: "Invitations", href: "/dashboard/workspace/invitations" },
+      {
+        label: "Create Department",
+        href: "/dashboard/workspace/departments/create",
+      },
     ],
   },
   {
@@ -335,11 +450,12 @@ function IdentityChip({
   iconFallback: React.ElementType;
   size?: string;
 }) {
+  const t = useT();
   if (src) {
     return (
       <img
         src={src}
-        alt="Avatar"
+        alt={t("Avatar")}
         className={`${size} rounded-md object-cover shrink-0 border border-white/10`}
       />
     );
@@ -374,6 +490,7 @@ function SidebarContent({
   onShowToast: (msg: string) => void;
   hasFacility: boolean;
 }) {
+  const t = useT();
   const pathname = usePathname();
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -418,11 +535,6 @@ function SidebarContent({
   const navRef = useRef<HTMLElement>(null);
   const activeItemRef = useRef<HTMLElement | null>(null);
 
-  useEffect(() => {
-    dispatch(fetchMe());
-    dispatch(fetchMyFacilities());
-  }, [dispatch]);
-
   const borderStyle = {
     borderColor: "rgba(255,255,255,0.1)",
   };
@@ -443,11 +555,10 @@ function SidebarContent({
     setIsWorkspaceOpen(false);
     try {
       await dispatch(switchFacility(companyId)).unwrap();
-      onShowToast("Switched facility");
-      // Full page reload on facility switch to reset state completely across all records
+      onShowToast(t("Switched facility"));
       window.location.reload();
     } catch (e: any) {
-      onShowToast(typeof e === "string" ? e : "Could not switch facility");
+      onShowToast(typeof e === "string" ? e : t("Could not switch facility"));
     }
   };
 
@@ -561,10 +672,14 @@ function SidebarContent({
               color: "rgba(255, 255, 255, 0.7)",
             }}
           >
-            <span className="tracking-tight leading-snug">{child.label}</span>
+            <span className="tracking-tight leading-snug">
+              {t(child.label)}
+            </span>
             <div className="flex items-center gap-1 bg-white/10 px-1.5 py-0.5 rounded text-[10px] font-medium text-white/80">
               <Lock size={10} />
-              <span>Coming Soon</span>
+              <span>
+                <T>Coming Soon</T>
+              </span>
             </div>
           </div>
         );
@@ -594,7 +709,7 @@ function SidebarContent({
                 color: "#FFFFFF",
               }}
             >
-              <span className="truncate tracking-tight">{child.label}</span>
+              <span className="truncate tracking-tight">{t(child.label)}</span>
               <ChevronIcon open={open} />
             </button>
 
@@ -648,7 +763,7 @@ function SidebarContent({
               style={{ backgroundColor: PRIMARY_COLOR }}
             />
           )}
-          <span className="truncate tracking-tight">{child.label}</span>
+          <span className="truncate tracking-tight">{t(child.label)}</span>
 
           {isInvitationsTab && pendingInvitations.length > 0 && (
             <span
@@ -691,10 +806,12 @@ function SidebarContent({
               />
               <div className="min-w-0">
                 <p className="text-[13px] font-medium truncate tracking-tight leading-tight text-white">
-                  {companyName}
+                  {companyName === "Hospital Facility"
+                    ? t(companyName)
+                    : companyName}
                 </p>
                 <p className="text-[10.5px] text-white/60 truncate tracking-tight leading-tight">
-                  EMR Facility
+                  <T>EMR Facility</T>
                 </p>
               </div>
             </div>
@@ -750,7 +867,7 @@ function SidebarContent({
                   })
                 ) : (
                   <div className="px-3 py-2 text-white/50 text-[12px]">
-                    No facilities yet
+                    <T>No facilities yet</T>
                   </div>
                 )}
 
@@ -764,7 +881,7 @@ function SidebarContent({
                     }}
                     className="w-full flex items-center gap-2 px-3 py-2 text-left opacity-60 hover:opacity-100 hover:bg-white/5 transition-colors cursor-pointer text-[12px]"
                   >
-                    <Plus size={14} /> New facility
+                    <Plus size={14} /> <T>New facility</T>
                   </button>
                 </div>
               </motion.div>
@@ -793,7 +910,7 @@ function SidebarContent({
                   }`}
                   style={index > 0 ? borderStyle : undefined}
                 >
-                  {item.category}
+                  {t(item.category ?? "")}
                 </div>
               )}
 
@@ -831,7 +948,7 @@ function SidebarContent({
                           {item.icon}
                         </span>
                         <span className="flex-1 text-left tracking-tight flex items-center gap-2">
-                          {item.label}
+                          {t(item.label)}
                           {isFacilityWorkspaceGroup &&
                             pendingInvitations.length > 0 && (
                               <span
@@ -877,11 +994,13 @@ function SidebarContent({
                 >
                   <div className="flex items-center gap-2.5 w-full">
                     <span className="opacity-60">{item.icon}</span>
-                    <span className="tracking-tight">{item.label}</span>
+                    <span className="tracking-tight">{t(item.label)}</span>
                   </div>
                   <div className="flex items-center gap-1 bg-white/10 px-1.5 py-0.5 rounded text-[10px] font-medium text-white/80">
                     <Lock size={10} />
-                    <span>Coming Soon</span>
+                    <span>
+                      <T>Coming Soon</T>
+                    </span>
                   </div>
                 </div>
               ) : (
@@ -916,7 +1035,7 @@ function SidebarContent({
                   >
                     {item.icon}
                   </span>
-                  <span className="tracking-tight">{item.label}</span>
+                  <span className="tracking-tight">{t(item.label)}</span>
                 </Link>
               )}
             </div>
@@ -940,10 +1059,10 @@ function SidebarContent({
             />
             <div className="min-w-0 flex-1">
               <p className="text-[12.5px] font-medium truncate tracking-tight leading-tight text-white">
-                {fullName}
+                {fullName === "Doctor / Staff" ? t(fullName) : fullName}
               </p>
               <p className="text-[10.5px] text-white/60 truncate tracking-tight leading-tight">
-                {email}
+                {email === "No email" ? t(email) : email}
               </p>
             </div>
           </div>
@@ -954,7 +1073,7 @@ function SidebarContent({
               goToSettingsTab("personal");
             }}
             className="w-6 h-6 flex items-center justify-center rounded opacity-60 hover:opacity-100 transition-colors shrink-0 ml-1 text-white"
-            title="Go to personal settings"
+            title={t("Go to personal settings")}
           >
             <ExternalLink size={13} />
           </button>
@@ -965,6 +1084,7 @@ function SidebarContent({
 }
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
+  const t = useT();
   const { theme, toggleTheme, colors } = useTheme();
   const dispatch = useAppDispatch();
   const { user, accessToken } = useAppSelector((state) => state.auth);
@@ -976,9 +1096,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const notifRef = useRef<HTMLDivElement>(null);
 
-  const { list: facilityList, activeFacilityId } = useAppSelector(
-    (state) => state.facilities
-  );
+  const {
+    list: facilityList,
+    activeFacilityId,
+    initialized: facilitiesInitialized,
+  } = useAppSelector((state) => state.facilities);
+
+  const waitingForFacility =
+    !!accessToken && !activeFacilityId && !facilitiesInitialized;
   const hasFacility = facilityList.length > 0 || !!activeFacilityId;
 
   const showToast = (msg: string) => {
@@ -1013,7 +1138,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       className="min-h-screen antialiased lg:flex transition-colors duration-200 relative"
       style={{ backgroundColor: colors.shadeBgSecond, color: colors.text }}
     >
-      {/* Toast Notification for Missing Facility */}
       <AnimatePresence>
         {toastMessage && (
           <motion.div
@@ -1035,7 +1159,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               className="ml-2 px-3 py-1 rounded-lg text-xs font-bold text-white transition-opacity hover:opacity-90"
               style={{ backgroundColor: PRIMARY_COLOR }}
             >
-              Create Facility Now
+              <T>Create Facility Now</T>
             </Link>
           </motion.div>
         )}
@@ -1094,7 +1218,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     : "rgba(0,0,0,0.1)",
                 color: colors.text,
               }}
-              aria-label="Open menu"
+              aria-label={t("Open menu")}
             >
               <Menu size={18} />
             </button>
@@ -1110,7 +1234,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 onChange={(e) => setSearchValue(e.target.value)}
                 onFocus={() => setIsSearchFocused(true)}
                 onBlur={() => setIsSearchFocused(false)}
-                placeholder="Search patients, medical records, ICD-11..."
+                placeholder={t("Search patients, medical records, ICD-11...")}
                 className="w-full rounded-lg pl-10 pr-14 py-2 text-[13px] border transition-all tracking-tight outline-none"
                 style={{
                   backgroundColor: colors.shadeBgSecond,
@@ -1140,6 +1264,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
 
           <div className="flex items-center gap-2.5">
+            <DashboardLanguageToggle
+              borderColor={
+                theme === "dark" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"
+              }
+              backgroundColor={colors.shadeBgSecond}
+              color={colors.text}
+            />
             <button
               type="button"
               onClick={toggleTheme}
@@ -1152,7 +1283,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     : "rgba(0,0,0,0.1)",
                 color: colors.text,
               }}
-              aria-label="Toggle theme"
+              aria-label={t("Toggle theme")}
             >
               {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
             </button>
@@ -1170,7 +1301,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                       : "rgba(0,0,0,0.1)",
                   color: colors.text,
                 }}
-                aria-label="Notifications"
+                aria-label={t("Notifications")}
               >
                 <Bell size={16} />
                 <span className="absolute top-1.5 right-1.5 w-2 h-2">
@@ -1204,13 +1335,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   >
                     <div className="px-4 pb-2 flex items-center justify-between">
                       <h3 className="text-[11px] font-bold uppercase tracking-wider">
-                        Notifications
+                        <T>Notifications</T>
                       </h3>
                       <span
                         className="text-[11px] font-medium cursor-pointer"
                         style={{ color: PRIMARY_COLOR }}
                       >
-                        Mark all read
+                        <T>Mark all read</T>
                       </span>
                     </div>
                     <div className="py-1 max-h-64 overflow-y-auto space-y-1 px-2">
@@ -1221,13 +1352,15 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                         />
                         <div className="min-w-0">
                           <p className="text-[12.5px] font-semibold tracking-tight">
-                            Critical lab result alert
+                            <T>Critical lab result alert</T>
                           </p>
                           <p className="text-[11px] opacity-70 tracking-tight">
-                            Patient Jane Doe potassium levels require review.
+                            <T>
+                              Patient Jane Doe potassium levels require review.
+                            </T>
                           </p>
                           <span className="text-[10px] opacity-50 mt-1 block">
-                            2m ago
+                            <T>2m ago</T>
                           </span>
                         </div>
                       </div>
@@ -1240,7 +1373,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </header>
 
         <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6 sm:py-8 max-w-7xl w-full mx-auto">
-          {children}
+          {waitingForFacility ? (
+            <div className="flex min-h-[60vh] items-center justify-center">
+              <MedbrainersLoader showText={false} size={72} />
+            </div>
+          ) : (
+            children
+          )}
         </main>
       </div>
     </div>

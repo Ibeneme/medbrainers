@@ -148,9 +148,11 @@ export default function NursingCarePlansPage() {
                 facilityId: activeFacilityId,
                 payload: {
                   patientId,
-                  nursingDiagnosis: diagnosis,
-                  goal,
-                  intervention,
+                  diagnosis,
+                  goals: goal.trim() ? [goal.trim()] : undefined,
+                  interventions: intervention.trim()
+                    ? [{ description: intervention.trim() }]
+                    : undefined,
                 },
               })
             ).unwrap();

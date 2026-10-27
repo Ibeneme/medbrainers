@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { productName } from "@/constants/site";
+import { T } from "@/i18n/provider";
 
 export default function ProductDescriptionHome() {
   const [ready, setReady] = useState(false);
@@ -19,10 +20,13 @@ export default function ProductDescriptionHome() {
         }`}
       >
         <p className="m-0 max-w-[48rem] px-4 text-[28px] font-normal leading-normal text-white">
-          {productName}, Designed for excellence across every clinical tier,
-          bringing all patient records, histories, lab results, tests and
-          prescriptions together in one place. Empowering healthcare providers
-          and patients with reliable, connected infrastructure.
+          {productName},{" "}
+          <T>
+            Designed for excellence across every clinical tier, bringing all
+            patient records, histories, lab results, tests and prescriptions
+            together in one place. Empowering healthcare providers and patients
+            with reliable, connected infrastructure.
+          </T>
         </p>
       </div>
     </div>

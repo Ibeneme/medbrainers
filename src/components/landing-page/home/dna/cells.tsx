@@ -8,8 +8,7 @@ import { useEffect, useRef } from "react";
 /*  - cells tumble in 3D (a rod turned end-on shortens into a circle)          */
 /*  - rising bubbles and drifting spores for depth                             */
 /*  - parallax on scroll: far chains drift less, near chains more              */
-/*  Usage: put it inside a `relative` parent; it fills the parent.             */
-/*    <section className="relative overflow-hidden bg-black"><Cells /></section> */
+/*  Usage: put it inside a `relative` parent with an explicit height.          */
 /* -------------------------------------------------------------------------- */
 
 const TAU = Math.PI * 2;
@@ -23,10 +22,6 @@ function rng(seed: number) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
-
-/* ========================================================================== */
-/*  CELLS (rod-shaped bacteria in chains)                                      */
-/* ========================================================================== */
 
 type Hair = { u: number; len: number; ph: number };
 type Blob = {
@@ -402,10 +397,6 @@ function drawCell(
   ctx.restore();
 }
 
-/* ========================================================================== */
-/*  Component                                                                  */
-/* ========================================================================== */
-
 export default function Cells({ className = "" }: { className?: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -444,34 +435,35 @@ export default function Cells({ className = "" }: { className?: string }) {
     let W = 0;
     let H = 0;
     let dpr = 1;
-    // scroll parallax: how far the section center is from viewport center
     let scrollY = 0;
 
     const updateScroll = () => {
       const rect = wrap.getBoundingClientRect();
-      // 0 when section is centered; positive when section is above center
       scrollY = window.innerHeight * 0.5 - (rect.top + rect.height * 0.5);
     };
 
     const resize = () => {
+      // Limit dpr to 2 on Safari to save memory and avoid GPU context loss crashes
       dpr = Math.min(window.devicePixelRatio || 1, 2);
-      W = canvas.clientWidth;
-      H = canvas.clientHeight;
+      
+      // Safari fallback: check clientWidth, fallback to bounding rect or window width
+      const rect = canvas.getBoundingClientRect();
+      W = canvas.clientWidth || rect.width || window.innerWidth;
+      H = canvas.clientHeight || rect.height || window.innerHeight;
+
       canvas.width = Math.max(1, Math.floor(W * dpr));
       canvas.height = Math.max(1, Math.floor(H * dpr));
       updateScroll();
     };
 
     const draw = (t: number) => {
+      if (W === 0 || H === 0) return;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, W, H);
 
       const scale = Math.min(1.15, Math.max(0.55, W / 1280));
-
-      // global parallax offset (slow layer)
       const baseParallax = reduce ? 0 : scrollY * 0.18;
 
-      // drifting spores — move a bit slower than near cells
       ctx.globalCompositeOperation = "lighter";
       for (const d of dust) {
         const x = (((d.x + t * d.vx) % 1) + 1) % 1;
@@ -485,7 +477,6 @@ export default function Cells({ className = "" }: { className?: string }) {
       }
       ctx.globalCompositeOperation = "source-over";
 
-      // bubbles
       ctx.lineWidth = 1;
       for (const b of bubbles) {
         const x = b.x + Math.sin(t * 0.4 + b.ph) * b.sway;
@@ -501,11 +492,9 @@ export default function Cells({ className = "" }: { className?: string }) {
         ctx.stroke();
       }
 
-      // chains — depth drives parallax strength (far = less, near = more)
       for (const ch of chains) {
         const c = ch.cfg;
         const cs = scale * (0.6 + 0.55 * c.depth);
-        // 0.08 (far) → ~0.55 (near)
         const depthParallax = reduce ? 0 : scrollY * (0.08 + 0.47 * c.depth);
 
         const ax =
@@ -560,11 +549,13 @@ export default function Cells({ className = "" }: { className?: string }) {
       t += dt;
       draw(t);
     };
+
     const start = () => {
       if (raf || reduce) return;
       last = 0;
       raf = requestAnimationFrame(frame);
     };
+    
     const stop = () => {
       cancelAnimationFrame(raf);
       raf = 0;
@@ -572,7 +563,6 @@ export default function Cells({ className = "" }: { className?: string }) {
 
     const onScroll = () => {
       updateScroll();
-      // redraw immediately when reduced-motion so parallax still updates once
       if (reduce) draw(t);
     };
 
@@ -614,9 +604,9 @@ export default function Cells({ className = "" }: { className?: string }) {
     <div
       ref={wrapRef}
       aria-hidden="true"
-      className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`}
+      className={`pointer-events-none absolute inset-0 block h-full w-full overflow-hidden ${className}`}
     >
-      <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
+      <canvas ref={canvasRef} className="block h-full w-full" />
     </div>
   );
 }

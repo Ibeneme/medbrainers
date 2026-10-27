@@ -1,125 +1,473 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { FlaskConical, Plus, RefreshCw } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/api/hooks";
-import { fetchMyFacilities } from "@/api/slices";
-import api from "@/api/services";
+import React, { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "../../store";
+import Link from "next/link";
+import {
+  trackRequestBySpecimenCode,
+  clearLabsError,
+  clearActiveLabRequest,
+} from "@/api";
+import { useFacilityId } from "@/hooks/useFacilityId";
+import { useTheme } from "@/contexts/theme-context";
 import { PRIMARY_COLOR } from "@/constants/colors";
 import {
-  ModuleShell,
-  personLabel,
-  StatusPill,
-  EmptyState,
-  useInputStyles,
-  ActionLink,
-} from "@/components/dashboard/ModuleShell";
+  Search,
+  Loader2,
+  CalendarDays,
+  IdCard,
+  Flag,
+  Check,
+  ChevronRight,
+  Barcode,
+} from "lucide-react";
 
-const ENDPOINTS: Record<string, string> = {
-  ambulances: "/emergency/ambulances",
-  critical: "/emergency/critical",
-  catalog: "/labs/catalog",
-  results: "/labs/requests",
-  specimens: "/labs/specimens",
-  prescriptions: "/pharmacy/prescriptions",
-  inventory: "/pharmacy/inventory",
-  dispense: "/pharmacy/prescriptions",
-  controlled: "/pharmacy/controlled",
-  requests: "/radiology/worklist",
-  viewer: "/radiology/worklist",
-  crossmatch: "/blood-bank/crossmatch",
-  transfusions: "/blood-bank/transfusions",
-  schedule: "/theater/schedule",
-  checklist: "/theater/schedule",
-  recovery: "/theater/recovery",
-  antenatal: "/maternal/antenatal",
-  delivery: "/maternal/deliveries",
-  immunization: "/maternal/immunizations",
-  pediatrics: "/maternal/pediatrics",
-};
+function InfoItem({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-start gap-2.5">
+      <span className="mt-0.5 opacity-40 shrink-0">{icon}</span>
+      <div className="min-w-0">
+        <p className="text-[11px] opacity-50">{label}</p>
+        <p className="text-sm font-semibold truncate capitalize">{value}</p>
+      </div>
+    </div>
+  );
+}
 
-export default function ModulePage() {
-  const dispatch = useAppDispatch();
-  const { activeFacilityId } = useAppSelector((s) => s.facilities);
-  const { inputStyle, inputCls, cardCls, ui } = useInputStyles();
-  const [items, setItems] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [msg, setMsg] = useState<string | null>(null);
+export default function SpecimenTracker() {
+  const dispatch = useDispatch<AppDispatch>();
+  const [barcodeInput, setBarcodeInput] = useState("");
+  const [hasSearched, setHasSearched] = useState(false);
+  const { facilityId } = useFacilityId();
 
-  useEffect(() => { dispatch(fetchMyFacilities()); }, [dispatch]);
+  const { theme, colors } = useTheme();
+  const isDark = theme === "dark";
+  const border = isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.12)";
+  const hairline = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.06)";
+  const ui = {
+    isDark,
+    page: colors.bg,
+    card: colors.shadeBg,
+    inner: colors.shadeBgSecond,
+    text: colors.text,
+    border,
+  };
 
-  async function load() {
-    if (!activeFacilityId) return;
-    const ep = ENDPOINTS["specimens"] || "";
-    if (!ep) { setItems([]); return; }
-    setLoading(true);
-    setError(null);
-    try {
-      const { data } = await api.get(`/companies/${activeFacilityId}${ep}`);
-      const list = data?.data ?? data ?? [];
-      setItems(Array.isArray(list) ? list : []);
-    } catch (e: any) {
-      setError(e?.response?.data?.message || e?.message || "Failed to load");
-      setItems([]);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const { activeRequest, detailLoading, error, message } = useSelector(
+    (state: RootState) => state.labs
+  );
 
-  useEffect(() => { load(); }, [activeFacilityId]);
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!barcodeInput.trim()) return;
 
-  function rowTitle(it: any) {
-    return (
-      it.name || it.procedureName || it.vaccineName || it.vehicleCode || it.unitNumber ||
-      it.drugName || it.barcode || it.modality || it.clinicalDescription ||
-      personLabel(it.patient || it.patientId) || it._id?.slice(-6) || "Record"
+    setHasSearched(true);
+    // Clear previous search results and errors immediately
+    dispatch(clearActiveLabRequest());
+    dispatch(clearLabsError());
+
+    dispatch(
+      trackRequestBySpecimenCode({
+        facilityId,
+        specimenCode: barcodeInput.trim(),
+      })
     );
-  }
+  };
 
-  function rowDetail(it: any) {
-    const parts = [
-      it.chiefComplaint, it.clinicalIndication, it.batchNumber, it.bloodType,
-      it.theaterRoom, it.specimenType, it.status, it.priority,
-    ].filter(Boolean);
-    return parts.slice(0, 3).join(" · ");
-  }
+  const getStatusBadgeStyle = (status: string) => {
+    switch (status) {
+      case "verified":
+      case "received":
+        return { bg: "rgba(16, 185, 129, 0.12)", color: "#059669" };
+      case "resulted":
+      case "processing":
+        return { bg: "rgba(59, 130, 246, 0.12)", color: "#2563eb" };
+      case "collected":
+      case "collecting_sample":
+        return { bg: "rgba(245, 158, 11, 0.12)", color: "#d97706" };
+      case "rejected":
+      case "discarded":
+      case "cancelled":
+        return { bg: "rgba(239, 68, 68, 0.12)", color: "#dc2626" };
+      default:
+        return { bg: ui.inner, color: ui.text };
+    }
+  };
+
+  const patient =
+    activeRequest &&
+    typeof activeRequest.patient === "object" &&
+    activeRequest.patient !== null
+      ? activeRequest.patient
+      : null;
+
+  const patientName = patient
+    ? `${patient.firstName || ""} ${patient.lastName || ""}`.trim()
+    : "Patient Record";
+
+  const initials = patient
+    ? `${(patient.firstName || "?")[0]}${
+        (patient.lastName || "")[0] || ""
+      }`.toUpperCase()
+    : "PR";
 
   return (
-    <ModuleShell
-      title="Specimen tracking"
-      subtitle={`${items.length} records`}
-      icon={FlaskConical}
-      loading={loading}
-      actions={
-        <>
-          <ActionLink href="/dashboard/dashboard">Dashboard</ActionLink>
-          <button type="button" onClick={load} className="flex items-center gap-1.5 rounded-full border px-4 py-2.5 text-xs font-semibold" style={{ borderColor: ui.border }}>
-            <RefreshCw size={14} /> Refresh
-          </button>
-        </>
-      }
+    <div
+      className="mx-auto max-w-4xl px-3 sm:px-6 py-6 space-y-6 relative"
+      style={{ color: ui.text }}
     >
-      {msg && <div className="rounded-2xl px-4 py-2 text-xs font-semibold" style={{ backgroundColor: "rgba(37,99,235,0.12)", color: "#2563eb" }}>{msg}</div>}
-      {error && <div className="rounded-2xl px-4 py-2 text-xs font-semibold" style={{ backgroundColor: "rgba(220,38,38,0.12)", color: "#dc2626" }}>{error}</div>}
+      {/* Top Breadcrumb Navigation */}
+      <div className="flex items-center gap-1.5 text-xs opacity-70">
+        <Link
+          href="/dashboard/labs"
+          className="hover:opacity-100 font-medium transition"
+        >
+          Laboratory
+        </Link>
+        <ChevronRight size={12} />
+        <Link
+          href="/dashboard/labs/requests"
+          className="hover:opacity-100 font-medium transition"
+        >
+          Patient Requests
+        </Link>
+        <ChevronRight size={12} />
+        <span className="font-semibold">Specimen Tracker</span>
+      </div>
 
-      <div className={cardCls} style={{ backgroundColor: ui.card, borderColor: ui.border }}>
-        {items.length === 0 ? (
-          <EmptyState text="No records yet. Data will appear when the API returns items for this module." />
-        ) : (
-          <div className="space-y-2">
-            {items.map((it: any) => (
-              <div key={it._id || JSON.stringify(it).slice(0, 20)} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl p-4" style={{ backgroundColor: ui.inner }}>
-                <div className="min-w-0">
-                  <p className="font-semibold text-sm truncate">{rowTitle(it)}</p>
-                  <p className="text-xs opacity-55 truncate">{rowDetail(it)}</p>
-                </div>
-                {it.status && <StatusPill status={String(it.status)} />}
-              </div>
-            ))}
+      <div
+        className="relative overflow-hidden rounded-[32px] border p-6 sm:p-8 space-y-4"
+        style={{ backgroundColor: ui.card, borderColor: hairline }}
+      >
+        <div className="flex items-center gap-3">
+          <div
+            className="flex h-12 w-12 items-center justify-center rounded-2xl shrink-0"
+            style={{
+              backgroundColor: `${PRIMARY_COLOR}15`,
+              color: PRIMARY_COLOR,
+            }}
+          >
+            <Barcode size={24} />
+          </div>
+          <div className="space-y-0.5">
+            <h2 className="text-xl font-bold">
+              Specimen & Lab Request Tracker
+            </h2>
+            <p className="text-xs opacity-60">
+              Enter or scan a specimen barcode to load full request and test
+              details.
+            </p>
+          </div>
+        </div>
+
+        <form onSubmit={handleSearch} className="space-y-2">
+          <div className="flex gap-3">
+            <div className="relative flex-1 flex items-center">
+              <Search size={16} className="absolute left-4 opacity-40" />
+              <input
+                type="text"
+                value={barcodeInput}
+                onChange={(e) => setBarcodeInput(e.target.value)}
+                placeholder="ENTER SPECIMEN BARCODE..."
+                className="w-full rounded-2xl pl-11 pr-4 py-3 text-xs outline-none border transition uppercase "
+                style={{
+                  backgroundColor: ui.inner,
+                  color: ui.text,
+                  borderColor: border,
+                }}
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={detailLoading || !barcodeInput.trim()}
+              className="flex items-center justify-center gap-2 rounded-2xl px-6 py-3 text-xs font-semibold text-white transition hover:opacity-90 disabled:opacity-50 shrink-0"
+              style={{ backgroundColor: PRIMARY_COLOR }}
+            >
+              {detailLoading ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <Search size={14} />
+              )}
+              Track Specimen
+            </button>
+          </div>
+          <div className="flex items-center gap-2 px-1 pt-1">
+            <span
+              className="text-[9px] font-semibold px-1.5 py-0.5 rounded"
+              style={{
+                backgroundColor: isDark
+                  ? "rgba(255,255,255,0.06)"
+                  : "rgba(0,0,0,0.04)",
+                color: PRIMARY_COLOR,
+              }}
+            >
+              HINT
+            </span>
+            <span className="text-[11px] opacity-50">
+              Enter a valid specimen barcode (e.g. SPECIMEN-MED-AA0001) and
+              click track to load details.
+            </span>
+          </div>
+        </form>
+
+        {error && (
+          <div className="mt-4 p-3.5 bg-red-500/10 border border-red-500/30 rounded-2xl text-xs text-red-500 flex justify-between items-center">
+            <span>{error}</span>
+            <button
+              onClick={() => dispatch(clearLabsError())}
+              className="font-bold hover:opacity-70"
+            >
+              ×
+            </button>
+          </div>
+        )}
+
+        {message && (
+          <div className="mt-4 p-3.5 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl text-xs text-emerald-500 flex justify-between items-center">
+            <span>{message}</span>
+            <button
+              onClick={() => dispatch(clearLabsError())}
+              className="font-bold hover:opacity-70"
+            >
+              ×
+            </button>
           </div>
         )}
       </div>
-    </ModuleShell>
+
+      {hasSearched && !activeRequest && !detailLoading && (
+        <div
+          className="rounded-[28px] border p-8 text-center text-xs opacity-50"
+          style={{ backgroundColor: ui.card, borderColor: hairline }}
+        >
+          None found
+        </div>
+      )}
+
+      {activeRequest && (
+        <div className="space-y-6">
+          <div
+            className="relative overflow-hidden rounded-[32px] border p-6 sm:p-8 space-y-6"
+            style={{ backgroundColor: ui.card, borderColor: hairline }}
+          >
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+              <div className="flex items-center gap-4 min-w-0">
+                <div
+                  className="flex h-16 w-16 sm:h-20 sm:w-20 shrink-0 items-center justify-center rounded-[24px] text-xl sm:text-2xl font-bold text-white"
+                  style={{ backgroundColor: PRIMARY_COLOR }}
+                >
+                  {initials}
+                </div>
+                <div className="min-w-0 space-y-1">
+                  <h3 className="text-xl sm:text-2xl font-bold truncate capitalize">
+                    {patientName}
+                  </h3>
+                  <div>
+                    <span
+                      className="inline-block rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider border"
+                      style={{
+                        backgroundColor: getStatusBadgeStyle(
+                          activeRequest.status
+                        ).bg,
+                        color: getStatusBadgeStyle(activeRequest.status).color,
+                        borderColor: border,
+                      }}
+                    >
+                      Status: {activeRequest.status.replace("_", " ")}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                className="flex flex-col gap-2 rounded-2xl p-4 border shrink-0 min-w-[240px]"
+                style={{ backgroundColor: ui.inner, borderColor: hairline }}
+              >
+                <span className="text-[10px] uppercase font-bold tracking-wider opacity-50">
+                  Priority: {activeRequest.priority}
+                </span>
+                <p className="text-xs opacity-70">
+                  Ordered At:{" "}
+                  {new Date(activeRequest.orderedAt).toLocaleString()}
+                </p>
+                {activeRequest.clinicalNotes && (
+                  <p className="text-xs opacity-60">
+                    Notes: {activeRequest.clinicalNotes}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div
+              className="grid grid-cols-2 md:grid-cols-4 gap-4 rounded-2xl p-4 sm:p-5 border"
+              style={{ backgroundColor: ui.inner, borderColor: hairline }}
+            >
+              <InfoItem
+                icon={<IdCard size={15} />}
+                label="MRN"
+                value={patient?.mrn || "N/A"}
+              />
+              <InfoItem
+                icon={<Check size={15} />}
+                label="Phone"
+                value={patient?.phone || "N/A"}
+              />
+              <InfoItem
+                icon={<CalendarDays size={15} />}
+                label="Tests Count"
+                value={activeRequest.tests?.length || 0}
+              />
+              <InfoItem
+                icon={<Flag size={15} />}
+                label="Priority"
+                value={activeRequest.priority || "routine"}
+              />
+            </div>
+          </div>
+
+          <div
+            className="rounded-[28px] border p-6 space-y-4"
+            style={{ backgroundColor: ui.card, borderColor: hairline }}
+          >
+            <h3 className="text-sm font-bold">
+              Linked Specimens & Transit Status
+            </h3>
+
+            {(activeRequest as any).specimens &&
+            (activeRequest as any).specimens.length > 0 ? (
+              <div className="space-y-3">
+                {(activeRequest as any).specimens.map((specimen: any) => {
+                  const badgeStyle = getStatusBadgeStyle(specimen.status);
+                  return (
+                    <div
+                      key={specimen._id}
+                      className="flex flex-col sm:flex-row justify-between items-start sm:items-center rounded-2xl p-4 border gap-4"
+                      style={{
+                        backgroundColor: ui.inner,
+                        borderColor: hairline,
+                      }}
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className=" font-bold text-xs"
+                            style={{ color: PRIMARY_COLOR }}
+                          >
+                            {specimen.barcode}
+                          </span>
+                          <span
+                            className="rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase border"
+                            style={{
+                              backgroundColor: badgeStyle.bg,
+                              color: badgeStyle.color,
+                              borderColor: border,
+                            }}
+                          >
+                            {specimen.status.replace("_", " ")}
+                          </span>
+                        </div>
+                        <p className="text-xs opacity-60">
+                          Type:{" "}
+                          <span
+                            className="font-semibold"
+                            style={{ color: ui.text }}
+                          >
+                            {specimen.specimenType}
+                          </span>
+                        </p>
+                        {specimen.storageLocation && (
+                          <p className="text-xs opacity-60">
+                            Storage: {specimen.storageLocation}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-xs opacity-50">
+                No specific specimen records found bound to this barcode.
+              </p>
+            )}
+          </div>
+
+          <div
+            className="rounded-[28px] border p-6 space-y-4"
+            style={{ backgroundColor: ui.card, borderColor: hairline }}
+          >
+            <h3 className="text-sm font-bold">Test Items & Results</h3>
+            <div className="divide-y" style={{ borderColor: hairline }}>
+              {activeRequest.tests.map((test, index) => {
+                const badgeStyle = getStatusBadgeStyle(test.status);
+                return (
+                  <div
+                    key={test._id || index}
+                    className="py-4 first:pt-0 last:pb-0 space-y-2"
+                  >
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <span className="text-[10px]  opacity-50">
+                          {test.code}
+                        </span>
+                        <h4 className="text-xs font-semibold">{test.name}</h4>
+                      </div>
+                      <span
+                        className="rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase border"
+                        style={{
+                          backgroundColor: badgeStyle.bg,
+                          color: badgeStyle.color,
+                          borderColor: border,
+                        }}
+                      >
+                        {test.status.replace("_", " ")}
+                      </span>
+                    </div>
+
+                    {test.resultValue && (
+                      <div
+                        className="rounded-2xl p-3 text-xs flex gap-6 border"
+                        style={{
+                          backgroundColor: ui.inner,
+                          borderColor: hairline,
+                        }}
+                      >
+                        <div>
+                          <span className="text-[10px] opacity-50 block">
+                            Result Value
+                          </span>
+                          <strong style={{ color: ui.text }}>
+                            {test.resultValue} {test.resultUnit}
+                          </strong>
+                        </div>
+                        {test.referenceRange && (
+                          <div>
+                            <span className="text-[10px] opacity-50 block">
+                              Reference Range
+                            </span>
+                            <span className="opacity-80">
+                              {test.referenceRange}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

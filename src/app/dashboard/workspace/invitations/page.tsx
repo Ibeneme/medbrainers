@@ -18,6 +18,7 @@ import {
   type FacilityMembership,
 } from "@/api/types";
 import { useTheme } from "@/contexts/theme-context";
+import { useFacilityId } from "@/hooks/useFacilityId";
 
 function inviteKey(inv: PendingInvite | FacilityMembership): string {
   if ("companyId" in inv && inv.companyId) return String(inv.companyId);
@@ -42,9 +43,11 @@ function inviteName(inv: PendingInvite | FacilityMembership): string {
 export default function InvitationsPage() {
   const dispatch = useAppDispatch();
   const { theme, colors } = useTheme();
-  const { pendingInvites, loading, error, message } = useAppSelector(
-    (s) => s.facilities
-  );
+
+  // Use the comprehensive useFacilityId hook
+  const { pendingInvites } = useFacilityId();
+  const { loading, error, message } = useAppSelector((s) => s.facilities);
+
   const [busyId, setBusyId] = useState<string | null>(null);
   const [localMsg, setLocalMsg] = useState<string | null>(null);
 

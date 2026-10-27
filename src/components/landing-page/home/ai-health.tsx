@@ -1,7 +1,7 @@
 "use client";
 
 import { PRIMARY_COLOR } from "@/constants/colors";
-import { T } from "@/i18n/provider";
+import { T, useT } from "@/i18n/provider";
 import { productName } from "@/constants/site";
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -334,6 +334,7 @@ function renderNote(
 }
 
 export default function HealthMeetsAI() {
+  const t = useT();
   const [active, setActive] = useState(0);
   const [role, setRole] = useState(0);
 
@@ -644,7 +645,7 @@ export default function HealthMeetsAI() {
 
             <div
               role="tablist"
-              aria-label="AI capabilities"
+              aria-label={t("AI capabilities")}
               className="relative flex flex-col"
             >
               {FEATURES.map((item, i) => {
@@ -1023,7 +1024,7 @@ export default function HealthMeetsAI() {
 
             <div
               role="tablist"
-              aria-label="Care team roles"
+              aria-label={t("Care team roles")}
               className="mt-8 flex flex-col"
             >
               {ROLES.map((r, i) => {

@@ -23,18 +23,22 @@ import { PRIMARY_COLOR, SECONDARY_COLOR } from "@/constants/colors";
 /*  15. orbiting satellites with comet trails                                  */
 /*  16. drifting aurora glow + twinkling star sparkles                         */
 /*  17. cursor glow: ribbons and beads light up near the pointer               */
-/*  18. water hover: bubbles rise from the cursor, ripple rings spread, and   */
-/*      the helix itself wobbles like liquid around the pointer; click = burst */
-/*  NEW                                                                        */
-/*  19. scanner beam: a plane sweeps along the helix "reading" it; everything  */
-/*      inside the beam lights up                                              */
-/*  20. base letters (A T C G) pop out next to lit rungs, always as true pairs */
-/*  21. neural links: satellites connect to each other and to the nearest      */
-/*      bead, like a live network                                              */
-/*  22. ECG trace: a heart-monitor line rides behind the lead light pulse      */
-/*  23. heartbeat shockwave: every beat sends a ring across the whole canvas   */
-/*  24. gentle float: the whole helix drifts slowly, like it is suspended      */
-/*  Still pauses off-screen / hidden tab and respects reduced motion.          */
+/*  18. water hover: bubbles, ripple rings, liquid wobble; click = burst       */
+/*  19. scanner beam sweeping along the helix                                  */
+/*  20. base letters (A T C G) pop out next to lit rungs                       */
+/*  21. neural links between satellites and nearest bead                       */
+/*  22. ECG trace behind the lead light pulse                                  */
+/*  23. heartbeat shockwave ring                                               */
+/*  24. gentle float                                                           */
+/*                                                                             */
+/*  MOBILE FIXES                                                               */
+/*   - zero-size guard (waits for real layout, ResizeObserver redraws)         */
+/*   - wrapper has a min-height so a collapsed parent can't hide it            */
+/*   - reduced-motion now slows the animation instead of freezing/hiding it    */
+/*   - draw() is wrapped in try/catch and canvas state is reset on error       */
+/*   - safer colour parsing, steadier 30fps throttle on touch devices          */
+/*                                                                             */
+/*  Still pauses off-screen / hidden tab.                                      */
 /*  Usage: put it inside a `relative` parent; it fills the parent.             */
 /* -------------------------------------------------------------------------- */
 
@@ -52,6 +56,7 @@ const PULSE_SPEED = 0.11; // fraction of helix per second
 const PULSE_WIDTH = 0.055;
 const PARTICLES = 46;
 const INTRO = 1.8; // seconds
+const REDUCED_MOTION_SLOWDOWN = 0.35; // time scale when the OS asks for less motion
 
 const SCAN_PERIOD = 7.5; // seconds per scan cycle (sweep + rest)
 const SCAN_WIDTH = 0.045; // beam thickness along the helix
@@ -66,30 +71,35 @@ const ecgShape = (p: number) =>
   0.3 * Math.exp(-Math.pow((p - 0.46) / 0.018, 2)) +
   0.25 * Math.exp(-Math.pow((p - 0.7) / 0.06, 2));
 
-function hexToRgba(hex: string, alpha: number) {
-  let c = hex.replace("#", "");
+/* safe hex parser: accepts #rgb / #rrggbb, falls back to grey if invalid */
+function parseHex(hex: string): [number, number, number] {
+  let c = (hex || "").trim().replace("#", "");
   if (c.length === 3)
     c = c
       .split("")
       .map((ch) => ch + ch)
       .join("");
-  const num = parseInt(c, 16);
-  return `rgba(${(num >> 16) & 255},${(num >> 8) & 255},${num & 255},${alpha})`;
+  const n = parseInt(c, 16);
+  if (c.length !== 6 || Number.isNaN(n)) return [136, 136, 136];
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 
+/* Safari is strict: addColorStop throws on colours it can't parse, and
+   tiny alphas print as "1e-7" which older iOS versions reject. So every
+   alpha is clamped to 0..1, forced finite and rounded to 3 decimals. */
+const safeA = (a: number) =>
+  Number.isFinite(a) ? Math.round(Math.min(1, Math.max(0, a)) * 1000) / 1000 : 0;
+
+function hexToRgba(hex: string, alpha: number) {
+  const [r, g, b] = parseHex(hex);
+  return `rgba(${r},${g},${b},${safeA(alpha)})`;
+}
+
+const white = (alpha: number) => `rgba(255,255,255,${safeA(alpha)})`;
+
 function mixHex(a: string, b: string, m: number) {
-  const parse = (hex: string) => {
-    let c = hex.replace("#", "");
-    if (c.length === 3)
-      c = c
-        .split("")
-        .map((ch) => ch + ch)
-        .join("");
-    const n = parseInt(c, 16);
-    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-  };
-  const A = parse(a);
-  const B = parse(b);
+  const A = parseHex(a);
+  const B = parseHex(b);
   const h = (i: number) =>
     Math.round(A[i] + (B[i] - A[i]) * m)
       .toString(16)
@@ -141,6 +151,18 @@ export default function Dna({ className = "", useWhite = false }: DnaProps) {
     const reduce = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
     ).matches;
+    /* reduced motion: keep it visible, just calmer */
+    const slow = reduce ? REDUCED_MOTION_SLOWDOWN : 1;
+
+    // Mobile / touch performance tuning
+    const lite =
+      window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 768;
+    const samples = lite ? 90 : SAMPLES;
+    const rungs = lite ? 18 : RUNGS;
+    const particleCount = lite ? 24 : PARTICLES;
+    const starCount = lite ? 14 : 28;
+    const maxBubbles = lite ? 30 : 70;
+    let clearTimer = 0;
 
     let W = 0;
     let H = 0;
@@ -166,7 +188,7 @@ export default function Dna({ className = "", useWhite = false }: DnaProps) {
     let lastBX = 0;
     let lastBY = 0;
     let lastRing = 0;
-    const stars = Array.from({ length: 28 }, () => ({
+    const stars = Array.from({ length: starCount }, () => ({
       x: Math.random(),
       y: Math.random(),
       size: 0.6 + Math.random() * 1.4,
@@ -174,7 +196,7 @@ export default function Dna({ className = "", useWhite = false }: DnaProps) {
       speed: 0.6 + Math.random() * 1.4,
     }));
 
-    const particles: Particle[] = Array.from({ length: PARTICLES }, () => ({
+    const particles: Particle[] = Array.from({ length: particleCount }, () => ({
       s: Math.random(),
       off: (Math.random() * 2 - 1) * 2.2,
       speed: 0.015 + Math.random() * 0.04,
@@ -189,9 +211,18 @@ export default function Dna({ className = "", useWhite = false }: DnaProps) {
     };
 
     const resize = () => {
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
-      W = canvas.clientWidth;
-      H = canvas.clientHeight;
+      dpr = Math.min(window.devicePixelRatio || 1, lite ? 1.5 : 2);
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      /* layout not ready yet (collapsed parent / hidden): wait for the
+         ResizeObserver to call us again with a real size */
+      if (w === 0 || h === 0) {
+        W = 0;
+        H = 0;
+        return;
+      }
+      W = w;
+      H = h;
       canvas.width = Math.max(1, Math.floor(W * dpr));
       canvas.height = Math.max(1, Math.floor(H * dpr));
       updateScroll();
@@ -215,14 +246,18 @@ export default function Dna({ className = "", useWhite = false }: DnaProps) {
     });
 
     const draw = (t: number) => {
+      /* nothing to draw until the canvas has a real size */
+      if (!W || !H) return;
+
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.globalCompositeOperation = "source-over";
       ctx.clearRect(0, 0, W, H);
 
       /* smooth pointer */
       px += (targetX - px) * 0.05;
       py += (targetY - py) * 0.05;
 
-      const intro = reduce ? 1 : easeOut(t / INTRO);
+      const intro = easeOut(t / INTRO);
       ctx.globalAlpha = 0.15 + 0.85 * intro;
       /* colour drifts between the two brand colours */
       const accent = mixHex(
@@ -233,7 +268,11 @@ export default function Dna({ className = "", useWhite = false }: DnaProps) {
 
       const par = reduce ? 0 : scrollY * 0.12;
       const rBase =
-        Math.min(Math.max(W * 0.1, 60), H * 0.2, 150) * (0.55 + 0.45 * intro);
+        Math.max(
+          1,
+          Math.min(Math.max(W * 0.1, 60), H * 0.2, 150)
+        ) *
+        (0.55 + 0.45 * intro);
 
       /* twist speed breathes: fast, slow, fast */
       const spin = spinAcc + Math.sin(t * 0.5) * 0.9;
@@ -350,9 +389,9 @@ export default function Dna({ className = "", useWhite = false }: DnaProps) {
       const beadPts: { x: number; y: number }[] = [];
 
       for (let k = 0 as 0 | 1; k < 2; k = (k + 1) as 0 | 1) {
-        for (let i = 0; i <= SAMPLES; i++) {
+        for (let i = 0; i <= samples; i++) {
           strands[k].push(
-            strandPoint(S_MIN + ((S_MAX - S_MIN) * i) / SAMPLES, k)
+            strandPoint(S_MIN + ((S_MAX - S_MIN) * i) / samples, k)
           );
         }
       }
@@ -412,7 +451,7 @@ export default function Dna({ className = "", useWhite = false }: DnaProps) {
       if (sw > 0 && sw < 1.8) {
         const k = sw / 1.8;
         const c0 = spine(0.5, t, par);
-        const rx = easeOut(k) * Math.max(W, H) * 0.6;
+        const rx = Math.max(0.5, easeOut(k) * Math.max(W, H) * 0.6);
         ctx.beginPath();
         ctx.ellipse(c0.x, c0.y, rx, rx * 0.6, -0.5, 0, TAU);
         ctx.strokeStyle = hexToRgba(accent, 0.22 * (1 - k));
@@ -435,7 +474,7 @@ export default function Dna({ className = "", useWhite = false }: DnaProps) {
         for (let i = 0; i < pts.length; i += 3) {
           const p = pts[i];
           if (p.g < 0.08) continue;
-          const r = rBase * 0.5 * p.ps * p.g;
+          const r = Math.max(0.5, rBase * 0.5 * p.ps * p.g);
           const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r);
           grad.addColorStop(0, hexToRgba(accent, 0.28 * p.g));
           grad.addColorStop(1, hexToRgba(accent, 0));
@@ -454,8 +493,8 @@ export default function Dna({ className = "", useWhite = false }: DnaProps) {
         ctx.ellipse(
           f.c.x,
           f.c.y,
-          f.R * (1.3 + 0.3 * pr),
-          f.R * 0.3,
+          Math.max(0.5, f.R * (1.3 + 0.3 * pr)),
+          Math.max(0.5, f.R * 0.3),
           Math.atan2(f.ny, f.nx),
           0,
           TAU
@@ -481,7 +520,7 @@ export default function Dna({ className = "", useWhite = false }: DnaProps) {
               : Math.max(1, 5 * f.ps * (1 - i / 8));
           ctx.stroke();
           if (i === 0) {
-            ctx.strokeStyle = `rgba(255,255,255,${0.7 * a})`;
+            ctx.strokeStyle = white(0.7 * a);
             ctx.lineWidth = Math.max(0.8, 1 * f.ps);
             ctx.stroke();
           }
@@ -534,7 +573,7 @@ export default function Dna({ className = "", useWhite = false }: DnaProps) {
               draw: () => {
                 ctx.beginPath();
                 ctx.arc(sp.x, sp.y, Math.max(0.8, 3.2 * sp.ps * fade), 0, TAU);
-                ctx.fillStyle = `rgba(255,255,255,${0.75 * fade})`;
+                ctx.fillStyle = white(0.75 * fade);
                 ctx.fill();
               },
             });
@@ -590,7 +629,7 @@ export default function Dna({ className = "", useWhite = false }: DnaProps) {
           z: pa.front ? 1.5 : -1.5,
           draw: () => {
             ctx.beginPath();
-            ctx.arc(x, y, pa.size * f.ps, 0, TAU);
+            ctx.arc(x, y, Math.max(0.3, pa.size * f.ps), 0, TAU);
             ctx.fillStyle = hexToRgba(activeColor, 0.5 * tw);
             ctx.fill();
           },
@@ -635,7 +674,7 @@ export default function Dna({ className = "", useWhite = false }: DnaProps) {
                 ctx.beginPath();
                 ctx.moveTo(p.x + nx * p.w * 0.6, p.y + ny * p.w * 0.6);
                 ctx.lineTo(q.x + nx * q.w * 0.6, q.y + ny * q.w * 0.6);
-                ctx.strokeStyle = `rgba(255,255,255,${Math.min(0.9, gloss)})`;
+                ctx.strokeStyle = white(Math.min(0.9, gloss));
                 ctx.lineWidth = Math.max(1, p.ps * 1.6);
                 ctx.stroke();
               }
@@ -645,8 +684,8 @@ export default function Dna({ className = "", useWhite = false }: DnaProps) {
       }
 
       /* base-pair rungs + glossy beads */
-      for (let r = 0; r < RUNGS; r++) {
-        const s = 0.02 + (0.96 * r) / (RUNGS - 1);
+      for (let r = 0; r < rungs; r++) {
+        const s = 0.02 + (0.96 * r) / (rungs - 1);
         const a = strandPoint(s, 0);
         const b = strandPoint(s, 1);
         /* the join point slides back and forth like the pair is "talking" */
@@ -685,9 +724,7 @@ export default function Dna({ className = "", useWhite = false }: DnaProps) {
             ctx.moveTo(bex, bey);
             ctx.lineTo(b.x, b.y);
             ctx.stroke();
-            ctx.strokeStyle = `rgba(255,255,255,${
-              0.15 + 0.25 * shimmer + 0.4 * g
-            })`;
+            ctx.strokeStyle = white(0.15 + 0.25 * shimmer + 0.4 * g);
             ctx.lineWidth = Math.max(0.6, wd * 0.25);
             ctx.beginPath();
             ctx.moveTo(a.x, a.y - wd * 0.2);
@@ -701,7 +738,10 @@ export default function Dna({ className = "", useWhite = false }: DnaProps) {
           items.push({
             z: e.z + 0.01,
             draw: () => {
-              const rad = wd * (1.25 + 0.2 * shimmer + 0.9 * hov(e.x, e.y));
+              const rad = Math.max(
+                0.5,
+                wd * (1.25 + 0.2 * shimmer + 0.9 * hov(e.x, e.y))
+              );
               const lit = e.z * 0.5 + 0.5;
               const grad = ctx.createRadialGradient(
                 e.x - rad * 0.3,
@@ -711,7 +751,7 @@ export default function Dna({ className = "", useWhite = false }: DnaProps) {
                 e.y,
                 rad
               );
-              grad.addColorStop(0, `rgba(255,255,255,${0.7 + 0.3 * g})`);
+              grad.addColorStop(0, white(0.7 + 0.3 * g));
               grad.addColorStop(0.45, hexToRgba(accent, 0.6 + 0.35 * lit));
               grad.addColorStop(1, hexToRgba(activeColor, 0.35 + 0.3 * lit));
               ctx.beginPath();
@@ -805,7 +845,7 @@ export default function Dna({ className = "", useWhite = false }: DnaProps) {
           rings.splice(i, 1);
           continue;
         }
-        const k = age / 1.3;
+        const k = Math.max(0, age / 1.3);
         const rx = 18 + easeOut(k) * 150;
         ctx.lineWidth = 0.6 + 1.4 * (1 - k);
         ctx.strokeStyle = hexToRgba(accent, 0.38 * (1 - k));
@@ -831,11 +871,11 @@ export default function Dna({ className = "", useWhite = false }: DnaProps) {
         const x = b.x + Math.sin(age * b.wf + b.ph) * b.wa;
         const y = b.y - age * b.vy;
         const grow = 0.55 + 0.45 * easeOut(age / 0.35);
-        const r = b.r * grow * (1 + 0.4 * popK);
+        const r = Math.max(0.5, b.r * grow * (1 + 0.4 * popK));
         const wob = 0.06 * Math.sin(age * 6 + b.ph);
         const rx = r * (1 + wob);
         const ry = r * (1 - wob);
-        const al = 1 - popK;
+        const al = Math.max(0, 1 - popK);
 
         /* body: clear in the middle, tinted toward the rim */
         const bg = ctx.createRadialGradient(
@@ -855,7 +895,7 @@ export default function Dna({ className = "", useWhite = false }: DnaProps) {
         ctx.fill();
         /* rim */
         ctx.lineWidth = popK > 0 ? 1 : 1.3;
-        ctx.strokeStyle = `rgba(255,255,255,${0.55 * al})`;
+        ctx.strokeStyle = white(0.55 * al);
         ctx.stroke();
         if (popK === 0) {
           /* big highlight top-left */
@@ -895,12 +935,25 @@ export default function Dna({ className = "", useWhite = false }: DnaProps) {
               0,
               TAU
             );
-            ctx.fillStyle = `rgba(255,255,255,${0.7 * al})`;
+            ctx.fillStyle = white(0.7 * al);
             ctx.fill();
           }
         }
       }
       ctx.globalAlpha = 1;
+    };
+
+    /* draw wrapper: an exception can never kill the loop or leave the
+       canvas in a broken state (wrong composite mode / alpha) */
+    const safeDraw = (t: number) => {
+      try {
+        draw(t);
+      } catch (err) {
+        console.error("Dna draw failed:", err);
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = "source-over";
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+      }
     };
 
     resize();
@@ -911,7 +964,7 @@ export default function Dna({ className = "", useWhite = false }: DnaProps) {
     let visible = true;
 
     const spawnBubble = (x: number, y: number, burst = false) => {
-      if (bubbles.length > 70) bubbles.shift();
+      if (bubbles.length > maxBubbles) bubbles.shift();
       const r = 4 + Math.random() * (burst ? 16 : 12);
       bubbles.push({
         x: x + (Math.random() - 0.5) * 28,
@@ -928,9 +981,12 @@ export default function Dna({ className = "", useWhite = false }: DnaProps) {
 
     const loop = (now: number) => {
       raf = requestAnimationFrame(loop);
+      /* cap at ~30fps on touch screens to save battery */
+      if (lite && last && now - last < 33) return;
       if (!last) last = now;
-      const dt = Math.min(0.05, (now - last) / 1000);
+      const rawDt = Math.min(0.05, (now - last) / 1000);
       last = now;
+      const dt = rawDt * slow;
       t += dt;
       boost *= Math.pow(0.12, dt); // momentum decays
       spinAcc += dt * (SPEED + boost);
@@ -950,10 +1006,11 @@ export default function Dna({ className = "", useWhite = false }: DnaProps) {
           lastRing = t;
         }
       }
-      draw(t);
+      safeDraw(t);
     };
+
     const start = () => {
-      if (raf || reduce) return;
+      if (raf) return;
       last = 0;
       raf = requestAnimationFrame(loop);
     };
@@ -965,9 +1022,8 @@ export default function Dna({ className = "", useWhite = false }: DnaProps) {
     const onScroll = () => {
       const dy = window.scrollY - lastScrollY;
       lastScrollY = window.scrollY;
-      boost = Math.max(-6, Math.min(6, boost + dy * 0.01));
+      if (!reduce) boost = Math.max(-6, Math.min(6, boost + dy * 0.01));
       updateScroll();
-      if (reduce) draw(t);
     };
 
     const onPointer = (e: PointerEvent) => {
@@ -981,6 +1037,7 @@ export default function Dna({ className = "", useWhite = false }: DnaProps) {
     };
 
     const onDown = (e: PointerEvent) => {
+      if (!W || !H) return;
       const rect = canvas.getBoundingClientRect();
       if (
         e.clientX < rect.left ||
@@ -1001,6 +1058,21 @@ export default function Dna({ className = "", useWhite = false }: DnaProps) {
       const cy = e.clientY - rect.top;
       rings.push({ x: cx, y: cy, t0: t });
       for (let i = 0; i < 12; i++) spawnBubble(cx, cy, true);
+
+      if (e.pointerType !== "mouse") {
+        window.clearTimeout(clearTimer);
+        mouseX = cx;
+        mouseY = cy;
+      }
+    };
+
+    const onUp = (e: PointerEvent) => {
+      if (e.pointerType === "mouse") return;
+      window.clearTimeout(clearTimer);
+      clearTimer = window.setTimeout(() => {
+        mouseX = -9999;
+        mouseY = -9999;
+      }, 700);
     };
 
     const onLeave = () => {
@@ -1008,18 +1080,22 @@ export default function Dna({ className = "", useWhite = false }: DnaProps) {
       mouseY = -9999;
     };
 
+    /* fires whenever the canvas gets (or changes) its real size, which also
+       covers the "parent had no height at first" mobile case */
     const ro = new ResizeObserver(() => {
       resize();
-      if (reduce || !raf) draw(t);
+      if (!raf) safeDraw(t);
     });
     ro.observe(canvas);
 
     const io = new IntersectionObserver(([e]) => {
-      visible = e.isIntersecting;
+      /* Safari can report 0-area/transformed elements as not intersecting;
+         only pause when it is clearly off-screen */
+      visible = e.isIntersecting || e.intersectionRatio > 0;
       if (visible && !document.hidden) start();
       else stop();
     });
-    io.observe(canvas);
+    io.observe(wrap);
 
     const onVis = () => {
       if (document.hidden) stop();
@@ -1027,16 +1103,20 @@ export default function Dna({ className = "", useWhite = false }: DnaProps) {
     };
     document.addEventListener("visibilitychange", onVis);
     window.addEventListener("scroll", onScroll, { passive: true });
+    /* mobile browsers resize the viewport when the address bar hides */
+    window.addEventListener("orientationchange", resize);
+
+    /* pointer effects are skipped for reduced motion */
     if (!reduce) {
       window.addEventListener("pointermove", onPointer, { passive: true });
       window.addEventListener("pointerdown", onDown, { passive: true });
+      window.addEventListener("pointerup", onUp, { passive: true });
+      window.addEventListener("pointercancel", onUp, { passive: true });
       document.documentElement.addEventListener("mouseleave", onLeave);
     }
 
-    if (reduce) {
-      updateScroll();
-      draw(0);
-    } else start();
+    /* always animate (slowly when reduced motion is on) */
+    start();
 
     return () => {
       stop();
@@ -1044,9 +1124,13 @@ export default function Dna({ className = "", useWhite = false }: DnaProps) {
       io.disconnect();
       document.removeEventListener("visibilitychange", onVis);
       window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("orientationchange", resize);
       window.removeEventListener("pointermove", onPointer);
       window.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
       document.documentElement.removeEventListener("mouseleave", onLeave);
+      window.clearTimeout(clearTimer);
     };
   }, [useWhite]);
 
@@ -1054,7 +1138,8 @@ export default function Dna({ className = "", useWhite = false }: DnaProps) {
     <div
       ref={wrapRef}
       aria-hidden="true"
-      className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`}
+      /* min-h keeps it visible even if the parent collapses on mobile */
+      className={`pointer-events-none absolute inset-0 min-h-[320px] overflow-hidden ${className}`}
     >
       <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
     </div>

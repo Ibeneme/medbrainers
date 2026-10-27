@@ -87,7 +87,7 @@ export default function PatientDirectoryPage() {
   const router = useRouter();
   const { theme, colors } = useTheme();
   const isDark = theme === "dark";
-  const border = isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.08)";
+  const border = colors?.text + 12;
 
   const ui: UI = {
     isDark,
@@ -98,8 +98,11 @@ export default function PatientDirectoryPage() {
     border,
   };
 
-  const { activeFacilityId, activeFacility, facilitiesLoading } =
-    useAppSelector((s) => s.facilities);
+  const {
+    activeFacilityId,
+    activeFacility,
+    loading: facilitiesLoading,
+  } = useAppSelector((s) => s.facilities);
   const {
     list: reduxList,
     listLoading,
@@ -400,10 +403,7 @@ export default function PatientDirectoryPage() {
                         <th className="px-3 pb-3 w-8" />
                       </tr>
                     </thead>
-                    <tbody
-                      className="divide-y"
-                      style={{ borderColor: ui.border }}
-                    >
+                    <tbody>
                       {filteredList.map((p) => {
                         const st =
                           STATUS_STYLE[p.status as string] ||

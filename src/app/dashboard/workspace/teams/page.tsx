@@ -18,125 +18,17 @@ import { fetchMyFacilities, fetchStaffDirectory } from "@/api/slices";
 import { formatRole } from "@/api/types";
 import { useTheme } from "@/contexts/theme-context";
 import { PRIMARY_COLOR } from "@/constants/colors";
-
-function CustomDropdown({
-  label,
-  value,
-  options,
-  onChange,
-  placeholder = "Select...",
-  isDark,
-  colors,
-  border,
-}: {
-  label?: string;
-  value: string;
-  options: { label: string; value: string }[];
-  onChange: (val: string) => void;
-  placeholder?: string;
-  isDark: boolean;
-  colors: any;
-  border: string;
-}) {
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node)
-      ) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const selectedOption = options.find((o) => o.value === value);
-
-  return (
-    <div className="relative flex flex-col gap-1" ref={dropdownRef}>
-      {label && (
-        <label className="text-xs font-semibold opacity-60">{label}</label>
-      )}
-      <button
-        type="button"
-        onClick={() => setIsOpen((prev) => !prev)}
-        className="flex w-full items-center justify-between rounded-xl border px-3.5 py-2.5 text-xs font-semibold focus:outline-none transition min-w-[140px]"
-        style={{
-          backgroundColor: colors.shadeBg,
-          color: colors.text,
-          borderColor: border,
-        }}
-      >
-        <span
-          className={
-            selectedOption ? "font-semibold truncate" : "opacity-50 truncate"
-          }
-        >
-          {selectedOption ? selectedOption.label : placeholder}
-        </span>
-        <ChevronDown
-          className={`h-3.5 w-3.5 opacity-60 transition-transform shrink-0 ml-2 ${
-            isOpen ? "rotate-180" : ""
-          }`}
-        />
-      </button>
-      {isOpen && (
-        <div
-          className={`absolute top-full left-0 z-50 mt-1.5 max-h-60 w-full overflow-y-auto rounded-xl border shadow-xl ${
-            isDark ? "border-white/[0.12]" : "border-black/[0.12]"
-          }`}
-          style={{
-            backgroundColor: colors.shadeBg,
-          }}
-        >
-          {options.map((opt) => {
-            const isSelected = opt.value === value;
-            return (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => {
-                  onChange(opt.value);
-                  setIsOpen(false);
-                }}
-                className="flex w-full items-center justify-between px-3.5 py-2.5 text-left text-xs font-semibold transition hover:opacity-80"
-                style={{
-                  backgroundColor: isSelected
-                    ? isDark
-                      ? "rgba(255,255,255,0.08)"
-                      : "rgba(0,0,0,0.05)"
-                    : "transparent",
-                  color: colors.text,
-                }}
-              >
-                <span className="truncate">{opt.label}</span>
-                {isSelected && (
-                  <Check
-                    className="h-3.5 w-3.5 shrink-0 ml-2"
-                    style={{ color: PRIMARY_COLOR }}
-                  />
-                )}
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
+import { CustomDropdown } from "@/components/ui/items";
+import { useFacilityId } from "@/hooks/useFacilityId";
 
 /** Staff Directory for the active facility */
 export default function TeamsPage() {
   const dispatch = useAppDispatch();
   const { theme, colors } = useTheme();
   const isDark = theme === "dark";
-  const { activeFacilityId, activeFacility } = useAppSelector(
-    (s) => s.facilities
-  );
+
+  // Use the comprehensive useFacilityId hook
+  const { facilityId, activeFacility } = useFacilityId();
   const { directory, directoryLoading } = useAppSelector((s) => s.staff);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
@@ -146,10 +38,10 @@ export default function TeamsPage() {
   }, [dispatch]);
 
   useEffect(() => {
-    if (activeFacilityId) {
-      dispatch(fetchStaffDirectory({ facilityId: activeFacilityId }));
+    if (facilityId) {
+      dispatch(fetchStaffDirectory({ facilityId }));
     }
-  }, [dispatch, activeFacilityId]);
+  }, [dispatch, facilityId]);
 
   const filtered = useMemo(() => {
     let rows = directory || [];
@@ -169,7 +61,7 @@ export default function TeamsPage() {
 
   const border = isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.12)";
 
-  if (!activeFacilityId) {
+  if (!facilityId) {
     return (
       <div
         className="max-w-2xl mx-auto px-4 sm:px-6 py-12 text-center"

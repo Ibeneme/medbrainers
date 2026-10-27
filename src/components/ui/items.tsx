@@ -1,3 +1,5 @@
+///Users/macbook/Downloads/CodesDoc/medbrainers/src/components/ui/items.tsx
+
 "use client";
 
 import { useEffect, useMemo, useState, useRef } from "react";
@@ -108,6 +110,7 @@ export function CustomDropdown({
   isDark,
   colors,
   border,
+  searchable = false,
 }: {
   label?: string;
   value: string;
@@ -117,8 +120,11 @@ export function CustomDropdown({
   isDark: boolean;
   colors: any;
   border: string;
+  /** Show a filter input at the top of the option list */
+  searchable?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [query, setQuery] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -134,7 +140,17 @@ export function CustomDropdown({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    if (!isOpen) setQuery("");
+  }, [isOpen]);
+
   const selectedOption = options.find((o) => o.value === value);
+  const visibleOptions =
+    searchable && query.trim()
+      ? options.filter((o) =>
+          o.label.toLowerCase().includes(query.trim().toLowerCase())
+        )
+      : options;
 
   return (
     <div className="relative flex flex-col gap-1.5" ref={dropdownRef}>
@@ -172,7 +188,25 @@ export function CustomDropdown({
             isDark ? "border-white/20 bg-[#1e1e1e]" : "border-black/15 bg-white"
           }`}
         >
-          {options.map((opt) => {
+          {searchable && (
+            <div
+              className="sticky top-0 z-10 p-2"
+              style={{ backgroundColor: isDark ? "#1e1e1e" : "#fff" }}
+            >
+              <input
+                autoFocus
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search..."
+                className="w-full rounded-lg border bg-transparent px-3 py-2 text-xs outline-none"
+                style={{ borderColor: border, color: colors.text }}
+              />
+            </div>
+          )}
+          {searchable && visibleOptions.length === 0 && (
+            <p className="px-3.5 py-3 text-xs opacity-50">No results</p>
+          )}
+          {visibleOptions.map((opt) => {
             const isSelected = opt.value === value;
             return (
               <button
@@ -404,6 +438,7 @@ export function CustomPopupDatePicker({
   border,
   colors,
   isDark,
+  placeholder = "Select date & time...",
 }: {
   label: string;
   value: string;
@@ -411,6 +446,7 @@ export function CustomPopupDatePicker({
   border: string;
   colors: any;
   isDark: boolean;
+  placeholder?: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -477,7 +513,7 @@ export function CustomPopupDatePicker({
           <span
             className={value ? "font-medium text-xs" : "text-xs opacity-40"}
           >
-            {value ? value.replace("T", " ") : "Select date & time..."}
+            {value ? value.replace("T", " ") : placeholder}
           </span>
         </div>
         <ChevronDown size={14} className="opacity-50 shrink-0" />
@@ -687,5 +723,50 @@ export function ConfirmModal({
         </button>
       </div>
     </Modal>
+  );
+}
+
+interface ToggleSwitchProps {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  label?: string;
+  description?: string;
+}
+
+export function ToggleSwitch({
+  checked,
+  onChange,
+  label,
+  description,
+}: ToggleSwitchProps) {
+  return (
+    <label className="flex items-center justify-between gap-3 cursor-pointer group select-none py-1">
+      <div className="flex flex-col">
+        {label && (
+          <span className="text-xs font-semibold group-hover:opacity-100 transition">
+            {label}
+          </span>
+        )}
+        {description && (
+          <span className="text-[10px] opacity-50">{description}</span>
+        )}
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        onClick={() => onChange(!checked)}
+        className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
+        style={{
+          backgroundColor: checked ? PRIMARY_COLOR : "rgba(150, 150, 150, 0.3)",
+        }}
+      >
+        <span
+          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+            checked ? "translate-x-5" : "translate-x-0"
+          }`}
+        />
+      </button>
+    </label>
   );
 }

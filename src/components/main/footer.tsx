@@ -219,7 +219,7 @@ export default function LandingPageFooter() {
             </p>
 
             <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[12px] text-white/40 sm:text-[13px] md:justify-end">
-              {/* <LanguageSwitcher variant="inline" /> */}
+            <LanguageSwitcher variant="inline" /> 
               <Link
                 href="/legal/privacy"
                 className="transition-colors duration-200 hover:text-white"

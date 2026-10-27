@@ -15,6 +15,7 @@ import radiologyReducer from "./slices/radiologySlice";
 import bloodBankReducer from "./slices/bloodBankSlice";
 import theaterReducer from "./slices/theaterSlice";
 import maternalReducer from "./slices/maternalSlice";
+import icdReducer from './slices/Icd.slice'
 
 const rootReducer = combineReducers({
   auth: authReducer,
@@ -33,6 +34,7 @@ const rootReducer = combineReducers({
   bloodBank: bloodBankReducer,
   theater: theaterReducer,
   maternal: maternalReducer,
+  icd: icdReducer,
 });
 
 export type RootState = ReturnType<typeof rootReducer>;
@@ -47,6 +49,12 @@ export * from "./slices/patientsSlice";
 export * from "./slices/wardsSlice";
 export * from "./slices/appointmentsSlice";
 export * from "./slices/clinicalSlice";
+export * from "./slices/Icd.slice";
+// Both slices export `fetchConsultations`; resolve explicitly.
+// `fetchConsultations` -> clinical (facility-wide, filterable by status)
+// `fetchPatientConsultations` -> patients (scoped to one patient)
+export { fetchConsultations } from "./slices/clinicalSlice";
+export { fetchConsultations as fetchPatientConsultations } from "./slices/patientsSlice";
 export * from "./slices/emergencySlice";
 export * from "./slices/labsSlice";
 export * from "./slices/pharmacySlice";

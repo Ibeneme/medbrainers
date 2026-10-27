@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { PRIMARY_COLOR } from "@/constants/colors";
+import { T, useT } from "@/i18n/provider";
 
 const CARDS = [
   {
@@ -38,6 +39,7 @@ type FeatureCardsSectionProps = {
 export default function FeatureCardsSection({
   className = "",
 }: FeatureCardsSectionProps) {
+  const t = useT();
   const [index, setIndex] = useState(0);
   const card = CARDS[index];
   const total = CARDS.length;
@@ -60,10 +62,10 @@ export default function FeatureCardsSection({
             {String(total).padStart(2, "0")}
           </p>
           <h2 className="font-semibold tracking-tight text-white text-4xl  sm:text-6xl md:text-7xl">
-            {card.title}
+            <T>{card.title}</T>
           </h2>
           <p className="mt-4 text-base leading-relaxed text-white/55 sm:text-lg">
-            {card.body}
+            <T>{card.body}</T>
           </p>
 
           {/* arrows */}
@@ -71,7 +73,7 @@ export default function FeatureCardsSection({
             <button
               type="button"
               onClick={prev}
-              aria-label="Previous"
+              aria-label={t("Previous")}
               className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition hover:border-white/30 hover:bg-white/10"
             >
               <svg
@@ -90,7 +92,7 @@ export default function FeatureCardsSection({
             <button
               type="button"
               onClick={next}
-              aria-label="Next"
+              aria-label={t("Next")}
               className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition hover:border-white/30 hover:bg-white/10"
             >
               <svg
@@ -133,7 +135,7 @@ export default function FeatureCardsSection({
             <Image
               key={card.src}
               src={card.src}
-              alt={card.alt}
+              alt={t(card.alt)}
               fill
               className="object-cover object-top"
               sizes="100vw"

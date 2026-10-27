@@ -15,6 +15,8 @@ export interface DarkBlurOverlayLoaderProps {
   overlayOpacity?: number;
   /** Backdrop blur intensity in px. Default: 8 */
   blurAmount?: number;
+  /** Optional message shown beneath the loader */
+  text?: string;
   /** Props passed directly to MedbrainersLoader */
   loaderProps?: MedbrainersLoaderProps;
   /** Custom overlay className */
@@ -30,6 +32,7 @@ export default function DarkBlurOverlayLoader({
   zIndex = 9999,
   overlayOpacity = 0.6,
   blurAmount = 8,
+  text,
   loaderProps,
   className = "",
   style,
@@ -66,12 +69,19 @@ export default function DarkBlurOverlayLoader({
         aria-modal="true"
         aria-busy="true"
       >
-        <MedbrainersLoader
-          showText={false}
-          tileColor={PRIMARY_COLOR}
-          size={96}
-          {...loaderProps}
-        />
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+          <MedbrainersLoader
+            showText={false}
+            tileColor={PRIMARY_COLOR}
+            size={96}
+            {...loaderProps}
+          />
+          {text && (
+            <p style={{ margin: 0, color: "#fff", fontSize: 14, fontWeight: 500, textAlign: "center" }}>
+              {text}
+            </p>
+          )}
+        </div>
       </div>
     </>
   );

@@ -16,7 +16,7 @@ export type UserRole =
 
 export type MembershipStatus = "pending" | "active" | "rejected";
 
-export type Gender = "male" | "female" | "other" | "prefer_not_to_say";
+export type Gender = "male" | "female" | "other" | "prefer_not_to_say" | "unknown";
 
 export interface Address {
   line1?: string;
@@ -103,6 +103,12 @@ export interface ActiveFacilityDetails {
   roles?: UserRole[];
   department?: string;
   lastActiveCompanyAt?: string;
+  /** Mongo id (the API may return `_id` alongside `id`) */
+  _id?: string;
+  /** Owner user id, or a populated user ref */
+  owner?: string | { _id?: string; id?: string };
+  facilityType?: string;
+  description?: string;
 }
 
 /** Authenticated user (auth slice + /users/me) */
@@ -186,6 +192,7 @@ export interface FacilityMembership {
   isActive?: boolean;
   isActiveCompany?: boolean;
   inviteToken?: string;
+  token?: string;
 }
 
 export interface MyFacilitiesResponse {
@@ -500,6 +507,7 @@ export type TaskPriority = "low" | "medium" | "high" | "urgent";
 
 export interface TaskUserRef {
   _id: string;
+  id?: string;
   firstName?: string;
   lastName?: string;
   email?: string;
@@ -600,7 +608,6 @@ export interface CreateHandoverPayload {
 /* ── Patients / Wards / Appointments ───────────────────────── */
 
 export type PatientStatus = "active" | "inactive" | "deceased" | "merged";
-export type Gender = "male" | "female" | "other" | "unknown";
 
 export interface PatientAllergy {
   _id?: string;
@@ -676,6 +683,7 @@ export interface Patient {
   bloodGroup?: string;
   phone?: string;
   countryCode?: string;
+  nationalId?: string;
   email?: string;
   status: PatientStatus;
   allergies?: PatientAllergy[];
@@ -696,6 +704,7 @@ export interface RegisterPatientPayload {
   bloodGroup?: string;
   phone?: string;
   countryCode?: string;
+  nationalId?: string;
   email?: string;
   notes?: string;
   allergies?: Array<{ substance: string; reaction?: string; severity?: string }>;

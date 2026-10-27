@@ -4,7 +4,7 @@ import { PRIMARY_COLOR } from "@/constants/colors";
 import React, { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { T } from "@/i18n/provider";
+import { T, useT } from "@/i18n/provider";
 import { productName } from "@/constants/site";
 import Link from "next/link";
 
@@ -77,6 +77,7 @@ const emrFeatures: EMRFeatureCard[] = [
 ];
 
 export default function EnterpriseSupportSection() {
+  const t = useT();
   const containerRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
@@ -227,7 +228,7 @@ export default function EnterpriseSupportSection() {
               type="button"
               onClick={() => scrollByCard(-1)}
               disabled={!canScrollLeft}
-              aria-label="Previous"
+              aria-label={t("Previous")}
               className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition enabled:hover:border-white/30 enabled:hover:bg-white/10 disabled:opacity-30"
             >
               <svg
@@ -247,7 +248,7 @@ export default function EnterpriseSupportSection() {
               type="button"
               onClick={() => scrollByCard(1)}
               disabled={!canScrollRight}
-              aria-label="Next"
+              aria-label={t("Next")}
               className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition enabled:hover:border-white/30 enabled:hover:bg-white/10 disabled:opacity-30"
             >
               <svg

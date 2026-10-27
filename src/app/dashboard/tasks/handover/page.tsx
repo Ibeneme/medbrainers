@@ -28,6 +28,7 @@ import {
 import { useTheme } from "@/contexts/theme-context";
 import { PRIMARY_COLOR } from "@/constants/colors";
 import DarkBlurOverlayLoader from "@/components/atoms/loaders/DarkBlurOverlayLoader";
+import { useFacilityId } from "@/hooks/useFacilityId";
 
 function personLabel(u: unknown): string {
   if (!u) return "—";
@@ -415,9 +416,9 @@ export default function HandoverLogPage() {
   const border = isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.12)";
 
   const { user } = useAppSelector((s) => s.auth);
-  const { activeFacilityId, activeFacility, members } = useAppSelector(
-    (s) => s.facilities
-  );
+
+  // Use the comprehensive useFacilityId hook
+  const { facilityId, activeFacility, members } = useFacilityId();
   const { handovers, handoversLoading, saving } = useAppSelector(
     (s) => s.tasks
   );
@@ -444,10 +445,10 @@ export default function HandoverLogPage() {
   }, [dispatch]);
 
   useEffect(() => {
-    if (!activeFacilityId) return;
-    dispatch(fetchFacilityMembers(activeFacilityId));
-    dispatch(fetchHandovers({ facilityId: activeFacilityId, scope }));
-  }, [dispatch, activeFacilityId, scope]);
+    if (!facilityId) return;
+    dispatch(fetchFacilityMembers(facilityId));
+    dispatch(fetchHandovers({ facilityId, scope }));
+  }, [dispatch, facilityId, scope]);
 
   const notify = (msg: string, err = false) => {
     setToast(msg);
@@ -457,7 +458,7 @@ export default function HandoverLogPage() {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!activeFacilityId) return;
+    if (!facilityId) return;
     if (!form.toUserId) {
       notify("Select incoming staff", true);
       return;
@@ -465,7 +466,7 @@ export default function HandoverLogPage() {
     try {
       await dispatch(
         createHandover({
-          facilityId: activeFacilityId,
+          facilityId,
           payload: {
             toUserId: form.toUserId,
             shiftDate: form.shiftDate,
@@ -486,29 +487,29 @@ export default function HandoverLogPage() {
         wardOrUnit: "",
         patientNotes: "",
       });
-      dispatch(fetchHandovers({ facilityId: activeFacilityId, scope }));
+      dispatch(fetchHandovers({ facilityId, scope }));
     } catch (err: unknown) {
       notify(typeof err === "string" ? err : "Submit failed", true);
     }
   };
 
   const handleAcknowledge = async (id: string) => {
-    if (!activeFacilityId) return;
+    if (!facilityId) return;
     try {
       await dispatch(
         acknowledgeHandover({
-          facilityId: activeFacilityId,
+          facilityId,
           handoverId: id,
         })
       ).unwrap();
       notify("Handover acknowledged");
-      dispatch(fetchHandovers({ facilityId: activeFacilityId, scope }));
+      dispatch(fetchHandovers({ facilityId, scope }));
     } catch (err: unknown) {
       notify(typeof err === "string" ? err : "Acknowledge failed", true);
     }
   };
 
-  if (!activeFacilityId) {
+  if (!facilityId) {
     return (
       <div
         className="max-w-lg mx-auto px-4 py-16 text-center"

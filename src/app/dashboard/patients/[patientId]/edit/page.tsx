@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ChevronRight, Edit3, User } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/api/hooks";
+import type { Gender } from "@/api/types";
 import { fetchPatient, updatePatient } from "@/api/slices";
 import { useTheme } from "@/contexts/theme-context";
 import { PRIMARY_COLOR, getUI } from "@/constants/colors";
@@ -89,7 +90,7 @@ export default function EditPatientPage() {
         lastName: editLastName,
         middleName: editMiddleName || undefined,
         dateOfBirth: editDob || undefined,
-        gender: editGender || undefined,
+        gender: (editGender || undefined) as Gender | undefined,
         bloodGroup: editBloodGroup || undefined,
         countryCode: editCountryCode || undefined,
         phone: editPhone || undefined,
