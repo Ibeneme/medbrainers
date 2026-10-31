@@ -48,11 +48,64 @@ export interface Prescription {
   updatedAt?: string;
 }
 
+export interface Supplier {
+  _id: string;
+  name: string;
+  contactPerson?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  isActive?: boolean;
+}
+
+export interface PurchaseOrder {
+  _id: string;
+  orderNumber: string;
+  supplier?: string | Supplier;
+  status: string;
+  items: any[];
+  orderedAt?: string;
+  notes?: string;
+}
+
+export interface GoodsReceived {
+  _id: string;
+  receivedAt: string;
+  supplier?: string | Supplier;
+  items: any[];
+  notes?: string;
+}
+
+export interface CounsellingNote {
+  _id: string;
+  patient: any;
+  notes: string;
+  counselledAt: string;
+  pharmacist?: any;
+  topics?: string[];
+}
+
+export interface StockAdjustment {
+  _id: string;
+  type: string;
+  quantity: number;
+  reason: string;
+  at: string;
+  drug?: any;
+  performedBy?: any;
+}
+
 export interface PharmacyState {
   drugs: Drug[];
   inventory: InventoryItem[];
   prescriptions: Prescription[];
-  controlled: Prescription[];
+  controlled: any[];
+  suppliers: Supplier[];
+  purchaseOrders: PurchaseOrder[];
+  goodsReceived: GoodsReceived[];
+  counselling: CounsellingNote[];
+  adjustments: StockAdjustment[];
+  dashboard: any | null;
   listLoading: boolean;
   saving: boolean;
   error: string | null;
@@ -64,6 +117,12 @@ const initialState: PharmacyState = {
   inventory: [],
   prescriptions: [],
   controlled: [],
+  suppliers: [],
+  purchaseOrders: [],
+  goodsReceived: [],
+  counselling: [],
+  adjustments: [],
+  dashboard: null,
   listLoading: false,
   saving: false,
   error: null,
@@ -266,6 +325,79 @@ export const fetchControlled = createAsyncThunk(
   },
 );
 
+
+export const fetchSuppliers = createAsyncThunk(
+  "pharmacy/fetchSuppliers",
+  async (facilityId: string, { rejectWithValue }) => {
+    try {
+      const { data } = await api.get<ApiSuccess<Supplier[]>>(`/companies/${facilityId}/pharmacy/suppliers`);
+      return data;
+    } catch (err) {
+      return rejectWithValue(getErrorMessage(err, "Failed to load suppliers"));
+    }
+  },
+);
+
+export const fetchPurchaseOrders = createAsyncThunk(
+  "pharmacy/fetchPurchaseOrders",
+  async (facilityId: string, { rejectWithValue }) => {
+    try {
+      const { data } = await api.get<ApiSuccess<PurchaseOrder[]>>(`/companies/${facilityId}/pharmacy/purchase-orders`);
+      return data;
+    } catch (err) {
+      return rejectWithValue(getErrorMessage(err, "Failed to load purchase orders"));
+    }
+  },
+);
+
+export const fetchGoodsReceived = createAsyncThunk(
+  "pharmacy/fetchGoodsReceived",
+  async (facilityId: string, { rejectWithValue }) => {
+    try {
+      const { data } = await api.get<ApiSuccess<GoodsReceived[]>>(`/companies/${facilityId}/pharmacy/receiving`);
+      return data;
+    } catch (err) {
+      return rejectWithValue(getErrorMessage(err, "Failed to load goods received"));
+    }
+  },
+);
+
+export const fetchCounselling = createAsyncThunk(
+  "pharmacy/fetchCounselling",
+  async (facilityId: string, { rejectWithValue }) => {
+    try {
+      const { data } = await api.get<ApiSuccess<CounsellingNote[]>>(`/companies/${facilityId}/pharmacy/counselling`);
+      return data;
+    } catch (err) {
+      return rejectWithValue(getErrorMessage(err, "Failed to load counselling notes"));
+    }
+  },
+);
+
+export const fetchAdjustments = createAsyncThunk(
+  "pharmacy/fetchAdjustments",
+  async (facilityId: string, { rejectWithValue }) => {
+    try {
+      const { data } = await api.get<ApiSuccess<StockAdjustment[]>>(`/companies/${facilityId}/pharmacy/adjustments`);
+      return data;
+    } catch (err) {
+      return rejectWithValue(getErrorMessage(err, "Failed to load adjustments"));
+    }
+  },
+);
+
+export const fetchPharmacyDashboard = createAsyncThunk(
+  "pharmacy/fetchDashboard",
+  async (facilityId: string, { rejectWithValue }) => {
+    try {
+      const { data } = await api.get<ApiSuccess<any>>(`/companies/${facilityId}/pharmacy/dashboard`);
+      return data;
+    } catch (err) {
+      return rejectWithValue(getErrorMessage(err, "Failed to load dashboard"));
+    }
+  },
+);
+
 const pharmacySlice = createSlice({
   name: "pharmacy",
   initialState,
@@ -357,6 +489,13 @@ const pharmacySlice = createSlice({
     b.addCase(fetchControlled.fulfilled, (s, a) => {
       s.controlled = a.payload.data || [];
     });
+
+    b.addCase(fetchSuppliers.fulfilled, (s, a) => { s.suppliers = a.payload.data || []; });
+    b.addCase(fetchPurchaseOrders.fulfilled, (s, a) => { s.purchaseOrders = a.payload.data || []; });
+    b.addCase(fetchGoodsReceived.fulfilled, (s, a) => { s.goodsReceived = a.payload.data || []; });
+    b.addCase(fetchCounselling.fulfilled, (s, a) => { s.counselling = a.payload.data || []; });
+    b.addCase(fetchAdjustments.fulfilled, (s, a) => { s.adjustments = a.payload.data || []; });
+    b.addCase(fetchPharmacyDashboard.fulfilled, (s, a) => { s.dashboard = a.payload.data || null; });
   },
 });
 

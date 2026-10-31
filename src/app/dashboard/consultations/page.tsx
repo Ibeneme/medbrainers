@@ -27,8 +27,7 @@ import { useFacilityId } from "@/hooks/useFacilityId";
 import { CustomPopupDatePicker } from "@/components/ui/items";
 import { formatRecordedDate } from "@/utils/dateUtils";
 
-
-// Helper to get local YYYY-MM-DD for today's default comparison
+// Helper to get local YYYY-MM-DD safely on the client side
 function getTodayDateString(): string {
   const now = new Date();
   const year = now.getFullYear();
@@ -57,10 +56,13 @@ export default function AllConsultationsPage() {
   const [hasDrugsFilter, setHasDrugsFilter] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<"list" | "kanban">("kanban");
 
-  // Date filter: Default to today's date (YYYY-MM-DD format)
-  const [selectedDate, setSelectedDate] = useState<string>(
-    getTodayDateString()
-  );
+  // Date filter: Initialize as empty string to prevent SSR/prerender mismatch
+  const [selectedDate, setSelectedDate] = useState<string>("");
+
+  // Set today's date safely on client mount
+  useEffect(() => {
+    setSelectedDate(getTodayDateString());
+  }, []);
 
   // Fetch consultations on mount or facility change
   useEffect(() => {

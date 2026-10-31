@@ -1,9 +1,16 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { ThemeProvider } from "@/contexts/theme-context";
 import ReduxProvider from "@/components/providers/redux-provider";
 import ConditionalLayout from "@/components/main/ConditionalLayout";
-import { SITE, EMAILS, absoluteUrl, productName, ogImages } from "@/constants/site";
+import {
+  SITE,
+  EMAILS,
+  absoluteUrl,
+  productName,
+  ogImages,
+} from "@/constants/site";
 import { locales, isLocale, localizePath, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { getT } from "@/i18n/server";
@@ -16,9 +23,11 @@ export const viewport: Viewport = {
   themeColor: "#000000",
 };
 
+type LangParams = Promise<{ lang: string }>;
+
 type LayoutProps = {
   children: React.ReactNode;
-  params: Promise<{ lang: string }>;
+  params: LangParams;
 };
 
 export function generateStaticParams() {
@@ -28,10 +37,12 @@ export function generateStaticParams() {
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ lang: string }>;
+  params: LangParams;
 }): Promise<Metadata> {
   const { lang } = await params;
+
   if (!isLocale(lang)) return {};
+
   const t = getT(lang);
   const title = `${productName} | ${t(SITE.tagline)}`;
   const description = t(SITE.description);
@@ -52,11 +63,15 @@ export async function generateMetadata({
       SITE.name,
     ],
     icons: {
-      icon: [{ url: SITE.logo, type: "image/svg+xml" }], // browser tab
+      icon: [{ url: SITE.logo, type: "image/svg+xml" }],
       shortcut: SITE.logo,
-      apple: [{ url: SITE.logo }], // iOS "Add to Home Screen"
+      apple: [{ url: SITE.logo }],
     },
-    appleWebApp: { capable: true, title: SITE.name, statusBarStyle: "black-translucent" },
+    appleWebApp: {
+      capable: true,
+      title: SITE.name,
+      statusBarStyle: "black-translucent",
+    },
     authors: [{ name: SITE.name, url: SITE.url }],
     creator: SITE.legalName,
     publisher: SITE.legalName,
@@ -80,7 +95,12 @@ export async function generateMetadata({
     robots: {
       index: true,
       follow: true,
-      googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 },
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+      },
     },
     formatDetection: { email: false, address: false, telephone: false },
   };
@@ -100,8 +120,16 @@ function buildJsonLd(lang: Locale) {
         logo: absoluteUrl(SITE.logo),
         email: EMAILS.support,
         contactPoint: [
-          { "@type": "ContactPoint", contactType: "sales", email: EMAILS.sales },
-          { "@type": "ContactPoint", contactType: "customer support", email: EMAILS.support },
+          {
+            "@type": "ContactPoint",
+            contactType: "sales",
+            email: EMAILS.sales,
+          },
+          {
+            "@type": "ContactPoint",
+            contactType: "customer support",
+            email: EMAILS.support,
+          },
         ],
       },
       {
@@ -130,18 +158,24 @@ export default async function LangLayout({ children, params }: LayoutProps) {
   const { lang } = await params;
   if (!isLocale(lang)) notFound();
 
+  // Double backslash so the output really contains the text \u003c,
+  // which stops "</script>" from breaking out of the JSON-LD tag.
+  const jsonLd = JSON.stringify(buildJsonLd(lang)).replace(/</g, "\\u003c");
+
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(buildJsonLd(lang)).replace(/</g, "\u003c"),
-        }}
+        dangerouslySetInnerHTML={{ __html: jsonLd }}
       />
       <ReduxProvider>
         <I18nProvider locale={lang} dict={getDictionary(lang)} persist>
           <ThemeProvider>
-            <ConditionalLayout>{children}</ConditionalLayout>
+            {/* Lets the rest of the page prerender if ConditionalLayout
+                reads the pathname, cookies, or search params. */}
+            <Suspense fallback={null}>
+              <ConditionalLayout>{children}</ConditionalLayout>
+            </Suspense>
           </ThemeProvider>
         </I18nProvider>
       </ReduxProvider>

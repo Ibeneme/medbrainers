@@ -3,31 +3,43 @@ import axios, {
   type AxiosInstance,
   type InternalAxiosRequestConfig,
 } from "axios";
+import Cookies from "js-cookie";
 import { API_CONFIG } from "./config";
 
-/* ── token helpers ─────────────────────────────────────────── */
+/* ── redirection helper ────────────────────────────────────── */
+function redirectToLogin() {
+  if (typeof window === "undefined") return;
+  // Prevent infinite loops if already on the login page
+  if (window.location.pathname.includes("/login")) return;
+
+  window.location.href = "/login"; // Change to "/(auth)/login" or your exact router path if needed
+}
+
+/* ── token & cookie helpers ────────────────────────────────── */
 export function getAccessToken(): string | null {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem(API_CONFIG.ACCESS_TOKEN_KEY);
+  return Cookies.get(API_CONFIG.ACCESS_TOKEN_KEY) || null;
 }
 
 export function getRefreshToken(): string | null {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem(API_CONFIG.REFRESH_TOKEN_KEY);
+  return Cookies.get(API_CONFIG.REFRESH_TOKEN_KEY) || null;
 }
 
 export function setTokens(access: string, refresh?: string) {
   if (typeof window === "undefined") return;
-  localStorage.setItem(API_CONFIG.ACCESS_TOKEN_KEY, access);
-  if (refresh) localStorage.setItem(API_CONFIG.REFRESH_TOKEN_KEY, refresh);
+  Cookies.set(API_CONFIG.ACCESS_TOKEN_KEY, access, { secure: true, sameSite: "strict" });
+  if (refresh) {
+    Cookies.set(API_CONFIG.REFRESH_TOKEN_KEY, refresh, { secure: true, sameSite: "strict" });
+  }
 }
 
 export function clearTokens() {
   if (typeof window === "undefined") return;
-  localStorage.removeItem(API_CONFIG.ACCESS_TOKEN_KEY);
-  localStorage.removeItem(API_CONFIG.REFRESH_TOKEN_KEY);
-  localStorage.removeItem(API_CONFIG.USER_KEY);
-  localStorage.removeItem(API_CONFIG.ACTIVE_FACILITY_KEY);
+  Cookies.remove(API_CONFIG.ACCESS_TOKEN_KEY);
+  Cookies.remove(API_CONFIG.REFRESH_TOKEN_KEY);
+  Cookies.remove(API_CONFIG.USER_KEY);
+  Cookies.remove(API_CONFIG.ACTIVE_FACILITY_KEY);
 }
 
 /* ── axios instance ────────────────────────────────────────── */
@@ -43,7 +55,11 @@ const api: AxiosInstance = axios.create({
 /* attach access token on every request */
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = getAccessToken();
-  if (token) {
+  if (!token) {
+    // Optional: If you want to block requests immediately when there's no access token client-side
+    // clearTokens();
+    // redirectToLogin();
+  } else {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
@@ -72,12 +88,17 @@ api.interceptors.response.use(
     };
 
     if (error.response?.status !== 401 || original._retry) {
+      if (error.response?.status === 401) {
+        clearTokens();
+        redirectToLogin();
+      }
       return Promise.reject(error);
     }
 
     const refreshToken = getRefreshToken();
     if (!refreshToken) {
       clearTokens();
+      redirectToLogin();
       return Promise.reject(error);
     }
 
@@ -109,6 +130,7 @@ api.interceptors.response.use(
     } catch (refreshErr) {
       processQueue(refreshErr, null);
       clearTokens();
+      redirectToLogin();
       return Promise.reject(refreshErr);
     } finally {
       isRefreshing = false;

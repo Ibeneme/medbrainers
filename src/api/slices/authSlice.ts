@@ -30,6 +30,25 @@ import {
   uploadProfilePicture,
 } from "./usersSlice";
 
+/* ── Cookie Helper Utilities ───────────────────────────────── */
+const setCookie = (name: string, value: string, days = 365) => {
+  if (typeof document === "undefined") return;
+  const expires = new Date(Date.now() + days * 864e5).toUTCString();
+  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
+};
+
+const getCookie = (name: string): string | null => {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
+  return match ? decodeURIComponent(match[2]) : null;
+};
+
+const removeCookie = (name: string) => {
+  if (typeof document === "undefined") return;
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
+};
+/* ──────────────────────────────────────────────────────────── */
+
 /* ── state ─────────────────────────────────────────────────── */
 export interface AuthState {
   user: User | null;
@@ -53,7 +72,7 @@ export interface AuthState {
 function loadUserFromStorage(): User | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = localStorage.getItem(API_CONFIG.USER_KEY);
+    const raw = getCookie(API_CONFIG.USER_KEY);
     return raw ? (JSON.parse(raw) as User) : null;
   } catch {
     return null;
@@ -62,16 +81,16 @@ function loadUserFromStorage(): User | null {
 
 function loadToken(key: string): string | null {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem(key);
+  return getCookie(key);
 }
 
-/** Persist user object to localStorage (and keep auth.user in sync). */
+/** Persist user object to cookies (and keep auth.user in sync). */
 function persistUser(user: User | null) {
   if (typeof window === "undefined") return;
   if (user) {
-    localStorage.setItem(API_CONFIG.USER_KEY, JSON.stringify(user));
+    setCookie(API_CONFIG.USER_KEY, JSON.stringify(user));
   } else {
-    localStorage.removeItem(API_CONFIG.USER_KEY);
+    removeCookie(API_CONFIG.USER_KEY);
   }
 }
 
@@ -200,7 +219,7 @@ export const login = createAsyncThunk(
       const result = data.data;
       setTokens(result.accessToken, result.refreshToken);
       if (typeof window !== "undefined") {
-        localStorage.setItem(API_CONFIG.USER_KEY, JSON.stringify(result.user));
+        setCookie(API_CONFIG.USER_KEY, JSON.stringify(result.user));
       }
       return data;
     } catch (err) {
@@ -605,12 +624,12 @@ const authSlice = createSlice({
           activeCompany:
             action.payload.data?.activeCompanyId ??
             (state.user.activeCompany &&
-            String(state.user.activeCompany) === String(leftId)
+              String(state.user.activeCompany) === String(leftId)
               ? undefined
               : state.user.activeCompany),
           activeCompanyDetails:
             state.user.activeCompanyDetails?.id &&
-            String(state.user.activeCompanyDetails.id) === String(leftId)
+              String(state.user.activeCompanyDetails.id) === String(leftId)
               ? undefined
               : state.user.activeCompanyDetails,
         };

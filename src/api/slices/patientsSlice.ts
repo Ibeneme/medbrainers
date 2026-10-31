@@ -87,6 +87,7 @@ export interface CompanyConsultationItem {
   patientName: string;
   patientPhone?: string;
   consultation: IConsultation;
+  createdAt?: any
 }
 
 export interface VitalRecordItem {
