@@ -1,340 +1,431 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Building2,
+  CheckCircle2,
   Check,
-  ChevronDown,
-  Loader2,
-  Search,
   ClipboardList,
+  Plus,
+  Search,
+  Trash2,
   X,
+  XCircle,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/api/hooks";
 import {
+  fetchCarePlans,
   fetchMyFacilities,
   fetchPatients,
-  fetchCarePlans,
-  createCarePlan,
+  updateCarePlan,
 } from "@/api/slices";
+import type { NursingCarePlan } from "@/api/types";
 import { useTheme } from "@/contexts/theme-context";
-import { PRIMARY_COLOR } from "@/constants/colors";
-import DarkBlurOverlayLoader from "@/components/atoms/loaders/DarkBlurOverlayLoader";
-import { CustomDropdown } from "@/components/ui/items";
+import { useToast } from "@/contexts/toast-context";
+import { PRIMARY_COLOR, getUI } from "@/constants/colors";
 
-function personName(p: unknown) {
+const personName = (p: unknown) => {
   if (!p || typeof p === "string") return "—";
   const x = p as { firstName?: string; lastName?: string; mrn?: string };
   return `${x.firstName || ""} ${x.lastName || ""}`.trim() || x.mrn || "—";
-}
-
-type UI = {
-  isDark: boolean;
-  page: string;
-  card: string;
-  inner: string;
-  text: string;
-  border: string;
 };
+const idOf = (p: unknown) =>
+  !p ? "" : typeof p === "string" ? p : (p as { _id?: string })._id || "";
 
+const initialsOf = (name: string) =>
+  name
+    .split(" ")
+    .filter(Boolean)
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase() || "?";
+
+type Tab = "active" | "completed" | "discontinued" | "all";
+const TABS: Tab[] = ["active", "completed", "discontinued", "all"];
 
 export default function NursingCarePlansPage() {
+  const router = useRouter();
   const dispatch = useAppDispatch();
+  const { showToast } = useToast();
   const { theme, colors } = useTheme();
   const isDark = theme === "dark";
-  const border = isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.08)";
+  const ui = getUI(isDark, colors);
 
-  const ui: UI = {
-    isDark,
-    page: isDark ? "rgba(255,255,255,0.03)" : "#eef2f7",
-    card: isDark ? colors.shadeBg : "#ffffff",
-    inner: isDark ? colors.shadeBgSecond : "#f3f5f9",
-    text: colors.text,
-    border,
-  };
+  const { activeFacilityId, initialized } = useAppSelector((s) => s.facilities);
+  const { carePlans, loading, saving } = useAppSelector((s) => s.wards);
 
-  const { activeFacilityId, activeFacility } = useAppSelector(
-    (s) => s.facilities
-  );
-  const { list: patients } = useAppSelector((s) => s.patients);
-  const { carePlans = [], loading, saving } = useAppSelector((s) => s.wards as any);
-
-  const [patientId, setPatientId] = useState("");
-  const [diagnosis, setDiagnosis] = useState("");
-  const [goal, setGoal] = useState("");
-  const [intervention, setIntervention] = useState("");
+  const [tab, setTab] = useState<Tab>("active");
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     dispatch(fetchMyFacilities());
   }, [dispatch]);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     if (!activeFacilityId) return;
-    dispatch(fetchPatients({ facilityId: activeFacilityId }));
     dispatch(fetchCarePlans({ facilityId: activeFacilityId }));
   }, [dispatch, activeFacilityId]);
 
-  const inputStyle = {
-    backgroundColor: ui.inner,
-    color: ui.text,
-    borderColor: "transparent",
+  useEffect(() => {
+    load();
+    if (activeFacilityId)
+      dispatch(fetchPatients({ facilityId: activeFacilityId }));
+  }, [load, dispatch, activeFacilityId]);
+
+  const counts = useMemo(() => {
+    const c: Record<string, number> = { all: carePlans.length };
+    carePlans.forEach((p) => (c[p.status] = (c[p.status] || 0) + 1));
+    return c;
+  }, [carePlans]);
+
+  const q = query.trim().toLowerCase();
+  const shown = carePlans.filter((c) => {
+    if (tab !== "all" && c.status !== tab) return false;
+    if (!q) return true;
+    return (
+      personName(c.patient).toLowerCase().includes(q) ||
+      ((c.patient as any)?.mrn || "").toLowerCase().includes(q) ||
+      (c.diagnosis || "").toLowerCase().includes(q)
+    );
+  });
+
+  const patch = async (
+    plan: NursingCarePlan,
+    payload: Parameters<typeof updateCarePlan>[0]["payload"]
+  ) => {
+    if (!activeFacilityId) return;
+    try {
+      await dispatch(
+        updateCarePlan({
+          facilityId: activeFacilityId,
+          planId: plan._id,
+          payload,
+        })
+      ).unwrap();
+    } catch (err) {
+      showToast(
+        typeof err === "string" ? err : "Could not update care plan",
+        "error"
+      );
+    }
   };
 
-  const inputCls =
-    "w-full rounded-2xl border px-4 py-3 text-sm outline-none focus:outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/25";
+  const toggleItem = (plan: NursingCarePlan, index: number) => {
+    const interventions = (plan.interventions || []).map((i, n) => ({
+      description: i.description,
+      frequency: i.frequency,
+      completed: n === index ? !i.completed : !!i.completed,
+    }));
+    patch(plan, { interventions });
+  };
 
-  if (!activeFacilityId) {
+  if (initialized && !activeFacilityId) {
     return (
       <div
-        className="max-w-lg mx-auto px-4 py-16 text-center"
-        style={{ color: colors.text }}
+        className="mx-auto max-w-lg px-4 py-16 text-center"
+        style={{ color: ui.text }}
       >
-        <Building2 className="mx-auto opacity-30 mb-3" size={32} />
+        <ClipboardList className="mx-auto mb-3 opacity-30" size={32} />
         <p className="font-bold">Select a facility first</p>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-3 sm:px-6 py-4 sm:py-6">
-      <div
-        className="relative rounded-[32px] p-4 sm:p-6 space-y-5"
-        style={{ backgroundColor: ui.page, color: ui.text }}
+    <div
+      className="mx-auto max-w-6xl space-y-6 px-3 py-5 sm:px-6"
+      style={{ color: ui.text }}
+    >
+      {/* ─── Main card ─────────────────────────────── */}
+      <section
+        className="space-y-5 rounded-[28px] p-5 sm:p-6"
+        style={{ backgroundColor: ui.card }}
       >
-        {saving && <DarkBlurOverlayLoader text="Saving care plan..." />}
-
-        {/* Header Section */}
-        <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <div className="flex items-center gap-2.5">
-              <span
-                className="flex h-10 w-10 items-center justify-center rounded-2xl border"
-                style={{
-                  backgroundColor: ui.card,
-                  borderColor: border,
-                  color: PRIMARY_COLOR,
-                }}
-              >
-                <ClipboardList size={20} />
-              </span>
-              <h1 className="text-3xl sm:text-4xl font-normal tracking-tight">
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-medium tracking-tight">
                 Nursing care plans
               </h1>
+              <span
+                className="rounded-full px-3 py-1 text-sm"
+                style={{ backgroundColor: ui.inner }}
+              >
+                {counts.all || 0}
+              </span>
             </div>
-            <p className="text-xs opacity-55 mt-1 ml-1">
-              {activeFacility?.name} · Create and monitor structured inpatient care goals
+            <p className="mt-1 text-xs opacity-55">
+              Goals and interventions for admitted patients.
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Link
-              href="/dashboard/wards"
-              className="rounded-full border px-4 py-2.5 text-xs font-semibold transition hover:opacity-80 outline-none focus:outline-none"
-              style={{ backgroundColor: ui.card, borderColor: border }}
+
+          <div className="flex flex-wrap items-center gap-3">
+            <div
+              className="flex min-w-[220px] items-center gap-2 rounded-full px-4 py-2.5"
+              style={{ backgroundColor: ui.inner }}
             >
-              Wards view
-            </Link>
-          </div>
-        </div>
-
-        {/* Care Plan Form */}
-        <form
-          className="rounded-[28px] border p-5 sm:p-6 space-y-4"
-          style={{ backgroundColor: ui.card, borderColor: border }}
-          onSubmit={async (e) => {
-            e.preventDefault();
-            await dispatch(
-              createCarePlan({
-                facilityId: activeFacilityId,
-                payload: {
-                  patientId,
-                  diagnosis,
-                  goals: goal.trim() ? [goal.trim()] : undefined,
-                  interventions: intervention.trim()
-                    ? [{ description: intervention.trim() }]
-                    : undefined,
-                },
-              })
-            ).unwrap();
-            dispatch(fetchCarePlans({ facilityId: activeFacilityId }));
-            setPatientId("");
-            setDiagnosis("");
-            setGoal("");
-            setIntervention("");
-          }}
-        >
-          <h2 className="text-lg font-semibold tracking-tight mb-1">
-            New nursing care plan
-          </h2>
-          <p className="text-xs opacity-60 mb-3">
-            Define individualized nursing diagnoses, patient goals, and specific clinical interventions.
-          </p>
-
-          <div className="space-y-4">
-            <div>
-              <CustomDropdown
-                label="Patient"
-                value={patientId}
-                placeholder="Search or select patient…"
-                searchable={true}
-                options={patients.map((p) => ({
-                  label: `${p.mrn} · ${p.firstName} ${p.lastName} ${
-                    p.gender ? `(${p.gender})` : ""
-                  }`,
-                  value: p._id,
-                }))}
-                onChange={setPatientId}
-                isDark={isDark}
-                colors={colors}
-                border={border}
+              <Search size={14} className="shrink-0 opacity-50" />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search patient or diagnosis…"
+                className="w-full bg-transparent text-xs outline-none"
+                style={{ color: ui.text }}
               />
-              <p className="text-[10px] opacity-50 mt-1">
-                Choose the admitted or registered patient this care plan applies to.
-              </p>
+              {query && (
+                <button
+                  type="button"
+                  onClick={() => setQuery("")}
+                  aria-label="Clear search"
+                  className="opacity-50 hover:opacity-100"
+                >
+                  <X size={13} />
+                </button>
+              )}
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold opacity-70">
-                  Nursing diagnosis *
-                </label>
-                <input
-                  required
-                  value={diagnosis}
-                  onChange={(e) => setDiagnosis(e.target.value)}
-                  placeholder="e.g. Acute pain related to surgical incision"
-                  className={inputCls}
-                  style={inputStyle}
-                />
-                <p className="text-[10px] opacity-50">
-                  Clinical judgment regarding patient health responses.
-                </p>
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold opacity-70">
-                  Goal *
-                </label>
-                <input
-                  required
-                  value={goal}
-                  onChange={(e) => setGoal(e.target.value)}
-                  placeholder="e.g. Patient reports pain below 3/10"
-                  className={inputCls}
-                  style={inputStyle}
-                />
-                <p className="text-[10px] opacity-50">
-                  Measurable patient outcome expected within timeframe.
-                </p>
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold opacity-70">
-                  Intervention *
-                </label>
-                <input
-                  required
-                  value={intervention}
-                  onChange={(e) => setIntervention(e.target.value)}
-                  placeholder="e.g. Administer prescribed analgesics"
-                  className={inputCls}
-                  style={inputStyle}
-                />
-                <p className="text-[10px] opacity-50">
-                  Specific nursing actions performed to achieve goals.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex justify-end pt-2">
             <button
-              type="submit"
-              disabled={saving || !patientId || !diagnosis.trim() || !goal.trim() || !intervention.trim()}
-              className="rounded-full px-6 py-3 text-xs font-semibold text-white transition hover:opacity-90 disabled:opacity-50 outline-none focus:outline-none border border-transparent"
+              onClick={() => router.push("/dashboard/wards/nursing/new")}
+              className="inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
               style={{ backgroundColor: PRIMARY_COLOR }}
             >
-              {saving ? "Creating..." : "Create care plan"}
+              <Plus size={15} /> New care plan
             </button>
           </div>
-        </form>
+        </div>
 
-        {/* Care Plans List */}
-        <div
-          className="rounded-[28px] border overflow-hidden"
-          style={{ backgroundColor: ui.card, borderColor: border }}
-        >
-          {loading ? (
-            <div className="flex items-center justify-center gap-2 p-12 text-xs opacity-60">
-              <Loader2 className="h-4 w-4 animate-spin" /> Loading care plans…
-            </div>
-          ) : carePlans.length === 0 ? (
-            <div className="p-12 text-center text-xs opacity-60">
-              No active nursing care plans recorded yet.
-            </div>
-          ) : (
-            <div className="divide-y" style={{ borderColor: border }}>
-              {carePlans.map((cp: any) => {
-                const pid = cp.patient?._id || cp.patient;
-                return (
-                  <div
-                    key={cp._id}
-                    className="p-5 flex flex-wrap items-center justify-between gap-4 text-xs transition"
-                  >
-                    <div className="space-y-1.5">
-                      <div className="flex items-center gap-2">
-                        <Link
-                          href={`/dashboard/patients/${pid}`}
-                          className="text-sm font-semibold tracking-tight hover:underline"
-                          style={{ color: PRIMARY_COLOR }}
-                        >
-                          {personName(cp.patient)}
-                        </Link>
-                        {cp.patient?.mrn && (
-                          <span
-                            className="rounded-md px-2 py-0.5 text-[10px] font-mono font-semibold"
-                            style={{ backgroundColor: ui.inner }}
-                          >
-                            {cp.patient.mrn}
-                          </span>
-                        )}
-                      </div>
+        {/* Status filter pills */}
+        <div className="flex flex-wrap gap-2">
+          {TABS.map((t) => {
+            const active = tab === t;
+            return (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className="rounded-full px-4 py-2 text-xs font-medium capitalize transition-colors"
+                style={{
+                  backgroundColor: active ? PRIMARY_COLOR : ui.inner,
+                  color: active ? "#FFFFFF" : ui.text,
+                }}
+              >
+                {t}{" "}
+                <span className={active ? "opacity-80" : "opacity-50"}>
+                  {counts[t] || 0}
+                </span>
+              </button>
+            );
+          })}
+        </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 opacity-80 pt-1">
-                        <div>
-                          <strong className="opacity-50 font-normal block text-[10px]">Diagnosis</strong>
-                          <span className="font-medium">{cp.nursingDiagnosis}</span>
-                        </div>
-                        <div>
-                          <strong className="opacity-50 font-normal block text-[10px]">Goal</strong>
-                          <span className="font-medium">{cp.goal}</span>
-                        </div>
-                        <div>
-                          <strong className="opacity-50 font-normal block text-[10px]">Intervention</strong>
-                          <span className="font-medium">{cp.intervention}</span>
-                        </div>
-                      </div>
-                    </div>
+        {/* Plans */}
+        {loading && carePlans.length === 0 ? (
+          <div className="py-16 text-center text-xs opacity-60">
+            Loading care plans…
+          </div>
+        ) : shown.length === 0 ? (
+          <div
+            className="rounded-3xl py-14 text-center text-xs opacity-60"
+            style={{ backgroundColor: ui.inner }}
+          >
+            No care plans here yet.
+          </div>
+        ) : (
+          <div className="grid gap-3 xl:grid-cols-2">
+            {shown.map((plan) => {
+              const done = (plan.interventions || []).filter(
+                (i) => i.completed
+              ).length;
+              const total = plan.interventions?.length || 0;
+              const pct = total ? Math.round((done / total) * 100) : 0;
+              const name = personName(plan.patient);
+              const isActive = plan.status === "active";
 
-                    <div className="flex items-center gap-2">
-                      <Link
-                        href={`/dashboard/patients/${pid}`}
-                        className="rounded-full border px-4 py-2 font-semibold transition hover:opacity-80"
+              return (
+                <article
+                  key={plan._id}
+                  className="space-y-4 rounded-3xl p-5"
+                  style={{ backgroundColor: ui.inner }}
+                >
+                  {/* Patient + status */}
+                  <header className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span
+                        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-bold"
                         style={{
-                          backgroundColor: ui.inner,
-                          borderColor: border,
+                          backgroundColor: `${PRIMARY_COLOR}26`,
+                          color: PRIMARY_COLOR,
                         }}
                       >
-                        View folder
-                      </Link>
+                        {initialsOf(name)}
+                      </span>
+                      <div className="min-w-0">
+                        <Link
+                          href={`/dashboard/patients/${idOf(plan.patient)}`}
+                          className="block truncate text-[15px] font-semibold hover:underline"
+                        >
+                          {name}
+                        </Link>
+                        <p className="truncate text-xs opacity-55">
+                          {plan.diagnosis || "No diagnosis recorded"}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
+                    <span
+                      className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold capitalize"
+                      style={
+                        isActive
+                          ? {
+                              backgroundColor: `${PRIMARY_COLOR}26`,
+                              color: PRIMARY_COLOR,
+                            }
+                          : { backgroundColor: ui.card }
+                      }
+                    >
+                      <span
+                        className="h-1.5 w-1.5 rounded-full"
+                        style={{
+                          backgroundColor: isActive
+                            ? PRIMARY_COLOR
+                            : "rgba(128,128,128,0.7)",
+                        }}
+                      />
+                      {plan.status}
+                    </span>
+                  </header>
+
+                  {/* Progress */}
+                  {!!total && (
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between text-[11px] opacity-65">
+                        <span>
+                          Interventions · {done}/{total}
+                        </span>
+                        <span>{pct}%</span>
+                      </div>
+                      <div
+                        className="h-1.5 w-full overflow-hidden rounded-full"
+                        style={{ backgroundColor: ui.card }}
+                      >
+                        <div
+                          className="h-full rounded-full transition-all"
+                          style={{
+                            width: `${pct}%`,
+                            backgroundColor: PRIMARY_COLOR,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Goals */}
+                  {!!plan.goals?.length && (
+                    <div>
+                      <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider opacity-50">
+                        Goals
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {plan.goals.map((g, i) => (
+                          <span
+                            key={i}
+                            className="rounded-full px-3 py-1.5 text-xs"
+                            style={{ backgroundColor: ui.card }}
+                          >
+                            {g}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Interventions checklist */}
+                  {!!total && (
+                    <ul className="space-y-1.5">
+                      {plan.interventions!.map((i, n) => (
+                        <li key={i._id || n}>
+                          <button
+                            type="button"
+                            disabled={!isActive || saving}
+                            onClick={() => toggleItem(plan, n)}
+                            className="flex w-full items-start gap-3 rounded-2xl px-3 py-2.5 text-left text-xs transition-opacity hover:opacity-80 disabled:cursor-default disabled:hover:opacity-100"
+                            style={{ backgroundColor: ui.card }}
+                          >
+                            <span
+                              className="mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
+                              style={{
+                                backgroundColor: i.completed
+                                  ? PRIMARY_COLOR
+                                  : ui.inner,
+                              }}
+                            >
+                              {i.completed && <Check size={12} color="#fff" />}
+                            </span>
+                            <span
+                              className={
+                                i.completed ? "line-through opacity-50" : ""
+                              }
+                            >
+                              {i.description}
+                              {i.frequency && (
+                                <span className="opacity-60">
+                                  {" "}
+                                  · {i.frequency}
+                                </span>
+                              )}
+                            </span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  {plan.notes && (
+                    <p className="text-xs leading-relaxed opacity-70">
+                      {plan.notes}
+                    </p>
+                  )}
+
+                  {/* Footer */}
+                  <footer className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                    <span className="text-[11px] opacity-55">
+                      Started{" "}
+                      {plan.startDate
+                        ? new Date(plan.startDate).toLocaleDateString()
+                        : "—"}
+                      {plan.endDate
+                        ? ` · Ended ${new Date(
+                            plan.endDate
+                          ).toLocaleDateString()}`
+                        : ""}
+                    </span>
+                    {isActive && (
+                      <span className="flex gap-2">
+                        <button
+                          onClick={() => patch(plan, { status: "completed" })}
+                          className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90"
+                          style={{ backgroundColor: PRIMARY_COLOR }}
+                        >
+                          <CheckCircle2 size={13} /> Complete
+                        </button>
+                        <button
+                          onClick={() =>
+                            patch(plan, { status: "discontinued" })
+                          }
+                          className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-medium transition-opacity hover:opacity-70"
+                          style={{ backgroundColor: ui.card }}
+                        >
+                          <XCircle size={13} /> Discontinue
+                        </button>
+                      </span>
+                    )}
+                  </footer>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

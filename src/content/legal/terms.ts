@@ -4,7 +4,7 @@ export const terms: LegalTranslations = {
   en: {
     metaTitle: "Terms of Service",
     metaDescription:
-      "The terms that govern your use of the MedBrainers website, electronic medical records platform and related services.",
+      "The terms that govern your use of the Medicules website, electronic medical records platform and related services.",
     title: "Terms of Service",
     updated: "Last Updated: October 20, 2026",
     sections: [
@@ -12,7 +12,7 @@ export const terms: LegalTranslations = {
         h: "1. Acceptance of Terms",
         blocks: [
           {
-            p: "Please read these Terms of Service (“Terms”) carefully before using the MedBrainers website, electronic medical records platform, API, or any related services (collectively, the “Services”).",
+            p: "Please read these Terms of Service (“Terms”) carefully before using the Medicules website, electronic medical records platform, API, or any related services (collectively, the “Services”).",
           },
           {
             p: "By accessing or using the Services you agree to be legally bound by these Terms. If you do not accept these Terms, do not use the Services.",
@@ -26,7 +26,7 @@ export const terms: LegalTranslations = {
         h: "2. Relationship to Subscription Agreement",
         blocks: [
           {
-            p: "These Terms primarily govern use of the public website and free, demo, or trial access. Paid use of the MedBrainers platform is additionally governed by our Master Subscription Agreement (or other written contract signed between you and MedBrainers). In the event of a conflict between these Terms and a signed Master Subscription Agreement, the signed agreement controls.",
+            p: "These Terms primarily govern use of the public website and free, demo, or trial access. Paid use of the Medicules platform is additionally governed by our Master Subscription Agreement (or other written contract signed between you and Medicules). In the event of a conflict between these Terms and a signed Master Subscription Agreement, the signed agreement controls.",
           },
         ],
       },
@@ -51,7 +51,7 @@ export const terms: LegalTranslations = {
             p: "You retain all right, title, and interest in and to the data, content, and information you upload or transmit through the Services (“Customer Data”), including patient records, billing and claims data, and laboratory and pharmacy records.",
           },
           {
-            p: "You grant MedBrainers a limited, non-exclusive license to host, process, transmit, and display Customer Data solely as necessary to provide and improve the Services, in accordance with our Privacy Statement and any Data Processing Addendum. We process Patient data only on your instructions.",
+            p: "You grant Medicules a limited, non-exclusive license to host, process, transmit, and display Customer Data solely as necessary to provide and improve the Services, in accordance with our Privacy Statement and any Data Processing Addendum. We process Patient data only on your instructions.",
           },
           {
             p: "As the healthcare provider, you are the data controller for Patient data. You are responsible for having a lawful basis to collect and use it, for giving patients any notices required by law, and for responding to patient requests about their records.",
@@ -62,7 +62,7 @@ export const terms: LegalTranslations = {
         h: "5. Healthcare and Clinical Responsibilities",
         blocks: [
           {
-            p: "MedBrainers is a software tool for managing health records and healthcare operations. It does not provide medical advice, diagnosis, or treatment, and it is not a substitute for professional clinical judgment.",
+            p: "Medicules is a software tool for managing health records and healthcare operations. It does not provide medical advice, diagnosis, or treatment, and it is not a substitute for professional clinical judgment.",
           },
           {
             ul: [
@@ -96,7 +96,7 @@ export const terms: LegalTranslations = {
         h: "7. Third-Party Services and Integrations",
         blocks: [
           {
-            p: "The Services may allow you to connect third-party tools such as payment gateways, messaging channels, HMO systems, and laboratory equipment. When you use a third-party integration you are interacting with that third party, not with MedBrainers. We are not responsible for the availability, accuracy, privacy practices, or content of any third-party service.",
+            p: "The Services may allow you to connect third-party tools such as payment gateways, messaging channels, HMO systems, and laboratory equipment. When you use a third-party integration you are interacting with that third party, not with Medicules. We are not responsible for the availability, accuracy, privacy practices, or content of any third-party service.",
           },
           {
             p: "Your use of third-party services is governed solely by their own terms and privacy policies. Payments made through a payment gateway are processed by that provider.",
@@ -118,10 +118,10 @@ export const terms: LegalTranslations = {
         h: "9. Intellectual Property and Content",
         blocks: [
           {
-            p: "The Services, including all software, text, graphics, logos, and other content (“MedBrainers Content”), are owned by MedBrainers or its licensors and are protected by copyright, trademark, and other laws.",
+            p: "The Services, including all software, text, graphics, logos, and other content (“Medicules Content”), are owned by Medicules or its licensors and are protected by copyright, trademark, and other laws.",
           },
           {
-            p: "We grant you a limited, revocable, non-sublicensable license to access and use the MedBrainers Content solely as necessary to use the Services. You may not copy, modify, distribute, sell, or create derivative works from the MedBrainers Content except as expressly permitted.",
+            p: "We grant you a limited, revocable, non-sublicensable license to access and use the Medicules Content solely as necessary to use the Services. You may not copy, modify, distribute, sell, or create derivative works from the Medicules Content except as expressly permitted.",
           },
         ],
       },
@@ -140,7 +140,7 @@ export const terms: LegalTranslations = {
         h: "11. Limitation of Liability",
         blocks: [
           {
-            caps: "TO THE FULLEST EXTENT PERMITTED BY APPLICABLE LAW, MEDBRAINERS AND ITS AFFILIATES SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, PUNITIVE, OR EXEMPLARY DAMAGES, INCLUDING LOSS OF PROFITS, REVENUE, DATA, OR BUSINESS OPPORTUNITIES, ARISING OUT OF OR RELATING TO YOUR USE OF (OR INABILITY TO USE) THE SERVICES.",
+            caps: "TO THE FULLEST EXTENT PERMITTED BY APPLICABLE LAW, Medicules AND ITS AFFILIATES SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, PUNITIVE, OR EXEMPLARY DAMAGES, INCLUDING LOSS OF PROFITS, REVENUE, DATA, OR BUSINESS OPPORTUNITIES, ARISING OUT OF OR RELATING TO YOUR USE OF (OR INABILITY TO USE) THE SERVICES.",
           },
           {
             p: "Our total aggregate liability under these Terms shall not exceed the greater of (a) the amounts you paid us in the twelve (12) months preceding the claim, or (b) one hundred U.S. dollars ($100).",
@@ -154,7 +154,7 @@ export const terms: LegalTranslations = {
         h: "12. Indemnification",
         blocks: [
           {
-            p: "You agree to defend, indemnify, and hold harmless MedBrainers, its affiliates, and their respective officers, directors, employees, and agents from and against any claims, damages, losses, liabilities, and expenses (including reasonable legal fees) arising out of or related to your use of the Services, your Customer Data, the care you provide to patients, your violation of these Terms, or your violation of any law or third-party rights.",
+            p: "You agree to defend, indemnify, and hold harmless Medicules, its affiliates, and their respective officers, directors, employees, and agents from and against any claims, damages, losses, liabilities, and expenses (including reasonable legal fees) arising out of or related to your use of the Services, your Customer Data, the care you provide to patients, your violation of these Terms, or your violation of any law or third-party rights.",
           },
         ],
       },
@@ -198,7 +198,7 @@ export const terms: LegalTranslations = {
   fr: {
     metaTitle: "Conditions d'utilisation",
     metaDescription:
-      "Les conditions qui régissent votre utilisation du site web, de la plateforme de dossiers médicaux électroniques et des services associés de MedBrainers.",
+      "Les conditions qui régissent votre utilisation du site web, de la plateforme de dossiers médicaux électroniques et des services associés de Medicules.",
     title: "Conditions d'utilisation",
     updated: "Dernière mise à jour : 20 octobre 2026",
     sections: [
@@ -206,7 +206,7 @@ export const terms: LegalTranslations = {
         h: "1. Acceptation des Conditions",
         blocks: [
           {
-            p: "Veuillez lire attentivement les présentes Conditions d'utilisation (les « Conditions ») avant d'utiliser le site web, la plateforme de dossiers médicaux électroniques, l'API ou tout service associé de MedBrainers (collectivement, les « Services »).",
+            p: "Veuillez lire attentivement les présentes Conditions d'utilisation (les « Conditions ») avant d'utiliser le site web, la plateforme de dossiers médicaux électroniques, l'API ou tout service associé de Medicules (collectivement, les « Services »).",
           },
           {
             p: "En accédant aux Services ou en les utilisant, vous acceptez d'être juridiquement lié par les présentes Conditions. Si vous n'acceptez pas ces Conditions, n'utilisez pas les Services.",
@@ -220,7 +220,7 @@ export const terms: LegalTranslations = {
         h: "2. Relation avec le Contrat d'abonnement",
         blocks: [
           {
-            p: "Les présentes Conditions régissent principalement l'utilisation du site web public et l'accès gratuit, de démonstration ou d'essai. L'utilisation payante de la plateforme MedBrainers est en outre régie par notre Contrat-cadre d'abonnement (ou tout autre contrat écrit signé entre vous et MedBrainers). En cas de conflit entre les présentes Conditions et un Contrat-cadre d'abonnement signé, le contrat signé prévaut.",
+            p: "Les présentes Conditions régissent principalement l'utilisation du site web public et l'accès gratuit, de démonstration ou d'essai. L'utilisation payante de la plateforme Medicules est en outre régie par notre Contrat-cadre d'abonnement (ou tout autre contrat écrit signé entre vous et Medicules). En cas de conflit entre les présentes Conditions et un Contrat-cadre d'abonnement signé, le contrat signé prévaut.",
           },
         ],
       },
@@ -245,7 +245,7 @@ export const terms: LegalTranslations = {
             p: "Vous conservez tous les droits, titres et intérêts sur les données, contenus et informations que vous téléversez ou transmettez via les Services (les « Données du Client »), y compris les dossiers des patients, les données de facturation et de remboursement, ainsi que les dossiers de laboratoire et de pharmacie.",
           },
           {
-            p: "Vous accordez à MedBrainers une licence limitée et non exclusive pour héberger, traiter, transmettre et afficher les Données du Client uniquement dans la mesure nécessaire à la fourniture et à l'amélioration des Services, conformément à notre Déclaration de confidentialité et à tout Avenant relatif au traitement des données. Nous ne traitons les données des Patients que sur vos instructions.",
+            p: "Vous accordez à Medicules une licence limitée et non exclusive pour héberger, traiter, transmettre et afficher les Données du Client uniquement dans la mesure nécessaire à la fourniture et à l'amélioration des Services, conformément à notre Déclaration de confidentialité et à tout Avenant relatif au traitement des données. Nous ne traitons les données des Patients que sur vos instructions.",
           },
           {
             p: "En tant que prestataire de santé, vous êtes le responsable du traitement des données des Patients. Il vous appartient de disposer d'une base légale pour les collecter et les utiliser, de fournir aux patients les informations requises par la loi et de répondre à leurs demandes concernant leurs dossiers.",
@@ -256,7 +256,7 @@ export const terms: LegalTranslations = {
         h: "5. Responsabilités en matière de santé et de pratique clinique",
         blocks: [
           {
-            p: "MedBrainers est un outil logiciel destiné à gérer les dossiers de santé et les opérations de soins. Il ne fournit ni conseil médical, ni diagnostic, ni traitement, et ne remplace pas le jugement clinique d'un professionnel.",
+            p: "Medicules est un outil logiciel destiné à gérer les dossiers de santé et les opérations de soins. Il ne fournit ni conseil médical, ni diagnostic, ni traitement, et ne remplace pas le jugement clinique d'un professionnel.",
           },
           {
             ul: [
@@ -290,7 +290,7 @@ export const terms: LegalTranslations = {
         h: "7. Services et intégrations tiers",
         blocks: [
           {
-            p: "Les Services peuvent vous permettre de connecter des outils tiers tels que des passerelles de paiement, des canaux de messagerie, des systèmes de HMO et des équipements de laboratoire. Lorsque vous utilisez une intégration tierce, vous interagissez avec ce tiers et non avec MedBrainers. Nous ne sommes pas responsables de la disponibilité, de l'exactitude, des pratiques de confidentialité ou du contenu de tout service tiers.",
+            p: "Les Services peuvent vous permettre de connecter des outils tiers tels que des passerelles de paiement, des canaux de messagerie, des systèmes de HMO et des équipements de laboratoire. Lorsque vous utilisez une intégration tierce, vous interagissez avec ce tiers et non avec Medicules. Nous ne sommes pas responsables de la disponibilité, de l'exactitude, des pratiques de confidentialité ou du contenu de tout service tiers.",
           },
           {
             p: "Votre utilisation des services tiers est régie exclusivement par leurs propres conditions et politiques de confidentialité. Les paiements effectués via une passerelle de paiement sont traités par le prestataire concerné.",
@@ -312,10 +312,10 @@ export const terms: LegalTranslations = {
         h: "9. Propriété intellectuelle et contenu",
         blocks: [
           {
-            p: "Les Services, y compris l'ensemble des logiciels, textes, graphismes, logos et autres contenus (le « Contenu MedBrainers »), appartiennent à MedBrainers ou à ses concédants de licence et sont protégés par le droit d'auteur, le droit des marques et d'autres lois.",
+            p: "Les Services, y compris l'ensemble des logiciels, textes, graphismes, logos et autres contenus (le « Contenu Medicules »), appartiennent à Medicules ou à ses concédants de licence et sont protégés par le droit d'auteur, le droit des marques et d'autres lois.",
           },
           {
-            p: "Nous vous accordons une licence limitée, révocable et non sous-licenciable pour accéder au Contenu MedBrainers et l'utiliser uniquement dans la mesure nécessaire à l'utilisation des Services. Vous ne pouvez pas copier, modifier, distribuer, vendre ou créer des œuvres dérivées à partir du Contenu MedBrainers, sauf autorisation expresse.",
+            p: "Nous vous accordons une licence limitée, révocable et non sous-licenciable pour accéder au Contenu Medicules et l'utiliser uniquement dans la mesure nécessaire à l'utilisation des Services. Vous ne pouvez pas copier, modifier, distribuer, vendre ou créer des œuvres dérivées à partir du Contenu Medicules, sauf autorisation expresse.",
           },
         ],
       },
@@ -334,7 +334,7 @@ export const terms: LegalTranslations = {
         h: "11. Limitation de responsabilité",
         blocks: [
           {
-            caps: "DANS TOUTE LA MESURE PERMISE PAR LA LOI APPLICABLE, MEDBRAINERS ET SES AFFILIÉS NE SAURAIENT ÊTRE TENUS RESPONSABLES DE TOUT DOMMAGE INDIRECT, ACCESSOIRE, SPÉCIAL, CONSÉCUTIF, PUNITIF OU EXEMPLAIRE, Y COMPRIS LA PERTE DE BÉNÉFICES, DE REVENUS, DE DONNÉES OU D'OPPORTUNITÉS COMMERCIALES, DÉCOULANT DE VOTRE UTILISATION DES SERVICES (OU DE VOTRE IMPOSSIBILITÉ DE LES UTILISER) OU Y ÉTANT LIÉS.",
+            caps: "DANS TOUTE LA MESURE PERMISE PAR LA LOI APPLICABLE, Medicules ET SES AFFILIÉS NE SAURAIENT ÊTRE TENUS RESPONSABLES DE TOUT DOMMAGE INDIRECT, ACCESSOIRE, SPÉCIAL, CONSÉCUTIF, PUNITIF OU EXEMPLAIRE, Y COMPRIS LA PERTE DE BÉNÉFICES, DE REVENUS, DE DONNÉES OU D'OPPORTUNITÉS COMMERCIALES, DÉCOULANT DE VOTRE UTILISATION DES SERVICES (OU DE VOTRE IMPOSSIBILITÉ DE LES UTILISER) OU Y ÉTANT LIÉS.",
           },
           {
             p: "Notre responsabilité totale cumulée au titre des présentes Conditions ne pourra excéder le plus élevé des montants suivants : (a) les sommes que vous nous avez versées au cours des douze (12) mois précédant la réclamation, ou (b) cent dollars américains (100 $ US).",
@@ -348,7 +348,7 @@ export const terms: LegalTranslations = {
         h: "12. Indemnisation",
         blocks: [
           {
-            p: "Vous vous engagez à défendre, indemniser et dégager de toute responsabilité MedBrainers, ses affiliés ainsi que leurs dirigeants, administrateurs, employés et agents respectifs à l'égard de toute réclamation, tout dommage, toute perte, toute responsabilité et tous frais (y compris les honoraires juridiques raisonnables) découlant de votre utilisation des Services, de vos Données du Client, des soins que vous dispensez aux patients, de votre violation des présentes Conditions ou de votre violation de toute loi ou de tout droit de tiers, ou s'y rapportant.",
+            p: "Vous vous engagez à défendre, indemniser et dégager de toute responsabilité Medicules, ses affiliés ainsi que leurs dirigeants, administrateurs, employés et agents respectifs à l'égard de toute réclamation, tout dommage, toute perte, toute responsabilité et tous frais (y compris les honoraires juridiques raisonnables) découlant de votre utilisation des Services, de vos Données du Client, des soins que vous dispensez aux patients, de votre violation des présentes Conditions ou de votre violation de toute loi ou de tout droit de tiers, ou s'y rapportant.",
           },
         ],
       },

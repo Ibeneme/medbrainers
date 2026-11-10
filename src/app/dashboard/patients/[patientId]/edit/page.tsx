@@ -9,7 +9,7 @@ import type { Gender } from "@/api/types";
 import { fetchPatient, updatePatient } from "@/api/slices";
 import { useTheme } from "@/contexts/theme-context";
 import { PRIMARY_COLOR, getUI } from "@/constants/colors";
-import { CustomDropdown } from "@/components/ui";
+import { CustomDropdown } from "@/components/ui/items";
 import DarkBlurOverlayLoader from "@/components/atoms/loaders/DarkBlurOverlayLoader";
 import { CustomPopupDatePicker } from "@/components/ui/items";
 
@@ -25,6 +25,7 @@ export default function EditPatientPage() {
   const isDark = theme === "dark";
   const border = isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.08)";
   const ui = getUI(isDark, colors, border);
+  const dd = { border: ui.border };
 
   const { activeFacilityId } = useAppSelector((s) => s.facilities);
   const { current, detailLoading, saving } = useAppSelector((s) => s.patients);
@@ -41,6 +42,7 @@ export default function EditPatientPage() {
   const [editBloodGroup, setEditBloodGroup] = useState("");
   const [editCountryCode, setEditCountryCode] = useState("");
   const [editPhone, setEditPhone] = useState("");
+  const [editEmail, setEditEmail] = useState("");
   const [editNationalId, setEditNationalId] = useState("");
   const [editStatus, setEditStatus] = useState("active");
   const [editNotes, setEditNotes] = useState("");
@@ -65,6 +67,7 @@ export default function EditPatientPage() {
       setEditBloodGroup(current.bloodGroup || "");
       setEditCountryCode(current.countryCode || "");
       setEditPhone(current.phone || "");
+      setEditEmail(current.email || "");
       setEditNationalId(current.nationalId || "");
       setEditStatus(current.status || "active");
       setEditNotes(current.notes || "");
@@ -84,6 +87,11 @@ export default function EditPatientPage() {
     e.preventDefault();
     if (!activeFacilityId || !patientId) return;
 
+    if (!editEmail.trim()) {
+      notify("Email address is compulsory.", true);
+      return;
+    }
+
     try {
       const payload = {
         firstName: editFirstName,
@@ -94,6 +102,7 @@ export default function EditPatientPage() {
         bloodGroup: editBloodGroup || undefined,
         countryCode: editCountryCode || undefined,
         phone: editPhone || undefined,
+        email: editEmail.trim(),
         nationalId: editNationalId || undefined,
         status: editStatus,
         notes: editNotes || undefined,
@@ -231,9 +240,6 @@ export default function EditPatientPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium opacity-80">
-                    Date of Birth
-                  </label>
                   <CustomPopupDatePicker
                     label="Date of Birth"
                     value={editDob}
@@ -253,9 +259,8 @@ export default function EditPatientPage() {
                     { value: "unknown", label: "Unknown" },
                   ]}
                   onChange={setEditGender}
-                  isDark={isDark}
-                  colors={colors}
-                  border={border}
+                  placeholder="Select gender..."
+                  {...dd}
                 />
               </div>
             </div>
@@ -307,6 +312,21 @@ export default function EditPatientPage() {
                 </div>
               </div>
 
+              <div>
+                <label className="mb-1.5 block text-xs font-medium opacity-80">
+                  Email Address *
+                </label>
+                <input
+                  required
+                  type="email"
+                  value={editEmail}
+                  onChange={(e) => setEditEmail(e.target.value)}
+                  placeholder="Email address"
+                  className={inputCls}
+                  style={inputStyle}
+                />
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="mb-1.5 block text-xs font-medium opacity-80">
@@ -330,9 +350,8 @@ export default function EditPatientPage() {
                     { value: "deceased", label: "Deceased" },
                   ]}
                   onChange={setEditStatus}
-                  isDark={isDark}
-                  colors={colors}
-                  border={border}
+                  placeholder="Select status..."
+                  {...dd}
                 />
               </div>
 

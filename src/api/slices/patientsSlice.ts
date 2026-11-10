@@ -658,6 +658,14 @@ export const addConsultation = createAsyncThunk(
         notes?: string;
         summary?: string;
         status?: 'open' | 'completed';
+        admission?: {
+          priority?: 'routine' | 'urgent' | 'emergency';
+          reason: string;
+          admittingDiagnosis?: string;
+          preferredWardType?: string;
+          isolationRequired?: boolean;
+          notes?: string;
+        };
       };
       files?: File[] | FileList;
     },

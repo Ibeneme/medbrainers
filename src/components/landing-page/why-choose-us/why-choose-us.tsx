@@ -76,7 +76,8 @@ export default function WhyChooseUsPage() {
         visionLabel="/Why Choose Us/"
         visionLead="is built around the people who use it. Whether it's a single clinic or a full hospital, we focus on what makes a system actually work in daily practice."
         visionMuted="Security, training, support and migration that don't get in your way."
-        heroImage="/assets/landing-page-images/team/ikenna.svg"
+        // heroImage="/assets/landing-page-images/team/ikenna.svg"
+        heroImage="/assets/landing-page-images/home/hero_a.svg"
         heroImageAlt="Ikenna - Founder & Team"
         items={items}
         closing={{

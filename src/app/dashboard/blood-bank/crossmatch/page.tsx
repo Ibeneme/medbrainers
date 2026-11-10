@@ -1,125 +1,43 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { HeartPulse, Plus, RefreshCw } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/api/hooks";
-import { fetchMyFacilities } from "@/api/slices";
-import api from "@/api/services";
-import { PRIMARY_COLOR } from "@/constants/colors";
+import { GitCompare, Plus } from "lucide-react";
+import { fetchCrossmatches } from "@/api/slices";
 import {
-  ModuleShell,
-  personLabel,
-  StatusPill,
-  EmptyState,
-  useInputStyles,
-  ActionLink,
-} from "@/components/dashboard/ModuleShell";
+  BASE, Btn, ENUMS, Empty, GroupBadge, Header, Loader, Page, Pill, Pills, PRODUCT_LABEL, RowLink, SectionCard,
+  fmtDateTime, label, nameOf, useBB,
+} from "@/components/blood-bank/bb-ui";
 
-const ENDPOINTS: Record<string, string> = {
-  ambulances: "/emergency/ambulances",
-  critical: "/emergency/critical",
-  catalog: "/labs/catalog",
-  results: "/labs/requests",
-  specimens: "/labs/specimens",
-  prescriptions: "/pharmacy/prescriptions",
-  inventory: "/pharmacy/inventory",
-  dispense: "/pharmacy/prescriptions",
-  controlled: "/pharmacy/controlled",
-  requests: "/radiology/worklist",
-  viewer: "/radiology/worklist",
-  crossmatch: "/blood-bank/inventory",
-  transfusions: "/blood-bank/transfusions",
-  schedule: "/theater/schedule",
-  checklist: "/theater/schedule",
-  recovery: "/theater/recovery",
-  antenatal: "/maternal/antenatal",
-  delivery: "/maternal/deliveries",
-  immunization: "/maternal/immunizations",
-  pediatrics: "/maternal/pediatrics",
-};
-
-export default function ModulePage() {
-  const dispatch = useAppDispatch();
-  const { activeFacilityId } = useAppSelector((s) => s.facilities);
-  const { inputStyle, inputCls, cardCls, ui } = useInputStyles();
-  const [items, setItems] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [msg, setMsg] = useState<string | null>(null);
-
-  useEffect(() => { dispatch(fetchMyFacilities()); }, [dispatch]);
-
-  async function load() {
-    if (!activeFacilityId) return;
-    const ep = ENDPOINTS["crossmatch"] || "";
-    if (!ep) { setItems([]); return; }
-    setLoading(true);
-    setError(null);
-    try {
-      const { data } = await api.get(`/companies/${activeFacilityId}${ep}`);
-      const list = data?.data ?? data ?? [];
-      setItems(Array.isArray(list) ? list : []);
-    } catch (e: any) {
-      setError(e?.response?.data?.message || e?.message || "Failed to load");
-      setItems([]);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => { load(); }, [activeFacilityId]);
-
-  function rowTitle(it: any) {
-    return (
-      it.name || it.procedureName || it.vaccineName || it.vehicleCode || it.unitNumber ||
-      it.drugName || it.barcode || it.modality || it.clinicalDescription ||
-      personLabel(it.patient || it.patientId) || it._id?.slice(-6) || "Record"
-    );
-  }
-
-  function rowDetail(it: any) {
-    const parts = [
-      it.chiefComplaint, it.clinicalIndication, it.batchNumber, it.bloodType,
-      it.theaterRoom, it.specimenType, it.status, it.priority,
-    ].filter(Boolean);
-    return parts.slice(0, 3).join(" · ");
-  }
-
+export default function CrossmatchPage() {
+  const { facilityId, act, bloodBank, activeFacility } = useBB();
+  const [status, setStatus] = useState("active");
+  useEffect(() => {
+    if (facilityId) act(fetchCrossmatches({ facilityId, status: status === "all" ? undefined : status, limit: 200 }), false);
+  }, [facilityId, act, status]);
+  const rows = bloodBank.crossmatches;
   return (
-    <ModuleShell
-      title="Crossmatch requests"
-      subtitle={`${items.length} records`}
-      icon={HeartPulse}
-      loading={loading}
-      actions={
-        <>
-          <ActionLink href="/dashboard/dashboard">Dashboard</ActionLink>
-          <button type="button" onClick={load} className="flex items-center gap-1.5 rounded-full border px-4 py-2.5 text-xs font-semibold" style={{ borderColor: ui.border }}>
-            <RefreshCw size={14} /> Refresh
-          </button>
-        </>
-      }
-    >
-      {msg && <div className="rounded-2xl px-4 py-2 text-xs font-semibold" style={{ backgroundColor: "rgba(37,99,235,0.12)", color: "#2563eb" }}>{msg}</div>}
-      {error && <div className="rounded-2xl px-4 py-2 text-xs font-semibold" style={{ backgroundColor: "rgba(220,38,38,0.12)", color: "#dc2626" }}>{error}</div>}
-
-      <div className={cardCls} style={{ backgroundColor: ui.card, borderColor: ui.border }}>
-        {items.length === 0 ? (
-          <EmptyState text="No records yet. Data will appear when the API returns items for this module." />
-        ) : (
-          <div className="space-y-2">
-            {items.map((it: any) => (
-              <div key={it._id || JSON.stringify(it).slice(0, 20)} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl p-4" style={{ backgroundColor: ui.inner }}>
-                <div className="min-w-0">
-                  <p className="font-semibold text-sm truncate">{rowTitle(it)}</p>
-                  <p className="text-xs opacity-55 truncate">{rowDetail(it)}</p>
+    <Page>
+      <Header icon={<GitCompare size={22} />} title="Crossmatching" subtitle={activeFacility?.name} actions={<Btn href={`${BASE}/crossmatch/new`}><Plus size={16} /> New crossmatch</Btn>} />
+      <SectionCard title="Crossmatches" count={rows.length}>
+        <Pills value={status} onChange={setStatus} options={[{ value: "all", label: "All" }, ...ENUMS.crossmatchStatuses.map((s) => ({ value: s, label: label(s) }))]} />
+        {bloodBank.listLoading && rows.length === 0 ? <Loader /> : rows.length === 0 ? <Empty>No crossmatches found.</Empty> : (
+          <div className="space-y-3">
+            {rows.map((x: any) => (
+              <RowLink key={x._id} href={`${BASE}/crossmatch/${x._id}`}>
+                <div className="grid items-center gap-3 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_auto]">
+                  <div className="min-w-0">
+                    <p className="truncate text-[15px] font-semibold">{nameOf(x.patient)}</p>
+                    <p className="font-mono text-xs opacity-50">{x.crossmatchNumber} · {x.request?.requestNumber}</p>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs opacity-70"><GroupBadge group={x.patientGroup} size="sm" />→<GroupBadge group={x.unitGroup} size="sm" /><span className="font-mono">{x.unitNumber}</span></div>
+                  <p className="text-xs opacity-60">{PRODUCT_LABEL[x.product]} · {label(x.method)}<br />Valid until {fmtDateTime(x.validUntil)}</p>
+                  <div className="flex items-center gap-2"><Pill value={x.result} /><Pill value={x.status} /></div>
                 </div>
-                {it.status && <StatusPill status={String(it.status)} />}
-              </div>
+              </RowLink>
             ))}
           </div>
         )}
-      </div>
-    </ModuleShell>
+      </SectionCard>
+    </Page>
   );
 }

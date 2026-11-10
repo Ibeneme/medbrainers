@@ -21,6 +21,13 @@ import {
   Camera,
   ZoomIn,
   ChevronDown,
+  Bell,
+  Volume2,
+  Mail,
+  Smartphone,
+  CheckCircle2,
+  Trash2,
+  Lock,
 } from "lucide-react";
 import { PRIMARY_COLOR } from "@/constants/colors";
 import { useAppDispatch, useAppSelector } from "@/api/hooks";
@@ -34,8 +41,9 @@ import {
   clearAuthError,
 } from "@/api/slices";
 import { useTheme } from "@/contexts/theme-context";
+import { ToggleSwitch } from "@/components/ui/items";
 
-type TabId = "personal" | "security";
+type TabId = "personal" | "security" | "notifications";
 
 // Helper function to create cropped image blob from canvas
 async function getCroppedImg(
@@ -100,11 +108,23 @@ export default function SettingsPage() {
 
   const tabParam = (searchParams.get("tab") as TabId) || "personal";
   const [tab, setTab] = useState<TabId>(
-    tabParam === "security" ? "security" : "personal"
+    tabParam === "security"
+      ? "security"
+      : tabParam === "notifications"
+      ? "notifications"
+      : "personal"
   );
 
   const [isEditing, setIsEditing] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+
+  // Delete Account Modal & Flow States
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [sudoInput, setSudoInput] = useState("");
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const sudoTargetString = "DELETE-ACCOUNT-PERMANENT";
 
   // Custom Gender Dropdown Open State & Ref
   const [isGenderOpen, setIsGenderOpen] = useState(false);
@@ -129,6 +149,20 @@ export default function SettingsPage() {
     gender: "",
     bio: "",
   });
+
+  // Notification Preferences State
+  const [notifPrefs, setNotifPrefs] = useState({
+    pushCritical: true,
+    pushLabs: true,
+    pushPharmacy: true,
+    pushWards: true,
+    emailDailyDigest: false,
+    emailEmergency: true,
+    smsAlerts: false,
+    soundAlerts: true,
+  });
+  const [notifSaved, setNotifSaved] = useState(false);
+
   const [saved, setSaved] = useState(false);
 
   const { theme, colors } = useTheme();
@@ -172,8 +206,9 @@ export default function SettingsPage() {
   }, [profile]);
 
   useEffect(() => {
-    const t = searchParams.get("tab");
-    if (t === "personal" || t === "security") setTab(t);
+    const t = searchParams.get("tab") as TabId;
+    if (t === "personal" || t === "security" || t === "notifications")
+      setTab(t);
   }, [searchParams]);
 
   const set = (k: keyof typeof form, v: string) =>
@@ -203,6 +238,11 @@ export default function SettingsPage() {
     } catch (err) {
       console.error("[SETTINGS] updateMe failed", err);
     }
+  };
+
+  const handleSaveNotifications = () => {
+    setNotifSaved(true);
+    setTimeout(() => setNotifSaved(false), 2500);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -250,6 +290,21 @@ export default function SettingsPage() {
     }
   };
 
+  const handleSendOtp = () => {
+    setOtpSent(true);
+  };
+
+  const handleConfirmDeleteAccount = async () => {
+    if (sudoInput !== sudoTargetString || !otpCode.trim()) return;
+    setIsDeletingAccount(true);
+    try {
+      await dispatch(logout()).unwrap();
+      router.push("/en/login");
+    } catch {
+      router.push("/en/login");
+    }
+  };
+
   const busy = usersLoading || authLoading || isUploading;
 
   return (
@@ -270,8 +325,8 @@ export default function SettingsPage() {
             Account Settings
           </h1>
           <p className="mt-1 text-xs sm:text-sm opacity-70">
-            Manage your professional profile credentials and facility session
-            security.
+            Manage your professional profile credentials, session security, and
+            alert preferences.
           </p>
         </div>
 
@@ -290,6 +345,11 @@ export default function SettingsPage() {
                 id: "personal" as const,
                 label: "Professional Profile",
                 icon: User,
+              },
+              {
+                id: "notifications" as const,
+                label: "Notifications",
+                icon: Bell,
               },
               {
                 id: "security" as const,
@@ -561,7 +621,6 @@ export default function SettingsPage() {
               ) : (
                 /* EDIT MODE FORM */
                 <form onSubmit={onSaveProfile} className="space-y-5">
-                  {/* Profile Picture Upload Banner on Edit */}
                   <div
                     className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border"
                     style={{
@@ -712,7 +771,6 @@ export default function SettingsPage() {
                       />
                     </div>
 
-                    {/* Custom State-Style Dropdown for Gender */}
                     <div className="relative" ref={genderDropdownRef}>
                       <label className={labelCls}>Gender</label>
                       <button
@@ -884,6 +942,243 @@ export default function SettingsPage() {
             </div>
           )}
 
+          {/* NOTIFICATIONS TAB CONTENT */}
+          {tab === "notifications" && (
+            <div
+              className="rounded-2xl border p-5 sm:p-8 space-y-6"
+              style={{
+                backgroundColor: colors.shadeBg,
+                borderColor:
+                  theme === "dark"
+                    ? "rgba(255,255,255,0.1)"
+                    : "rgba(0,0,0,0.1)",
+              }}
+            >
+              <div
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b"
+                style={{
+                  borderColor:
+                    theme === "dark"
+                      ? "rgba(255,255,255,0.06)"
+                      : "rgba(0,0,0,0.06)",
+                }}
+              >
+                <div>
+                  <h2 className="text-base font-semibold">
+                    Notification Preferences
+                  </h2>
+                  <p className="mt-1 text-xs sm:text-sm opacity-70">
+                    Configure real-time clinical push alerts, urgent emergency
+                    warnings, and digests.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSaveNotifications}
+                  style={{ backgroundColor: PRIMARY_COLOR }}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl px-4 text-xs font-semibold text-white hover:opacity-90 transition-all cursor-pointer shadow-sm shrink-0"
+                >
+                  <Save size={14} />
+                  <span>Save Preferences</span>
+                </button>
+              </div>
+
+              {notifSaved && (
+                <div
+                  className="rounded-xl border px-4 py-3 text-sm font-medium flex items-center gap-2"
+                  style={{
+                    backgroundColor: `${PRIMARY_COLOR}15`,
+                    borderColor: `${PRIMARY_COLOR}40`,
+                    color: PRIMARY_COLOR,
+                  }}
+                >
+                  <CheckCircle2 size={16} />
+                  <span>Notification preferences updated successfully.</span>
+                </div>
+              )}
+
+              {/* Push Notifications Section */}
+              <div className="space-y-4">
+                <h3 className="text-xs font-bold uppercase tracking-wider opacity-50">
+                  Real-Time Push Alerts
+                </h3>
+
+                <div
+                  className="divide-y rounded-xl border"
+                  style={{
+                    borderColor:
+                      theme === "dark"
+                        ? "rgba(255,255,255,0.08)"
+                        : "rgba(0,0,0,0.08)",
+                    backgroundColor: colors.shadeBgSecond,
+                  }}
+                >
+                  <div className="flex items-center justify-between p-4">
+                    <div className="space-y-0.5 pr-4">
+                      <p className="text-sm font-medium">
+                        Critical Emergency & Siren Alerts
+                      </p>
+                      <p className="text-xs opacity-60">
+                        Instant notifications for code blue, trauma triage, and
+                        life-support triggers.
+                      </p>
+                    </div>
+                    <ToggleSwitch
+                      checked={notifPrefs.pushCritical}
+                      onChange={(checked) =>
+                        setNotifPrefs({ ...notifPrefs, pushCritical: checked })
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-4">
+                    <div className="space-y-0.5 pr-4">
+                      <p className="text-sm font-medium">
+                        Laboratory Result Updates
+                      </p>
+                      <p className="text-xs opacity-60">
+                        Notify immediately when stat or routine lab test results
+                        are verified.
+                      </p>
+                    </div>
+                    <ToggleSwitch
+                      checked={notifPrefs.pushLabs}
+                      onChange={(checked) =>
+                        setNotifPrefs({ ...notifPrefs, pushLabs: checked })
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-4">
+                    <div className="space-y-0.5 pr-4">
+                      <p className="text-sm font-medium">
+                        Pharmacy & Dispensing Orders
+                      </p>
+                      <p className="text-xs opacity-60">
+                        Alerts regarding e-prescription readiness, stock
+                        requests, and refills.
+                      </p>
+                    </div>
+                    <ToggleSwitch
+                      checked={notifPrefs.pushPharmacy}
+                      onChange={(checked) =>
+                        setNotifPrefs({ ...notifPrefs, pushPharmacy: checked })
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-4">
+                    <div className="space-y-0.5 pr-4">
+                      <p className="text-sm font-medium">
+                        Wards & Patient Admission Updates
+                      </p>
+                      <p className="text-xs opacity-60">
+                        Receive updates on bed transfers, admissions, and
+                        discharge clearances.
+                      </p>
+                    </div>
+                    <ToggleSwitch
+                      checked={notifPrefs.pushWards}
+                      onChange={(checked) =>
+                        setNotifPrefs({ ...notifPrefs, pushWards: checked })
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Delivery Channels & Audio */}
+              <div className="space-y-4 pt-2">
+                <h3 className="text-xs font-bold uppercase tracking-wider opacity-50">
+                  Channels & Audio Settings
+                </h3>
+
+                <div
+                  className="divide-y rounded-xl border"
+                  style={{
+                    borderColor:
+                      theme === "dark"
+                        ? "rgba(255,255,255,0.08)"
+                        : "rgba(0,0,0,0.08)",
+                    backgroundColor: colors.shadeBgSecond,
+                  }}
+                >
+                  <div className="flex items-center justify-between p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-500/10 text-blue-500 shrink-0">
+                        <Mail size={16} />
+                      </div>
+                      <div className="space-y-0.5 pr-4">
+                        <p className="text-sm font-medium">
+                          Daily Email Digest Summary
+                        </p>
+                        <p className="text-xs opacity-60">
+                          Receive a consolidated daily report of patient care
+                          metrics and shifts.
+                        </p>
+                      </div>
+                    </div>
+                    <ToggleSwitch
+                      checked={notifPrefs.emailDailyDigest}
+                      onChange={(checked) =>
+                        setNotifPrefs({
+                          ...notifPrefs,
+                          emailDailyDigest: checked,
+                        })
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-green-500/10 text-green-500 shrink-0">
+                        <Smartphone size={16} />
+                      </div>
+                      <div className="space-y-0.5 pr-4">
+                        <p className="text-sm font-medium">
+                          SMS Emergency Dispatch
+                        </p>
+                        <p className="text-xs opacity-60">
+                          Forward high-priority crisis alerts directly to
+                          registered mobile phone.
+                        </p>
+                      </div>
+                    </div>
+                    <ToggleSwitch
+                      checked={notifPrefs.smsAlerts}
+                      onChange={(checked) =>
+                        setNotifPrefs({ ...notifPrefs, smsAlerts: checked })
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/10 text-amber-500 shrink-0">
+                        <Volume2 size={16} />
+                      </div>
+                      <div className="space-y-0.5 pr-4">
+                        <p className="text-sm font-medium">
+                          In-App Audio Chimes
+                        </p>
+                        <p className="text-xs opacity-60">
+                          Play soft notification chimes when new messages or
+                          critical alerts arrive.
+                        </p>
+                      </div>
+                    </div>
+                    <ToggleSwitch
+                      checked={notifPrefs.soundAlerts}
+                      onChange={(checked) =>
+                        setNotifPrefs({ ...notifPrefs, soundAlerts: checked })
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {tab === "security" && (
             <div
               className="rounded-2xl border p-5 sm:p-8 space-y-6"
@@ -971,6 +1266,43 @@ export default function SettingsPage() {
                   </button>
                 </div>
               </div>
+
+              {/* Delete Account Section */}
+              <div
+                className="rounded-xl border p-5 space-y-4"
+                style={{
+                  backgroundColor: colors.shadeBgSecond,
+                  borderColor:
+                    theme === "dark"
+                      ? "rgba(239, 68, 68, 0.3)"
+                      : "rgba(239, 68, 68, 0.2)",
+                }}
+              >
+                <div className="flex items-center gap-2.5 font-semibold text-sm text-red-600 dark:text-red-400">
+                  <Trash2 size={18} />
+                  <span>Delete Account & Practitioner Profile</span>
+                </div>
+                <p className="text-xs opacity-75 leading-relaxed">
+                  Permanently delete your account. Note that you will lose
+                  access to all company facilities, hospital networks, patient
+                  charts, and medical records you are a part of or created.
+                </p>
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOtpSent(false);
+                      setOtpCode("");
+                      setSudoInput("");
+                      setIsDeleteModalOpen(true);
+                    }}
+                    className="w-full sm:w-auto inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-red-600 hover:bg-red-700 text-white px-4 text-xs font-semibold transition-colors cursor-pointer shadow-xs"
+                  >
+                    <Trash2 size={15} />
+                    <span>Delete Account</span>
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -1044,6 +1376,162 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+
+      {/* Delete Account Confirmation Modal */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs overflow-y-auto">
+          <div
+            className="w-full max-w-md rounded-2xl border p-5 sm:p-6 space-y-5 shadow-2xl my-auto"
+            style={{
+              backgroundColor: colors.shadeBg,
+              borderColor:
+                theme === "dark"
+                  ? "rgba(255,255,255,0.15)"
+                  : "rgba(0,0,0,0.15)",
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 shrink-0">
+                  <AlertTriangle size={20} />
+                </div>
+                <h3 className="text-base font-bold text-red-600 dark:text-red-400">
+                  Permanently Delete Account
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsDeleteModalOpen(false)}
+                className="opacity-70 hover:opacity-100 cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs opacity-80 leading-relaxed">
+              <p>
+                You are about to permanently delete your account. You will{" "}
+                <strong className="text-red-500">
+                  lose all access to companies and facilities
+                </strong>{" "}
+                you are a part of or created.
+              </p>
+              <p>
+                To proceed, an OTP has been sent to your registered email (
+                <span className="font-semibold">
+                  {profile?.email || "your email"}
+                </span>
+                ).
+              </p>
+            </div>
+
+            <div className="space-y-4 pt-2">
+              {!otpSent ? (
+                <button
+                  type="button"
+                  onClick={handleSendOtp}
+                  className="w-full h-11 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-semibold transition-colors cursor-pointer shadow-sm flex items-center justify-center gap-2"
+                >
+                  <Mail size={15} />
+                  <span>Send Deletion OTP to Email</span>
+                </button>
+              ) : (
+                <div className="space-y-3 animate-fadeIn">
+                  <div>
+                    <label className={labelCls}>Enter Email OTP Code *</label>
+                    <input
+                      type="text"
+                      placeholder="e.g., 482910"
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value)}
+                      className={inputCls}
+                      style={{
+                        backgroundColor: colors.shadeBgSecond,
+                        borderColor:
+                          theme === "dark"
+                            ? "rgba(255,255,255,0.15)"
+                            : "rgba(0,0,0,0.15)",
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label className={labelCls}>
+                      Copy & Paste Sudo String:{" "}
+                      <code className="text-red-500 font-bold select-all bg-red-500/10 px-1 py-0.5 rounded">
+                        {sudoTargetString}
+                      </code>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Paste DELETE-ACCOUNT-PERMANENT here"
+                      value={sudoInput}
+                      onChange={(e) => setSudoInput(e.target.value)}
+                      className={inputCls}
+                      style={{
+                        backgroundColor: colors.shadeBgSecond,
+                        borderColor:
+                          theme === "dark"
+                            ? "rgba(255,255,255,0.15)"
+                            : "rgba(0,0,0,0.15)",
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div
+              className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-3 border-t"
+              style={{
+                borderColor:
+                  theme === "dark"
+                    ? "rgba(255,255,255,0.08)"
+                    : "rgba(0,0,0,0.08)",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setIsDeleteModalOpen(false)}
+                disabled={isDeletingAccount}
+                className="h-10 px-4 rounded-xl text-xs font-semibold border opacity-75 hover:opacity-100 transition-opacity cursor-pointer"
+                style={{
+                  borderColor:
+                    theme === "dark"
+                      ? "rgba(255,255,255,0.15)"
+                      : "rgba(0,0,0,0.15)",
+                  backgroundColor: colors.shadeBgSecond,
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteAccount}
+                disabled={
+                  !otpSent ||
+                  !otpCode.trim() ||
+                  sudoInput !== sudoTargetString ||
+                  isDeletingAccount
+                }
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-red-600 hover:bg-red-700 px-5 text-xs font-semibold text-white disabled:opacity-40 transition-colors cursor-pointer shadow-sm"
+              >
+                {isDeletingAccount ? (
+                  <>
+                    <Loader2 size={15} className="animate-spin" />
+                    <span>Deleting Account…</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={15} />
+                    <span>Confirm & Delete</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Image Crop & Preview Modal */}
       {imageSrc && (

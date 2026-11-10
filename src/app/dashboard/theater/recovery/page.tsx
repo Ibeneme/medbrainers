@@ -1,125 +1,90 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Scissors, Plus, RefreshCw } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/api/hooks";
-import { fetchMyFacilities } from "@/api/slices";
-import api from "@/api/services";
-import { PRIMARY_COLOR } from "@/constants/colors";
-import {
-  ModuleShell,
-  personLabel,
-  StatusPill,
-  EmptyState,
-  useInputStyles,
-  ActionLink,
-} from "@/components/dashboard/ModuleShell";
+import { Activity } from "lucide-react";
+import { useAppDispatch } from "@/api/hooks";
+import { fetchTheaterRecords } from "@/api/slices/theaterSlice";
+import { Banner, Btn, Empty, Header, Loader, Page, Pill, RowLink, SectionCard, TBASE, fmtDateTime, fmtDuration, minutesBetween, nameOf, patientLabel, roomLabel, useSchedule } from "@/components/theater/th-ui";
 
-const ENDPOINTS: Record<string, string> = {
-  ambulances: "/emergency/ambulances",
-  critical: "/emergency/critical",
-  catalog: "/labs/catalog",
-  results: "/labs/requests",
-  specimens: "/labs/specimens",
-  prescriptions: "/pharmacy/prescriptions",
-  inventory: "/pharmacy/inventory",
-  dispense: "/pharmacy/prescriptions",
-  controlled: "/pharmacy/controlled",
-  requests: "/radiology/worklist",
-  viewer: "/radiology/worklist",
-  crossmatch: "/blood-bank/crossmatch",
-  transfusions: "/blood-bank/transfusions",
-  schedule: "/theater/schedule",
-  checklist: "/theater/schedule",
-  recovery: "/theater/recovery",
-  antenatal: "/maternal/antenatal",
-  delivery: "/maternal/deliveries",
-  immunization: "/maternal/immunizations",
-  pediatrics: "/maternal/pediatrics",
-};
-
-export default function ModulePage() {
+export default function RecoveryPage() {
+  const { facilityId, theater, activeFacility, cases } = useSchedule();
   const dispatch = useAppDispatch();
-  const { activeFacilityId } = useAppSelector((s) => s.facilities);
-  const { inputStyle, inputCls, cardCls, ui } = useInputStyles();
-  const [items, setItems] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [msg, setMsg] = useState<string | null>(null);
+  const [missing, setMissing] = useState(false);
 
-  useEffect(() => { dispatch(fetchMyFacilities()); }, [dispatch]);
+  useEffect(() => {
+    if (!facilityId) return;
+    setMissing(false);
+    const load = () => dispatch(fetchTheaterRecords({ facilityId, kind: "recovery" })).unwrap().catch(() => setMissing(true));
+    load();
+    const t = setInterval(load, 60000);
+    return () => clearInterval(t);
+  }, [facilityId, dispatch]);
 
-  async function load() {
-    if (!activeFacilityId) return;
-    const ep = ENDPOINTS["recovery"] || "";
-    if (!ep) { setItems([]); return; }
-    setLoading(true);
-    setError(null);
-    try {
-      const { data } = await api.get(`/companies/${activeFacilityId}${ep}`);
-      const list = data?.data ?? data ?? [];
-      setItems(Array.isArray(list) ? list : []);
-    } catch (e: any) {
-      setError(e?.response?.data?.message || e?.message || "Failed to load");
-      setItems([]);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => { load(); }, [activeFacilityId]);
-
-  function rowTitle(it: any) {
-    return (
-      it.name || it.procedureName || it.vaccineName || it.vehicleCode || it.unitNumber ||
-      it.drugName || it.barcode || it.modality || it.clinicalDescription ||
-      personLabel(it.patient || it.patientId) || it._id?.slice(-6) || "Record"
-    );
-  }
-
-  function rowDetail(it: any) {
-    const parts = [
-      it.chiefComplaint, it.clinicalIndication, it.batchNumber, it.bloodType,
-      it.theaterRoom, it.specimenType, it.status, it.priority,
-    ].filter(Boolean);
-    return parts.slice(0, 3).join(" · ");
-  }
+  const records: any[] = theater.records.recovery || [];
+  const active = records.filter((r) => !r.dischargedAt);
+  const done = records.filter((r) => r.dischargedAt).slice(0, 20);
+  const inTheatre = cases.filter((c) => c.status === "in-theatre");
+  const recoveryCases = cases.filter((c) => c.status === "recovery");
 
   return (
-    <ModuleShell
-      title="Post-op recovery"
-      subtitle={`${items.length} records`}
-      icon={Scissors}
-      loading={loading}
-      actions={
-        <>
-          <ActionLink href="/dashboard/dashboard">Dashboard</ActionLink>
-          <button type="button" onClick={load} className="flex items-center gap-1.5 rounded-full border px-4 py-2.5 text-xs font-semibold" style={{ borderColor: ui.border }}>
-            <RefreshCw size={14} /> Refresh
-          </button>
-        </>
-      }
-    >
-      {msg && <div className="rounded-2xl px-4 py-2 text-xs font-semibold" style={{ backgroundColor: "rgba(37,99,235,0.12)", color: "#2563eb" }}>{msg}</div>}
-      {error && <div className="rounded-2xl px-4 py-2 text-xs font-semibold" style={{ backgroundColor: "rgba(220,38,38,0.12)", color: "#dc2626" }}>{error}</div>}
+    <Page>
+      <Header icon={<Activity size={22} />} title="Recovery Room (PACU)" subtitle={activeFacility?.name} actions={<Btn href={`${TBASE}/recovery/new`}>Move patient to recovery</Btn>} />
 
-      <div className={cardCls} style={{ backgroundColor: ui.card, borderColor: ui.border }}>
-        {items.length === 0 ? (
-          <EmptyState text="No records yet. Data will appear when the API returns items for this module." />
-        ) : (
-          <div className="space-y-2">
-            {items.map((it: any) => (
-              <div key={it._id || JSON.stringify(it).slice(0, 20)} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl p-4" style={{ backgroundColor: ui.inner }}>
-                <div className="min-w-0">
-                  <p className="font-semibold text-sm truncate">{rowTitle(it)}</p>
-                  <p className="text-xs opacity-55 truncate">{rowDetail(it)}</p>
+      <>
+        {inTheatre.length === 0 ? <Empty>No patients are currently in theatre.</Empty> : (
+          <div className="space-y-3">
+            {inTheatre.map((c) => (
+              <RowLink key={c._id} href={`${TBASE}/recovery/new?caseId=${c._id}`}>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="min-w-0"><p className="truncate text-[15px] font-semibold">{patientLabel(c.patient)}</p><p className="truncate text-xs opacity-55">{c.procedureName} · {roomLabel(c.room)}</p></div>
+                  <Pill value={c.status} />
                 </div>
-                {it.status && <StatusPill status={String(it.status)} />}
-              </div>
+              </RowLink>
             ))}
           </div>
         )}
-      </div>
-    </ModuleShell>
+      </>
+
+      <>
+        {missing ? (
+          <>
+            <Banner tone="info">Showing cases marked “recovery”. Add the optional read endpoints on the server to discharge from this page (server/theater-read-endpoints.patch.md).</Banner>
+            {recoveryCases.length === 0 ? <Empty>No patients in recovery.</Empty> : (
+              <div className="space-y-3">{recoveryCases.map((c) => (
+                <RowLink key={c._id} href={`${TBASE}/schedule/${c._id}`}><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-[15px] font-semibold">{patientLabel(c.patient)}</p><p className="text-xs opacity-55">{c.procedureName}</p></div><Pill value="recovery" /></div></RowLink>
+              ))}</div>
+            )}
+          </>
+        ) : theater.listLoading && records.length === 0 ? <Loader /> : active.length === 0 ? <Empty>No patients in recovery.</Empty> : (
+          <div className="space-y-3">
+            {active.map((r) => (
+              <RowLink key={r._id} href={`${TBASE}/recovery/${r._id}/discharge`}>
+                <div className="grid items-center gap-3 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_auto]">
+                  <div className="min-w-0"><p className="truncate text-[15px] font-semibold">{patientLabel(r.patient)}</p><p className="truncate text-xs opacity-55">{r.theatreCase?.procedureName}</p></div>
+                  <p className="text-xs opacity-60">Arrived {fmtDateTime(r.arrivedAt)}<br />In recovery {fmtDuration(minutesBetween(r.arrivedAt))} · nurse {nameOf(r.nurse)}</p>
+                  <span className="text-xs font-semibold opacity-70">Discharge</span>
+                </div>
+              </RowLink>
+            ))}
+          </div>
+        )}
+      </>
+
+      {!missing && (
+        <>
+          {done.length === 0 ? <Empty>No discharges yet.</Empty> : (
+            <div className="space-y-3">{done.map((r) => (
+              <RowLink key={r._id} href={`${TBASE}/schedule/${typeof r.theatreCase === "object" ? r.theatreCase._id : r.theatreCase}`}>
+                <div className="grid items-center gap-3 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_auto]">
+                  <p className="truncate text-[15px] font-semibold">{patientLabel(r.patient)}</p>
+                  <p className="text-xs opacity-60">Stayed {fmtDuration(minutesBetween(r.arrivedAt, r.dischargedAt))} · Aldrete {r.aldreteScore ?? "—"} · pain {r.painScore ?? "—"}</p>
+                  <p className="text-xs opacity-60">{fmtDateTime(r.dischargedAt)}</p>
+                </div>
+              </RowLink>
+            ))}</div>
+          )}
+        </>
+      )}
+    </Page>
   );
 }

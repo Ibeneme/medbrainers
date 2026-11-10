@@ -36,12 +36,12 @@ export default function Home() {
       <FeatureSlider />
       <EmrImportSection />
       <DnaSection />
-
+      <FeatureSlider />
       <MedBrainersIntro />
       <EnterpriseSupportSection />
       <HealthMeetsAI />
       <Testimonials />
-      <MedBrainersMosaic /> 
+      <MedBrainersMosaic />
       {/* <Countdown /> */}
     </div>
   );

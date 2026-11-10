@@ -19,9 +19,6 @@ import {
   UserCheck,
   AlertTriangle,
   UserMinus,
-  ChevronDown,
-  Edit2,
-  Save,
   Phone,
   MapPin,
   Upload,
@@ -29,6 +26,8 @@ import {
   Trash2,
   Info,
   Send,
+  Edit2,
+  Save,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/api/hooks";
 import {
@@ -40,21 +39,19 @@ import {
   fetchOutgoingInvites,
   resendFacilityInvite,
   retractFacilityInvite,
-  switchFacility,
-  clearFacilitiesError,
-  clearCurrentMemberDetail,
   updateFacility,
   uploadFacilityLogo,
   updateFacilityMember,
   removeFacilityMember,
   leaveFacility,
   transferFacilityOwnership,
+  clearFacilitiesError,
+  clearCurrentMemberDetail,
 } from "@/api/slices";
 import {
   FACILITY_ADMIN_ROLES,
   FACILITY_ROLES,
   facilityIdOf,
-  facilityNameOf,
   formatRole,
   type UserRole,
   type FacilityType,
@@ -105,8 +102,6 @@ function sanitizeWebsite(urlStr: string): string {
   }
   return `https://${trimmed}`;
 }
-
-
 
 function LogoCropModal({
   isOpen,
@@ -247,7 +242,6 @@ export default function ActiveFacilityPage() {
   const { user } = useAppSelector((s) => s.auth);
   const {
     list,
-    pendingInvites,
     outgoingInvites,
     activeFacilityId,
     activeFacility,
@@ -318,10 +312,17 @@ export default function ActiveFacilityPage() {
 
   const canManage =
     !!myRole && FACILITY_ADMIN_ROLES.includes(myRole as UserRole);
+
+  const activeFacOwner = current?.owner || activeFacility?.owner;
   const isOwner =
-    (current?.owner &&
+    (activeFacOwner &&
       user?._id &&
-      String(current.owner) === String(user._id)) ||
+      String(
+        typeof activeFacOwner === "object"
+          ? (activeFacOwner as any)._id || (activeFacOwner as any).id
+          : activeFacOwner
+      ) === String(user._id)) ||
+    myRole === "owner" ||
     myRole === "ceo" ||
     myRole === "super_admin";
 
@@ -638,7 +639,6 @@ export default function ActiveFacilityPage() {
     }
   };
 
-  // Outgoing invites for the active facility (admin-issued, pending acceptance)
   const currentFacilityPendingInvites: OutgoingInvite[] = useMemo(() => {
     return outgoingInvites || [];
   }, [outgoingInvites]);
@@ -715,7 +715,15 @@ export default function ActiveFacilityPage() {
   const banner = error || message || localMsg;
   const bannerIsError = !!error || (!!localMsg && localMsgIsError);
   const isOnlyMember = members.length <= 1;
-  const ownerId = current?.owner ? String(current.owner) : null;
+  const resolvedOwnerId = current?.owner
+    ? typeof current.owner === "object"
+      ? (current.owner as any)._id || (current.owner as any).id
+      : current.owner
+    : activeFacility?.owner
+    ? typeof activeFacility.owner === "object"
+      ? (activeFacility.owner as any)._id || (activeFacility.owner as any).id
+      : activeFacility.owner
+    : null;
 
   const roleOptions = FACILITY_ROLES.filter((r) => r !== "ceo").map((r) => ({
     label: formatRole(r).toUpperCase(),
@@ -764,7 +772,7 @@ export default function ActiveFacilityPage() {
           </p>
         </div>
         <div className="flex items-center gap-2.5 flex-wrap">
-          {canManage && (
+          {(canManage || isOwner) && (
             <button
               type="button"
               onClick={() => setIsEditingFacility((v) => !v)}
@@ -906,7 +914,7 @@ export default function ActiveFacilityPage() {
       </div>
 
       {/* Edit form */}
-      {isEditingFacility && canManage ? (
+      {isEditingFacility && (canManage || isOwner) ? (
         <form
           onSubmit={handleUpdateFacility}
           className={`flex flex-col gap-5 rounded-2xl border p-6 ${
@@ -1198,7 +1206,7 @@ export default function ActiveFacilityPage() {
       )}
 
       {/* Invite */}
-      {inviteOpen && canManage && (
+      {inviteOpen && (canManage || isOwner) && (
         <form
           onSubmit={onInvite}
           className={`flex flex-col gap-4 rounded-2xl border p-6 ${borderCls}`}
@@ -1328,7 +1336,7 @@ export default function ActiveFacilityPage() {
       )}
 
       {/* Pending Invitations Section */}
-      {canManage &&
+      {(canManage || isOwner) &&
         (outgoingInvitesLoading ||
           currentFacilityPendingInvites.length > 0) && (
           <div className="flex flex-col gap-3">
@@ -1447,7 +1455,7 @@ export default function ActiveFacilityPage() {
             Team Members{" "}
             <span className="font-normal opacity-50">({members.length})</span>
           </h3>
-          {canManage && !inviteOpen && (
+          {(canManage || isOwner) && !inviteOpen && (
             <button
               type="button"
               onClick={() => setInviteOpen(true)}
@@ -1472,15 +1480,18 @@ export default function ActiveFacilityPage() {
               const fullName = `${m.firstName || ""} ${
                 m.lastName || ""
               }`.trim();
-              const isMemberOwner = ownerId && String(m.id) === ownerId;
+              const isMemberOwner =
+                resolvedOwnerId && String(m.id) === String(resolvedOwnerId);
               return (
                 <div
                   key={m.id}
                   onClick={() => {
-                    if (canManage) openMemberDetail(m);
+                    if (canManage || isOwner) openMemberDetail(m);
                   }}
                   className={`flex items-center justify-between rounded-2xl border p-4 transition ${borderCls} ${
-                    canManage ? "cursor-pointer hover:opacity-80" : ""
+                    canManage || isOwner
+                      ? "cursor-pointer hover:opacity-80"
+                      : ""
                   }`}
                   style={{
                     backgroundColor: colors.shadeBg,
@@ -1556,10 +1567,10 @@ export default function ActiveFacilityPage() {
             })}
           </div>
         )}
-        {!canManage && (
+        {!canManage && !isOwner && (
           <p className="text-xs opacity-40 flex items-center gap-1">
-            <Shield className="h-3 w-3" /> Only CEO, Admin, or Manager can
-            invite or change roles.
+            <Shield className="h-3 w-3" /> Only Owner, CEO, Admin, or Manager
+            can invite or change roles.
           </p>
         )}
       </div>
@@ -1663,7 +1674,9 @@ export default function ActiveFacilityPage() {
                     {currentMemberDetail?.email || selectedMember.email}
                   </p>
                   {(currentMemberDetail?.isOwner ||
-                    (ownerId && String(selectedMember.id) === ownerId)) && (
+                    (resolvedOwnerId &&
+                      String(selectedMember.id) ===
+                        String(resolvedOwnerId))) && (
                     <span className="mt-1 inline-flex items-center gap-1 text-[10px] font-semibold text-amber-500">
                       <Crown className="h-3 w-3" /> Facility owner
                     </span>
@@ -1771,18 +1784,7 @@ export default function ActiveFacilityPage() {
               isDark={isDark}
               colors={colors}
             />
-            <div>
-              <label className="mb-1.5 block text-xs font-semibold opacity-60">
-                Department
-              </label>
-              <input
-                value={memberDept}
-                placeholder="Enter department"
-                onChange={(e) => setMemberDept(e.target.value)}
-                className={`w-full rounded-xl border px-3.5 py-2.5 text-sm ${borderCls}`}
-                style={inputStyle}
-              />
-            </div>
+       
 
             <div className="flex flex-col gap-2">
               <button
@@ -1794,29 +1796,32 @@ export default function ActiveFacilityPage() {
               >
                 {memberBusy ? "Saving…" : "Save role"}
               </button>
-              {isOwner && String(selectedMember.id) !== ownerId && (
-                <button
-                  type="button"
-                  disabled={memberBusy}
-                  onClick={handleTransferOwnership}
-                  className={`flex items-center gap-2 rounded-xl border p-3 text-xs font-semibold ${borderCls}`}
-                >
-                  <Crown className="h-4 w-4" /> Transfer ownership to this
-                  member
-                </button>
-              )}
-              {String(selectedMember.id) !== ownerId && (
-                <button
-                  type="button"
-                  disabled={memberBusy}
-                  onClick={() => handleRemoveMember(selectedMember.id)}
-                  className={`flex items-center gap-2 rounded-xl border p-3 text-xs font-semibold text-red-500 ${
-                    isDark ? "border-red-500/30" : "border-red-600/20"
-                  }`}
-                >
-                  <UserMinus className="h-4 w-4" /> Remove from facility
-                </button>
-              )}
+              {isOwner &&
+                resolvedOwnerId &&
+                String(selectedMember.id) !== String(resolvedOwnerId) && (
+                  <button
+                    type="button"
+                    disabled={memberBusy}
+                    onClick={handleTransferOwnership}
+                    className={`flex items-center gap-2 rounded-xl border p-3 text-xs font-semibold ${borderCls}`}
+                  >
+                    <Crown className="h-4 w-4" /> Transfer ownership to this
+                    member
+                  </button>
+                )}
+              {resolvedOwnerId &&
+                String(selectedMember.id) !== String(resolvedOwnerId) && (
+                  <button
+                    type="button"
+                    disabled={memberBusy}
+                    onClick={() => handleRemoveMember(selectedMember.id)}
+                    className={`flex items-center gap-2 rounded-xl border p-3 text-xs font-semibold text-red-500 ${
+                      isDark ? "border-red-500/30" : "border-red-600/20"
+                    }`}
+                  >
+                    <UserMinus className="h-4 w-4" /> Remove from facility
+                  </button>
+                )}
             </div>
           </div>
         </div>

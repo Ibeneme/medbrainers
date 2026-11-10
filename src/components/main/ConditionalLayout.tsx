@@ -25,6 +25,7 @@ export default function ConditionalLayout({
   const isAuthRoute =
     pathname.includes("/auth") ||
     pathname.includes("/get-started") ||
+    pathname.includes("/telehealth") ||
     pathname.includes("/login") ||
     pathname.includes("/forgot-password") ||
     pathname.includes("/reset-password");

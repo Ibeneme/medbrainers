@@ -27,15 +27,6 @@ import { useFacilityId } from "@/hooks/useFacilityId";
 import { CustomPopupDatePicker } from "@/components/ui/items";
 import { formatRecordedDate } from "@/utils/dateUtils";
 
-// Helper to get local YYYY-MM-DD safely on the client side
-function getTodayDateString(): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
 export default function AllConsultationsPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -56,13 +47,8 @@ export default function AllConsultationsPage() {
   const [hasDrugsFilter, setHasDrugsFilter] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<"list" | "kanban">("kanban");
 
-  // Date filter: Initialize as empty string to prevent SSR/prerender mismatch
+  // Date filter initialized as empty string to show all records by default
   const [selectedDate, setSelectedDate] = useState<string>("");
-
-  // Set today's date safely on client mount
-  useEffect(() => {
-    setSelectedDate(getTodayDateString());
-  }, []);
 
   // Fetch consultations on mount or facility change
   useEffect(() => {
@@ -91,10 +77,10 @@ export default function AllConsultationsPage() {
   const filteredConsultations = useMemo(() => {
     if (!companyConsultations) return [];
 
-    return companyConsultations.filter((item) => {
+    return companyConsultations.filter((item: any) => {
       const con = item.consultation;
 
-      // Date filtering logic
+      // Date filtering logic (optional)
       if (selectedDate) {
         const consultedAtRaw = con.consultedAt || item.createdAt;
         if (!consultedAtRaw) return false;
@@ -128,7 +114,7 @@ export default function AllConsultationsPage() {
   }, [companyConsultations, searchQuery, selectedDate]);
 
   return (
-    <div className="mx-auto max-w-7xl w-full">
+    <div className="mx-auto max-w-7xl w-full px-2 sm:px-4 py-4 sm:py-6">
       {(companyConsultationsLoading || facilitiesLoading) &&
         (!companyConsultations || companyConsultations.length === 0) && (
           <DarkBlurOverlayLoader text="Loading company consultations..." />
@@ -139,7 +125,7 @@ export default function AllConsultationsPage() {
         style={{ backgroundColor: colors.shadeBgSecond, color: ui.text }}
       >
         {/* Breadcrumb */}
-        <div className="flex items-center justify-between text-xs">
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
           <div className="flex items-center gap-1.5 opacity-70 truncate pr-2">
             <Link
               href="/dashboard/patients"
@@ -186,7 +172,7 @@ export default function AllConsultationsPage() {
 
         {/* Header Banner */}
         <div
-          className="rounded-[28px] p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border"
+          className="rounded-[28px] p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 border"
           style={{ backgroundColor: ui.card, borderColor: ui.border }}
         >
           <div className="flex items-center gap-3.5">
@@ -205,7 +191,7 @@ export default function AllConsultationsPage() {
                 <span className="font-semibold">
                   {filteredConsultations.length}
                 </span>{" "}
-                of {companyConsultations.length} total records
+                of {companyConsultations?.length || 0} total records
               </p>
             </div>
           </div>
@@ -259,63 +245,61 @@ export default function AllConsultationsPage() {
           </div>
         </div>
 
-        {/* Search, Date Picker & Filter Bar */}
+        {/* Search & Date Picker stacked full width */}
         <div className="space-y-3">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {/* Search Input */}
-            <div
-              className="md:col-span-2 rounded-[22px] px-4 py-3 flex items-center gap-3 border"
-              style={{ backgroundColor: ui.card, borderColor: ui.border }}
-            >
-              <Search size={16} className="opacity-40 shrink-0" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by patient name, MRN, consultation title, or diagnosis..."
-                className="w-full bg-transparent text-xs outline-none"
-                style={{ color: ui.text }}
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery("")}
-                  className="opacity-40 hover:opacity-100 text-xs shrink-0"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
+          {/* Full-width Search Input */}
+          <div
+            className="w-full rounded-[22px] px-4 py-3 flex items-center gap-3 border"
+            style={{ backgroundColor: ui.card, borderColor: ui.border }}
+          >
+            <Search size={16} className="opacity-40 shrink-0" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by patient name, MRN, consultation title, or diagnosis..."
+              className="w-full bg-transparent text-xs outline-none"
+              style={{ color: ui.text }}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="opacity-40 hover:opacity-100 text-xs shrink-0"
+              >
+                Clear
+              </button>
+            )}
+          </div>
 
-            {/* Date Picker Filter */}
-            <div className="flex items-center gap-2">
-              <div className="flex-1">
-                <CustomPopupDatePicker
-                  label=""
-                  value={selectedDate}
-                  onChange={(val) => setSelectedDate(val)}
-                  border={ui.border}
-                  colors={colors}
-                  isDark={isDark}
-                  placeholder="Filter by date..."
-                />
-              </div>
-              {selectedDate && (
-                <button
-                  type="button"
-                  onClick={() => setSelectedDate("")}
-                  className="rounded-xl px-3 py-3 text-xs font-semibold border transition hover:opacity-80 shrink-0 flex items-center gap-1"
-                  style={{
-                    backgroundColor: ui.card,
-                    borderColor: ui.border,
-                    color: ui.text,
-                  }}
-                  title="Clear date filter"
-                >
-                  <X size={14} /> All Dates
-                </button>
-              )}
+          {/* Date Picker below full-width search */}
+          <div className="flex items-center gap-2">
+            <div className="flex-1">
+              <CustomPopupDatePicker
+                label=""
+                value={selectedDate}
+                onChange={(val) => setSelectedDate(val)}
+                border={ui.border}
+                colors={colors}
+                isDark={isDark}
+                placeholder="All Dates (Optional filter)"
+              />
             </div>
+            {selectedDate && (
+              <button
+                type="button"
+                onClick={() => setSelectedDate("")}
+                className="rounded-xl px-3.5 py-3 text-xs font-semibold border transition hover:opacity-80 shrink-0 flex items-center gap-1"
+                style={{
+                  backgroundColor: ui.card,
+                  borderColor: ui.border,
+                  color: ui.text,
+                }}
+                title="Clear date filter"
+              >
+                <X size={14} /> Reset Date
+              </button>
+            )}
           </div>
 
           {/* Status & Category Filter Chips */}
@@ -343,7 +327,7 @@ export default function AllConsultationsPage() {
             <button
               type="button"
               onClick={() => setHasTestsFilter(!hasTestsFilter)}
-              className="rounded-full px-3 py-1 text-[11px] font-medium transition border"
+              className="rounded-full px-3.5 py-1 text-[11px] font-medium transition border"
               style={{
                 backgroundColor: hasTestsFilter ? PRIMARY_COLOR : ui.card,
                 borderColor: hasTestsFilter ? PRIMARY_COLOR : ui.border,
@@ -355,7 +339,7 @@ export default function AllConsultationsPage() {
             <button
               type="button"
               onClick={() => setHasDrugsFilter(!hasDrugsFilter)}
-              className="rounded-full px-3 py-1 text-[11px] font-medium transition border"
+              className="rounded-full px-3.5 py-1 text-[11px] font-medium transition border"
               style={{
                 backgroundColor: hasDrugsFilter ? PRIMARY_COLOR : ui.card,
                 borderColor: hasDrugsFilter ? PRIMARY_COLOR : ui.border,
@@ -382,18 +366,16 @@ export default function AllConsultationsPage() {
           >
             <Stethoscope size={36} className="mx-auto opacity-30" />
             <p className="text-sm font-medium opacity-80">
-              No consultations match your filter criteria for{" "}
-              {selectedDate ? `date ${selectedDate}` : "selected filters"}.
+              No consultations match your filter criteria.
             </p>
             <p className="text-xs opacity-50">
-              Try selecting "All Dates" or adjusting your search query and
-              status filters.
+              Try resetting your date filter, search query, or status filters.
             </p>
           </div>
         ) : viewMode === "list" ? (
           /* ================= LIST VIEW ================= */
           <div className="grid grid-cols-1 gap-4">
-            {filteredConsultations.map((item, idx) => {
+            {filteredConsultations.map((item: any, idx: any) => {
               const con = item.consultation;
               const testCount = con.recommendedTests?.length || 0;
               const drugCount = con.recommendedDrugs?.length || 0;
@@ -414,7 +396,7 @@ export default function AllConsultationsPage() {
                         {item.patientName?.[0] || "P"}
                       </span>
                       <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <Link
                             href={`/dashboard/patients/${item.patientId}`}
                             className="text-sm font-bold hover:underline"
@@ -531,109 +513,112 @@ export default function AllConsultationsPage() {
             })}
           </div>
         ) : (
-          /* ================= KANBAN VIEW (Non-Draggable) ================= */
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-            {["open", "completed"].map((columnStatus) => {
-              const columnItems = filteredConsultations.filter(
-                (item) => (item.consultation.status || "open") === columnStatus
-              );
+          /* ================= KANBAN VIEW (Horizontal Overflow Scroll) ================= */
+          <div className="w-full overflow-x-auto pb-4">
+            <div className="flex gap-6 items-start min-w-[700px]">
+              {["open", "completed"].map((columnStatus) => {
+                const columnItems = filteredConsultations.filter(
+                  (item: any) =>
+                    (item.consultation.status || "open") === columnStatus
+                );
 
-              return (
-                <div
-                  key={columnStatus}
-                  className="rounded-[24px] p-4 space-y-4 border flex flex-col"
-                  style={{ backgroundColor: ui.card, borderColor: ui.border }}
-                >
-                  <div className="flex items-center justify-between pb-2 border-b border-black/5 dark:border-white/5 px-2">
-                    <h3 className="text-xs font-bold uppercase tracking-wider flex items-center gap-2">
+                return (
+                  <div
+                    key={columnStatus}
+                    className="w-80 shrink-0 rounded-[24px] p-4 space-y-4 border flex flex-col"
+                    style={{ backgroundColor: ui.card, borderColor: ui.border }}
+                  >
+                    <div className="flex items-center justify-between pb-2 border-b border-black/5 dark:border-white/5 px-2">
+                      <h3 className="text-xs font-bold uppercase tracking-wider flex items-center gap-2">
+                        <span
+                          className="h-2.5 w-2.5 rounded-full"
+                          style={{
+                            backgroundColor:
+                              columnStatus === "completed"
+                                ? "#059669"
+                                : "#3b82f6",
+                          }}
+                        />
+                        {columnStatus} Consultations
+                      </h3>
                       <span
-                        className="h-2.5 w-2.5 rounded-full"
+                        className="rounded-full px-2.5 py-0.5 text-[11px] font-bold border"
                         style={{
-                          backgroundColor:
-                            columnStatus === "completed"
-                              ? "#059669"
-                              : "#3b82f6",
+                          backgroundColor: ui.inner,
+                          borderColor: ui.border,
                         }}
-                      />
-                      {columnStatus} Consultations
-                    </h3>
-                    <span
-                      className="rounded-full px-2.5 py-0.5 text-[11px] font-bold border"
-                      style={{
-                        backgroundColor: ui.inner,
-                        borderColor: ui.border,
-                      }}
-                    >
-                      {columnItems.length}
-                    </span>
+                      >
+                        {columnItems.length}
+                      </span>
+                    </div>
+
+                    <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
+                      {columnItems.length === 0 ? (
+                        <p className="text-center text-xs opacity-40 py-8">
+                          No {columnStatus} consultations found.
+                        </p>
+                      ) : (
+                        columnItems.map((item: any, idx: any) => {
+                          const con = item.consultation;
+                          return (
+                            <div
+                              key={con._id || idx}
+                              className="rounded-[18px] p-4 space-y-3 border transition hover:border-current/30"
+                              style={{
+                                backgroundColor: ui.inner,
+                                borderColor: ui.border,
+                              }}
+                            >
+                              <div className="flex flex-col gap-0.5">
+                                <Link
+                                  href={`/dashboard/patients/${item.patientId}`}
+                                  className="text-xs font-bold hover:underline truncate"
+                                  style={{ color: PRIMARY_COLOR }}
+                                >
+                                  {item.patientName}
+                                </Link>
+                                <span className="text-[10px] opacity-50">
+                                  {formatRecordedDate(con.consultedAt)}
+                                </span>
+                              </div>
+
+                              <div>
+                                <h4 className="text-xs font-semibold line-clamp-1">
+                                  {con.title}
+                                </h4>
+                                <p className="text-[11px] opacity-70 mt-1 line-clamp-2">
+                                  {con.complaint}
+                                </p>
+                              </div>
+
+                              <div className="flex items-center justify-between pt-2 border-t border-black/5 dark:border-white/5">
+                                <span className="text-[10px] opacity-60 font-mono">
+                                  {item.patientMrn
+                                    ? `MRN: ${item.patientMrn}`
+                                    : "—"}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    router.push(
+                                      `/dashboard/patients/${item.patientId}/consultations/${con._id}`
+                                    )
+                                  }
+                                  className="inline-flex items-center gap-1 text-[11px] font-semibold hover:underline"
+                                  style={{ color: PRIMARY_COLOR }}
+                                >
+                                  View <ChevronRight size={10} />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
                   </div>
-
-                  <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
-                    {columnItems.length === 0 ? (
-                      <p className="text-center text-xs opacity-40 py-8">
-                        No {columnStatus} consultations found.
-                      </p>
-                    ) : (
-                      columnItems.map((item, idx) => {
-                        const con = item.consultation;
-                        return (
-                          <div
-                            key={con._id || idx}
-                            className="rounded-[18px] p-4 space-y-3 border transition hover:border-current/30"
-                            style={{
-                              backgroundColor: ui.inner,
-                              borderColor: ui.border,
-                            }}
-                          >
-                            <div className="flex items-center justify-between gap-2">
-                              <Link
-                                href={`/dashboard/patients/${item.patientId}`}
-                                className="text-xs font-bold hover:underline truncate"
-                                style={{ color: PRIMARY_COLOR }}
-                              >
-                                {item.patientName}
-                              </Link>
-                              <span className="text-[10px] opacity-50 shrink-0">
-                                {formatRecordedDate(con.consultedAt)}
-                              </span>
-                            </div>
-
-                            <div>
-                              <h4 className="text-xs font-semibold line-clamp-1">
-                                {con.title}
-                              </h4>
-                              <p className="text-[11px] opacity-70 mt-1 line-clamp-2">
-                                {con.complaint}
-                              </p>
-                            </div>
-
-                            <div className="flex items-center justify-between pt-2 border-t border-black/5 dark:border-white/5">
-                              <span className="text-[10px] opacity-60 font-mono">
-                                {item.patientMrn
-                                  ? `MRN: ${item.patientMrn}`
-                                  : "—"}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  router.push(
-                                    `/dashboard/patients/${item.patientId}/consultations/${con._id}`
-                                  )
-                                }
-                                className="inline-flex items-center gap-1 text-[11px] font-semibold hover:underline"
-                                style={{ color: PRIMARY_COLOR }}
-                              >
-                                View <ChevronRight size={10} />
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         )}
       </div>

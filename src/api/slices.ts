@@ -14,8 +14,15 @@ import pharmacyReducer from "./slices/pharmacySlice";
 import radiologyReducer from "./slices/radiologySlice";
 import bloodBankReducer from "./slices/bloodBankSlice";
 import theaterReducer from "./slices/theaterSlice";
-import maternalReducer from "./slices/maternalSlice";
-import icdReducer from './slices/Icd.slice'
+import maternityReducer from "./slices/maternitySlice";
+import icdReducer from "./slices/Icd.slice";
+import complianceReducer from "./slices/complianceSlice";
+import aiReducer from "./slices/aiSlice";
+import dashboardReducer from "./slices/dashboardSlice";
+import telemedicineReducer from "./slices/telemedicineSlice";
+import dataManagementReducer from "./slices/datamanagementSlice";
+import feedbacksReducer from "./slices/feedbacksSlice"; // 1. Import your feedbacks reducer
+import notificationsReducer from "./slices/notificationsSlice";
 
 const rootReducer = combineReducers({
   auth: authReducer,
@@ -33,8 +40,15 @@ const rootReducer = combineReducers({
   radiology: radiologyReducer,
   bloodBank: bloodBankReducer,
   theater: theaterReducer,
-  maternal: maternalReducer,
+  maternity: maternityReducer,
   icd: icdReducer,
+  compliance: complianceReducer,
+  ai: aiReducer,
+  dashboard: dashboardReducer,
+  telemedicine: telemedicineReducer,
+  dataManagement: dataManagementReducer,
+  feedbacks: feedbacksReducer, // 2. Add feedbacks slice to the root reducer
+  notifications: notificationsReducer,
 });
 
 export type RootState = ReturnType<typeof rootReducer>;
@@ -50,9 +64,6 @@ export * from "./slices/wardsSlice";
 export * from "./slices/appointmentsSlice";
 export * from "./slices/clinicalSlice";
 export * from "./slices/Icd.slice";
-// Both slices export `fetchConsultations`; resolve explicitly.
-// `fetchConsultations` -> clinical (facility-wide, filterable by status)
-// `fetchPatientConsultations` -> patients (scoped to one patient)
 export { fetchConsultations } from "./slices/clinicalSlice";
 export { fetchConsultations as fetchPatientConsultations } from "./slices/patientsSlice";
 export * from "./slices/emergencySlice";
@@ -61,4 +72,11 @@ export * from "./slices/pharmacySlice";
 export * from "./slices/radiologySlice";
 export * from "./slices/bloodBankSlice";
 export * from "./slices/theaterSlice";
-export * from "./slices/maternalSlice";
+export * from "./slices/maternitySlice";
+export * from "./slices/complianceSlice";
+export * from "./slices/aiSlice";
+export * from "./slices/dashboardSlice";
+export * from "./slices/telemedicineSlice";
+export * from "./slices/datamanagementSlice";
+export * from "./slices/feedbacksSlice"; // 3. Export feedbacks actions/thunks
+export * from "./slices/notificationsSlice";

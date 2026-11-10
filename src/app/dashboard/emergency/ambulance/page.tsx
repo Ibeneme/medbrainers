@@ -1,125 +1,55 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Siren, Plus, RefreshCw } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/api/hooks";
-import { fetchMyFacilities } from "@/api/slices";
-import api from "@/api/services";
-import { PRIMARY_COLOR } from "@/constants/colors";
+import { useCallback, useMemo, useState } from "react";
+import { Ambulance, Plus } from "lucide-react";
+import { fetchErDispatches } from "@/api/slices";
 import {
-  ModuleShell,
-  personLabel,
-  StatusPill,
-  EmptyState,
-  useInputStyles,
-  ActionLink,
-} from "@/components/dashboard/ModuleShell";
+  BASE, Btn, ER, Empty, ErPill, Header, Loader, Page, Pills, RowLink, SearchBox, SectionCard,
+  erLabel, fmtMins, minsSince, useAutoRefresh, useER, useTick,
+} from "@/components/emergency/er-ui";
 
-const ENDPOINTS: Record<string, string> = {
-  ambulances: "/emergency/ambulances",
-  critical: "/emergency/critical",
-  catalog: "/labs/catalog",
-  results: "/labs/requests",
-  specimens: "/labs/specimens",
-  prescriptions: "/pharmacy/prescriptions",
-  inventory: "/pharmacy/inventory",
-  dispense: "/pharmacy/prescriptions",
-  controlled: "/pharmacy/controlled",
-  requests: "/radiology/worklist",
-  viewer: "/radiology/worklist",
-  crossmatch: "/blood-bank/crossmatch",
-  transfusions: "/blood-bank/transfusions",
-  schedule: "/theater/schedule",
-  checklist: "/theater/schedule",
-  recovery: "/theater/recovery",
-  antenatal: "/maternal/antenatal",
-  delivery: "/maternal/deliveries",
-  immunization: "/maternal/immunizations",
-  pediatrics: "/maternal/pediatrics",
-};
+export default function AmbulancePage() {
+  const { facilityId, act, emergency, activeFacility } = useER();
+  const [q, setQ] = useState("");
+  const [status, setStatus] = useState("open");
+  useTick();
+  const load = useCallback(() => { if (facilityId) act(fetchErDispatches({ facilityId }), false); }, [facilityId, act]);
+  useAutoRefresh(load, !!facilityId, 20000);
 
-export default function ModulePage() {
-  const dispatch = useAppDispatch();
-  const { activeFacilityId } = useAppSelector((s) => s.facilities);
-  const { inputStyle, inputCls, cardCls, ui } = useInputStyles();
-  const [items, setItems] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [msg, setMsg] = useState<string | null>(null);
-
-  useEffect(() => { dispatch(fetchMyFacilities()); }, [dispatch]);
-
-  async function load() {
-    if (!activeFacilityId) return;
-    const ep = ENDPOINTS["ambulances"] || "";
-    if (!ep) { setItems([]); return; }
-    setLoading(true);
-    setError(null);
-    try {
-      const { data } = await api.get(`/companies/${activeFacilityId}${ep}`);
-      const list = data?.data ?? data ?? [];
-      setItems(Array.isArray(list) ? list : []);
-    } catch (e: any) {
-      setError(e?.response?.data?.message || e?.message || "Failed to load");
-      setItems([]);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => { load(); }, [activeFacilityId]);
-
-  function rowTitle(it: any) {
-    return (
-      it.name || it.procedureName || it.vaccineName || it.vehicleCode || it.unitNumber ||
-      it.drugName || it.barcode || it.modality || it.clinicalDescription ||
-      personLabel(it.patient || it.patientId) || it._id?.slice(-6) || "Record"
-    );
-  }
-
-  function rowDetail(it: any) {
-    const parts = [
-      it.chiefComplaint, it.clinicalIndication, it.batchNumber, it.bloodType,
-      it.theaterRoom, it.specimenType, it.status, it.priority,
-    ].filter(Boolean);
-    return parts.slice(0, 3).join(" · ");
-  }
+  const rows = useMemo(
+    () =>
+      emergency.dispatches.filter((d) => {
+        if (status === "open" ? !ER.openDispatch.includes(d.status) : status !== "all" && d.status !== status) return false;
+        const s = q.trim().toLowerCase();
+        return !s || [d.pickupAddress, d.vehicle, d.callerName, d.chiefComplaint].some((x) => (x || "").toLowerCase().includes(s));
+      }),
+    [emergency.dispatches, q, status],
+  );
 
   return (
-    <ModuleShell
-      title="Ambulance dispatch"
-      subtitle={`${items.length} records`}
-      icon={Siren}
-      loading={loading}
-      actions={
-        <>
-          <ActionLink href="/dashboard/dashboard">Dashboard</ActionLink>
-          <button type="button" onClick={load} className="flex items-center gap-1.5 rounded-full border px-4 py-2.5 text-xs font-semibold" style={{ borderColor: ui.border }}>
-            <RefreshCw size={14} /> Refresh
-          </button>
-        </>
-      }
-    >
-      {msg && <div className="rounded-2xl px-4 py-2 text-xs font-semibold" style={{ backgroundColor: "rgba(37,99,235,0.12)", color: "#2563eb" }}>{msg}</div>}
-      {error && <div className="rounded-2xl px-4 py-2 text-xs font-semibold" style={{ backgroundColor: "rgba(220,38,38,0.12)", color: "#dc2626" }}>{error}</div>}
-
-      <div className={cardCls} style={{ backgroundColor: ui.card, borderColor: ui.border }}>
-        {items.length === 0 ? (
-          <EmptyState text="No records yet. Data will appear when the API returns items for this module." />
-        ) : (
-          <div className="space-y-2">
-            {items.map((it: any) => (
-              <div key={it._id || JSON.stringify(it).slice(0, 20)} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl p-4" style={{ backgroundColor: ui.inner }}>
-                <div className="min-w-0">
-                  <p className="font-semibold text-sm truncate">{rowTitle(it)}</p>
-                  <p className="text-xs opacity-55 truncate">{rowDetail(it)}</p>
+    <Page>
+      <Header icon={<Ambulance size={22} />} title="Ambulance & Dispatch" subtitle={activeFacility?.name} actions={<Btn href={`${BASE}/ambulance/new`}><Plus size={16} /> Log call</Btn>} />
+      <SectionCard title="Calls" count={rows.length}>
+        <SearchBox value={q} onChange={setQ} placeholder="Search address, vehicle, caller…" />
+        <Pills value={status} onChange={setStatus} options={[{ value: "open", label: "Open" }, { value: "all", label: "All" }, ...ER.dispatchStatuses.map((s) => ({ value: s, label: erLabel(s) }))]} />
+        {emergency.listLoading && !emergency.dispatches.length ? <Loader text="Loading calls…" /> : rows.length === 0 ? <Empty>No calls match. Log a call when the phone rings.</Empty> : (
+          <div className="space-y-3">
+            {rows.map((d) => (
+              <RowLink key={d._id} href={`${BASE}/ambulance/${d._id}`}>
+                <div className="grid items-center gap-3 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)_auto]">
+                  <div className="min-w-0">
+                    <p className="truncate text-[15px] font-semibold">{d.pickupAddress}</p>
+                    <p className="truncate text-xs opacity-55">{d.chiefComplaint || "No details recorded"}</p>
+                  </div>
+                  <p className="text-xs opacity-65">{d.vehicle || "No vehicle"}{d.crew?.length ? <><br />{d.crew.join(", ")}</> : null}</p>
+                  <p className="text-xs opacity-60">Called {new Date(d.callReceivedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}<br />{ER.openDispatch.includes(d.status) ? `${fmtMins(minsSince(d.callReceivedAt))} ago` : erLabel(d.status)}</p>
+                  <div className="flex gap-2"><ErPill value={d.priority} /><ErPill value={d.status} /></div>
                 </div>
-                {it.status && <StatusPill status={String(it.status)} />}
-              </div>
+              </RowLink>
             ))}
           </div>
         )}
-      </div>
-    </ModuleShell>
+      </SectionCard>
+    </Page>
   );
 }

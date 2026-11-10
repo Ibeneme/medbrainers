@@ -4,7 +4,7 @@ export const privacy: LegalTranslations = {
   en: {
     metaTitle: "Product Privacy Statement",
     metaDescription:
-      "How MedBrainers collects, uses, shares and protects personal data processed on behalf of hospitals, clinics and other healthcare providers.",
+      "How Medicules collects, uses, shares and protects personal data processed on behalf of hospitals, clinics and other healthcare providers.",
     title: "Product Privacy Statement",
     updated: "Effective Date: October 20, 2026",
     sections: [
@@ -12,7 +12,7 @@ export const privacy: LegalTranslations = {
         h: "1. Introduction & Scope",
         blocks: [
           {
-            p: "Welcome to **MedBrainers** (“MedBrainers,” “we,” “us,” or “our”). We provide a cloud-based electronic medical records (EMR) and healthcare management platform that helps hospitals, clinics, pharmacies, laboratories, and other healthcare providers (“Client,” “you,” or “your”) manage patient records, billing, HMO and insurance claims, laboratory and pharmacy workflows, ward management, and related operations for their patients (“Patients”).",
+            p: "Welcome to **Medicules** (“Medicules,” “we,” “us,” or “our”). We provide a cloud-based electronic medical records (EMR) and healthcare management platform that helps hospitals, clinics, pharmacies, laboratories, and other healthcare providers (“Client,” “you,” or “your”) manage patient records, billing, HMO and insurance claims, laboratory and pharmacy workflows, ward management, and related operations for their patients (“Patients”).",
           },
           {
             p: "This Product Privacy Statement explains how we collect, use, disclose, and otherwise process Personal Data on behalf of our Clients in connection with their use of our products and services (collectively, the “Services”).",
@@ -129,7 +129,7 @@ export const privacy: LegalTranslations = {
         h: "9. Children’s Data",
         blocks: [
           {
-            p: "Healthcare providers routinely record data about children. That data is entered by the Client, usually with the consent of a parent or guardian, and is handled under the same protections as all other health data. Children do not create or manage MedBrainers accounts themselves.",
+            p: "Healthcare providers routinely record data about children. That data is entered by the Client, usually with the consent of a parent or guardian, and is handled under the same protections as all other health data. Children do not create or manage Medicules accounts themselves.",
           },
         ],
       },
@@ -165,7 +165,7 @@ export const privacy: LegalTranslations = {
   fr: {
     metaTitle: "Déclaration de confidentialité du produit",
     metaDescription:
-      "Comment MedBrainers collecte, utilise, partage et protège les données personnelles traitées pour le compte d'hôpitaux, de cliniques et d'autres prestataires de santé.",
+      "Comment Medicules collecte, utilise, partage et protège les données personnelles traitées pour le compte d'hôpitaux, de cliniques et d'autres prestataires de santé.",
     title: "Déclaration de confidentialité du produit",
     updated: "Date d'entrée en vigueur : 20 octobre 2026",
     sections: [
@@ -173,7 +173,7 @@ export const privacy: LegalTranslations = {
         h: "1. Introduction et champ d'application",
         blocks: [
           {
-            p: "Bienvenue chez **MedBrainers** (« MedBrainers », « nous » ou « notre »). Nous proposons une plateforme cloud de dossiers médicaux électroniques (DME) et de gestion de la santé qui aide les hôpitaux, cliniques, pharmacies, laboratoires et autres prestataires de santé (le « Client » ou « vous ») à gérer les dossiers des patients, la facturation, les demandes de remboursement auprès des HMO et des assureurs, les flux de travail des laboratoires et des pharmacies, la gestion des services d'hospitalisation et les opérations connexes pour leurs patients (les « Patients »).",
+            p: "Bienvenue chez **Medicules** (« Medicules », « nous » ou « notre »). Nous proposons une plateforme cloud de dossiers médicaux électroniques (DME) et de gestion de la santé qui aide les hôpitaux, cliniques, pharmacies, laboratoires et autres prestataires de santé (le « Client » ou « vous ») à gérer les dossiers des patients, la facturation, les demandes de remboursement auprès des HMO et des assureurs, les flux de travail des laboratoires et des pharmacies, la gestion des services d'hospitalisation et les opérations connexes pour leurs patients (les « Patients »).",
           },
           {
             p: "La présente Déclaration de confidentialité du produit explique comment nous collectons, utilisons, divulguons et traitons par ailleurs les Données personnelles pour le compte de nos Clients dans le cadre de leur utilisation de nos produits et services (collectivement, les « Services »).",
@@ -290,7 +290,7 @@ export const privacy: LegalTranslations = {
         h: "9. Données relatives aux enfants",
         blocks: [
           {
-            p: "Les prestataires de santé enregistrent régulièrement des données concernant des enfants. Ces données sont saisies par le Client, généralement avec le consentement d'un parent ou d'un tuteur, et sont traitées avec les mêmes protections que toutes les autres données de santé. Les enfants ne créent ni ne gèrent eux-mêmes de comptes MedBrainers.",
+            p: "Les prestataires de santé enregistrent régulièrement des données concernant des enfants. Ces données sont saisies par le Client, généralement avec le consentement d'un parent ou d'un tuteur, et sont traitées avec les mêmes protections que toutes les autres données de santé. Les enfants ne créent ni ne gèrent eux-mêmes de comptes Medicules.",
           },
         ],
       },

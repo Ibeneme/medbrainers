@@ -1,125 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Scissors, Plus, RefreshCw } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/api/hooks";
-import { fetchMyFacilities } from "@/api/slices";
-import api from "@/api/services";
-import { PRIMARY_COLOR } from "@/constants/colors";
-import {
-  ModuleShell,
-  personLabel,
-  StatusPill,
-  EmptyState,
-  useInputStyles,
-  ActionLink,
-} from "@/components/dashboard/ModuleShell";
+import { ShieldCheck } from "lucide-react";
+import { Pill, RecordIndex, TBASE, fmtDateTime } from "@/components/theater/th-ui";
 
-const ENDPOINTS: Record<string, string> = {
-  ambulances: "/emergency/ambulances",
-  critical: "/emergency/critical",
-  catalog: "/labs/catalog",
-  results: "/labs/requests",
-  specimens: "/labs/specimens",
-  prescriptions: "/pharmacy/prescriptions",
-  inventory: "/pharmacy/inventory",
-  dispense: "/pharmacy/prescriptions",
-  controlled: "/pharmacy/controlled",
-  requests: "/radiology/worklist",
-  viewer: "/radiology/worklist",
-  crossmatch: "/blood-bank/crossmatch",
-  transfusions: "/blood-bank/transfusions",
-  schedule: "/theater/schedule",
-  checklist: "/theater/schedule",
-  recovery: "/theater/recovery",
-  antenatal: "/maternal/antenatal",
-  delivery: "/maternal/deliveries",
-  immunization: "/maternal/immunizations",
-  pediatrics: "/maternal/pediatrics",
-};
-
-export default function ModulePage() {
-  const dispatch = useAppDispatch();
-  const { activeFacilityId } = useAppSelector((s) => s.facilities);
-  const { inputStyle, inputCls, cardCls, ui } = useInputStyles();
-  const [items, setItems] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [msg, setMsg] = useState<string | null>(null);
-
-  useEffect(() => { dispatch(fetchMyFacilities()); }, [dispatch]);
-
-  async function load() {
-    if (!activeFacilityId) return;
-    const ep = ENDPOINTS["checklist"] || "";
-    if (!ep) { setItems([]); return; }
-    setLoading(true);
-    setError(null);
-    try {
-      const { data } = await api.get(`/companies/${activeFacilityId}${ep}`);
-      const list = data?.data ?? data ?? [];
-      setItems(Array.isArray(list) ? list : []);
-    } catch (e: any) {
-      setError(e?.response?.data?.message || e?.message || "Failed to load");
-      setItems([]);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => { load(); }, [activeFacilityId]);
-
-  function rowTitle(it: any) {
-    return (
-      it.name || it.procedureName || it.vaccineName || it.vehicleCode || it.unitNumber ||
-      it.drugName || it.barcode || it.modality || it.clinicalDescription ||
-      personLabel(it.patient || it.patientId) || it._id?.slice(-6) || "Record"
-    );
-  }
-
-  function rowDetail(it: any) {
-    const parts = [
-      it.chiefComplaint, it.clinicalIndication, it.batchNumber, it.bloodType,
-      it.theaterRoom, it.specimenType, it.status, it.priority,
-    ].filter(Boolean);
-    return parts.slice(0, 3).join(" · ");
-  }
-
+export default function ChecklistIndexPage() {
   return (
-    <ModuleShell
-      title="Surgical safety checklists"
-      subtitle={`${items.length} records`}
-      icon={Scissors}
-      loading={loading}
-      actions={
-        <>
-          <ActionLink href="/dashboard/dashboard">Dashboard</ActionLink>
-          <button type="button" onClick={load} className="flex items-center gap-1.5 rounded-full border px-4 py-2.5 text-xs font-semibold" style={{ borderColor: ui.border }}>
-            <RefreshCw size={14} /> Refresh
-          </button>
-        </>
-      }
-    >
-      {msg && <div className="rounded-2xl px-4 py-2 text-xs font-semibold" style={{ backgroundColor: "rgba(37,99,235,0.12)", color: "#2563eb" }}>{msg}</div>}
-      {error && <div className="rounded-2xl px-4 py-2 text-xs font-semibold" style={{ backgroundColor: "rgba(220,38,38,0.12)", color: "#dc2626" }}>{error}</div>}
-
-      <div className={cardCls} style={{ backgroundColor: ui.card, borderColor: ui.border }}>
-        {items.length === 0 ? (
-          <EmptyState text="No records yet. Data will appear when the API returns items for this module." />
-        ) : (
-          <div className="space-y-2">
-            {items.map((it: any) => (
-              <div key={it._id || JSON.stringify(it).slice(0, 20)} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl p-4" style={{ backgroundColor: ui.inner }}>
-                <div className="min-w-0">
-                  <p className="font-semibold text-sm truncate">{rowTitle(it)}</p>
-                  <p className="text-xs opacity-55 truncate">{rowDetail(it)}</p>
-                </div>
-                {it.status && <StatusPill status={String(it.status)} />}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </ModuleShell>
+    <RecordIndex icon={<ShieldCheck size={22} />} title="Surgical Safety Checklist" subtitle="WHO sign-in · time-out · sign-out" kind="checklists" stages={["pre-op", "in-theatre", "recovery"]} stageTitle="Active cases"
+      newPath="/checklist" actionLabel="Open checklist" rowHref={(c) => `${TBASE}/checklist/${c._id}`} recordTitle="Checklists on file"
+      renderRecord={(r) => (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm font-semibold">{r.theatreCase?.procedureName || "Case"}</p>
+          <div className="flex flex-wrap gap-2"><Pill tone={r.signInCompleted ? "ok" : "warn"}>Sign-in</Pill><Pill tone={r.timeOutCompleted ? "ok" : "warn"}>Time-out</Pill><Pill tone={r.signOutCompleted ? "ok" : "warn"}>Sign-out</Pill><span className="text-xs opacity-55">{fmtDateTime(r.updatedAt)}</span></div>
+        </div>
+      )}
+      recordHref={(r) => `${TBASE}/checklist/${typeof r.theatreCase === "object" ? r.theatreCase._id : r.theatreCase}`} />
   );
 }

@@ -59,6 +59,14 @@ export default function ConsultationDetailPage() {
     params?.consultationId || fallbackConsultationId
   );
 
+  /** Open the pharmacy prescription form pre-filled from this consultation. */
+  const goToPrescription = () =>
+    router.push(
+      `/dashboard/pharmacy/prescriptions/new?patients=${encodeURIComponent(patientId)}&consultation=${encodeURIComponent(
+        consultationId
+      )}`
+    );
+
   const dispatch = useAppDispatch();
   const { theme, colors } = useTheme();
   const isDark = theme === "dark";
@@ -614,6 +622,14 @@ export default function ConsultationDetailPage() {
             </div>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={goToPrescription}
+              className="flex-1 sm:flex-none rounded-full px-5 py-2.5 text-xs font-semibold text-white transition hover:opacity-90"
+              style={{ backgroundColor: PRIMARY_COLOR }}
+            >
+              Create prescription
+            </button>
             <button
               type="button"
               disabled={isLocked}
@@ -1264,14 +1280,24 @@ export default function ConsultationDetailPage() {
                 </div>
               )}
 
-              {consultation.recommendedDrugs?.length > 0 && (
-                <div
-                  className="rounded-xl p-5 sm:p-6 space-y-4 text-xs"
-                  style={{ backgroundColor: ui.card, borderColor: ui.border }}
-                >
+              <div
+                className="rounded-xl p-5 sm:p-6 space-y-4 text-xs"
+                style={{ backgroundColor: ui.card, borderColor: ui.border }}
+              >
+                <div className="flex items-center justify-between gap-3">
                   <h3 className="text-sm font-semibold flex items-center gap-1.5">
                     <Pill size={16} /> Prescriptions
                   </h3>
+                  <button
+                    type="button"
+                    onClick={goToPrescription}
+                    className="rounded-full px-4 py-2 text-[11px] font-semibold text-white transition hover:opacity-90"
+                    style={{ backgroundColor: PRIMARY_COLOR }}
+                  >
+                    Create prescription
+                  </button>
+                </div>
+                {consultation.recommendedDrugs?.length > 0 ? (
                   <ul className="space-y-2 text-xs">
                     {consultation.recommendedDrugs.map((d: any, i: number) => (
                       <li
@@ -1291,8 +1317,13 @@ export default function ConsultationDetailPage() {
                       </li>
                     ))}
                   </ul>
-                </div>
-              )}
+                ) : (
+                  <p className="text-[11px] opacity-60">
+                    No drugs were recommended in this consultation. You can still create a prescription and add drugs
+                    by hand.
+                  </p>
+                )}
+              </div>
             </div>
 
             {/* Attachments View */}

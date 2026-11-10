@@ -27,6 +27,17 @@ export interface Department {
   isActive: boolean;
 }
 
+export interface IThemeModeColors {
+  sidebarBg: string | null;
+  activeColor: string | null;
+}
+
+export interface ICompanyTheme {
+  defaultMode: 'dark' | 'light' | 'system';
+  dark: IThemeModeColors;
+  light: IThemeModeColors;
+}
+
 export interface FacilitiesState {
   list: FacilityMembership[];
   pendingInvites: FacilityMembership[] | PendingInvite[];
@@ -37,6 +48,7 @@ export interface FacilitiesState {
   /** true once the first /companies/mine request has settled (success or failure) */
   initialized: boolean;
   current: Facility | null;
+  currentTheme: ICompanyTheme | null;
   members: FacilityMember[];
   currentMemberDetail: FacilityMemberDetail | null;
   loading: boolean;
@@ -51,7 +63,18 @@ export interface FacilitiesState {
 }
 
 /**
- * The active facility is remembered in localStorage so the dashboard has it on
+ * Cookie helper utilities to replace localStorage operations
+ */
+function getCookie(name: string): string | null {
+  if (typeof document === "undefined") return null;
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
+  return null;
+}
+
+/**
+ * The active facility is remembered in a cookie so the dashboard has it on
  * the very first render after a reload/login, instead of flashing
  * "Select a facility first" until /companies/mine returns. The server value
  * still wins as soon as it arrives.
@@ -63,9 +86,10 @@ function loadPersistedFacility(): {
   const empty = { activeFacilityId: null, activeFacility: null };
   if (typeof window === "undefined") return empty;
   try {
-    const raw = localStorage.getItem(API_CONFIG.ACTIVE_FACILITY_KEY);
-    if (!raw || !localStorage.getItem(API_CONFIG.ACCESS_TOKEN_KEY)) return empty;
-    const parsed = JSON.parse(raw);
+    const raw = getCookie(API_CONFIG.ACTIVE_FACILITY_KEY);
+    const accessToken = getCookie(API_CONFIG.ACCESS_TOKEN_KEY);
+    if (!raw || !accessToken) return empty;
+    const parsed = JSON.parse(decodeURIComponent(raw));
     return {
       activeFacilityId: typeof parsed?.activeFacilityId === "string" ? parsed.activeFacilityId : null,
       activeFacility: parsed?.activeFacility ?? null,
@@ -86,6 +110,7 @@ const initialState: FacilitiesState = {
   activeFacility: persisted.activeFacility,
   initialized: false,
   current: null,
+  currentTheme: null,
   members: [],
   currentMemberDetail: null,
   loading: false,
@@ -200,10 +225,7 @@ export const switchFacility = createAsyncThunk(
       );
       const result = data.data;
       if (result.accessToken) {
-        const refresh =
-          typeof window !== "undefined"
-            ? localStorage.getItem(API_CONFIG.REFRESH_TOKEN_KEY) || undefined
-            : undefined;
+        const refresh = getCookie(API_CONFIG.REFRESH_TOKEN_KEY) || undefined;
         setTokens(result.accessToken, refresh);
       }
       return data;
@@ -213,7 +235,90 @@ export const switchFacility = createAsyncThunk(
   },
 );
 
-// --- Department Thunks ---
+// --- Theme & Color Thunks ---
+export const fetchCompanyTheme = createAsyncThunk(
+  "facilities/fetchTheme",
+  async (facilityId: string, { rejectWithValue }) => {
+    try {
+      const { data } = await api.get<ApiSuccess<ICompanyTheme>>(`/companies/${facilityId}/theme`);
+      return { ...data, facilityId };
+    } catch (err) {
+      return rejectWithValue(getErrorMessage(err, "Failed to load facility theme"));
+    }
+  },
+);
+
+export const updateModeColors = createAsyncThunk(
+  "facilities/updateModeColors",
+  async (
+    {
+      facilityId,
+      mode,
+      sidebarBg,
+      activeColor,
+    }: {
+      facilityId: string;
+      mode: 'dark' | 'light';
+      sidebarBg?: string | null;
+      activeColor?: string | null;
+    },
+    { rejectWithValue },
+  ) => {
+    try {
+      const body: {
+        mode: "dark" | "light";
+        sidebarBg?: string | null;
+        activeColor?: string | null;
+      } = { mode };
+      if (sidebarBg !== undefined) body.sidebarBg = sidebarBg;
+      if (activeColor !== undefined) body.activeColor = activeColor;
+      const { data } = await api.patch<ApiSuccess<Facility>>(
+        `/companies/${facilityId}/theme/colors`,
+        body,
+      );
+      return { ...data, facilityId };
+    } catch (err) {
+      return rejectWithValue(getErrorMessage(err, "Could not update theme colors"));
+    }
+  },
+);
+
+export const updateDefaultMode = createAsyncThunk(
+  "facilities/updateDefaultMode",
+  async (
+    {
+      facilityId,
+      defaultMode,
+    }: {
+      facilityId: string;
+      defaultMode: 'dark' | 'light' | 'system';
+    },
+    { rejectWithValue },
+  ) => {
+    try {
+      const { data } = await api.patch<ApiSuccess<Facility>>(
+        `/companies/${facilityId}/theme/default-mode`,
+        { defaultMode },
+      );
+      return { ...data, facilityId };
+    } catch (err) {
+      return rejectWithValue(getErrorMessage(err, "Could not update default mode"));
+    }
+  },
+);
+
+export const resetCompanyTheme = createAsyncThunk(
+  "facilities/resetTheme",
+  async (facilityId: string, { rejectWithValue }) => {
+    try {
+      const { data } = await api.post<ApiSuccess<Facility>>(`/companies/${facilityId}/theme/reset`);
+      return { ...data, facilityId };
+    } catch (err) {
+      return rejectWithValue(getErrorMessage(err, "Could not reset theme configuration"));
+    }
+  },
+);
+
 // --- Department Thunks ---
 export const fetchDepartments = createAsyncThunk(
   "facilities/fetchDepartments",
@@ -226,6 +331,7 @@ export const fetchDepartments = createAsyncThunk(
     }
   },
 );
+
 export const addDepartment = createAsyncThunk(
   "facilities/addDepartment",
   async (
@@ -499,6 +605,65 @@ export const leaveFacility = createAsyncThunk(
   },
 );
 
+const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/;
+
+const EMPTY_THEME = (): ICompanyTheme => ({
+  defaultMode: "system",
+  dark: { sidebarBg: null, activeColor: null },
+  light: { sidebarBg: null, activeColor: null },
+});
+
+/** Accept either a theme object or a company document that contains `.theme`. */
+export function normalizeCompanyTheme(input: unknown): ICompanyTheme | null {
+  if (!input || typeof input !== "object") return null;
+  const raw = input as {
+    theme?: unknown;
+    dark?: IThemeModeColors;
+    light?: IThemeModeColors;
+    defaultMode?: string;
+  };
+  const theme =
+    raw.theme && typeof raw.theme === "object"
+      ? (raw.theme as typeof raw)
+      : raw;
+  if (!("dark" in theme) && !("light" in theme) && !("defaultMode" in theme)) {
+    return null;
+  }
+  const mode = (colors?: Partial<IThemeModeColors> | null): IThemeModeColors => ({
+    sidebarBg:
+      typeof colors?.sidebarBg === "string" && HEX_COLOR_RE.test(colors.sidebarBg)
+        ? colors.sidebarBg
+        : null,
+    activeColor:
+      typeof colors?.activeColor === "string" && HEX_COLOR_RE.test(colors.activeColor)
+        ? colors.activeColor
+        : null,
+  });
+  const defaultMode =
+    theme.defaultMode === "dark" || theme.defaultMode === "light" || theme.defaultMode === "system"
+      ? theme.defaultMode
+      : "system";
+  return {
+    defaultMode,
+    dark: mode(theme.dark),
+    light: mode(theme.light),
+  };
+}
+
+function themeFromApiPayload(payload: { data?: unknown } | null | undefined): ICompanyTheme | null {
+  if (!payload) return null;
+  if (payload.data !== undefined) {
+    const fromData = normalizeCompanyTheme(payload.data);
+    if (fromData) return fromData;
+  }
+  return normalizeCompanyTheme(payload);
+}
+
+function sameActiveFacility(state: FacilitiesState, facilityId?: string | null) {
+  if (!facilityId || !state.activeFacilityId) return true;
+  return String(facilityId) === String(state.activeFacilityId);
+}
+
 const facilitiesSlice = createSlice({
   name: "facilities",
   initialState,
@@ -527,6 +692,33 @@ const facilitiesSlice = createSlice({
       if (action.payload.pendingInvites) {
         state.pendingInvites = action.payload.pendingInvites;
       }
+    },
+    /**
+     * Optimistic facility colour change.
+     * Null means "use the product default" for that slot.
+     */
+    patchFacilityTheme(
+      state,
+      action: PayloadAction<{
+        mode: "dark" | "light";
+        sidebarBg?: string | null;
+        activeColor?: string | null;
+      }>,
+    ) {
+      const base = state.currentTheme ?? EMPTY_THEME();
+      const mode = action.payload.mode;
+      const prev = base[mode] ?? { sidebarBg: null, activeColor: null };
+      state.currentTheme = {
+        ...base,
+        [mode]: {
+          sidebarBg:
+            action.payload.sidebarBg !== undefined ? action.payload.sidebarBg : prev.sidebarBg,
+          activeColor:
+            action.payload.activeColor !== undefined
+              ? action.payload.activeColor
+              : prev.activeColor,
+        },
+      };
     },
   },
   extraReducers: (builder) => {
@@ -572,6 +764,8 @@ const facilitiesSlice = createSlice({
               roles: m.roles,
               department: m.department,
             };
+            const embedded = normalizeCompanyTheme((m.company as { theme?: unknown }).theme);
+            if (embedded) state.currentTheme = embedded;
           }
         }
       })
@@ -585,8 +779,74 @@ const facilitiesSlice = createSlice({
       .addCase(fetchFacility.fulfilled, (state, action) => {
         state.loading = false;
         state.current = action.payload.data;
+        const loaded = normalizeCompanyTheme(action.payload.data);
+        if (loaded) state.currentTheme = loaded;
       })
       .addCase(fetchFacility.rejected, rejected);
+
+    // Theme & Color Reducers
+    // A missing/failed theme must NOT flip the global facilities error —
+    // the dashboard just keeps the product defaults.
+    builder
+      .addCase(fetchCompanyTheme.fulfilled, (state, action) => {
+        if (!sameActiveFacility(state, action.payload.facilityId)) return;
+        state.currentTheme = themeFromApiPayload(action.payload) ?? EMPTY_THEME();
+      })
+      .addCase(fetchCompanyTheme.rejected, () => { });
+
+    builder
+      .addCase(updateModeColors.pending, (state) => {
+        state.saving = true;
+        state.error = null;
+      })
+      .addCase(updateModeColors.fulfilled, (state, action) => {
+        state.saving = false;
+        state.message = action.payload.message || "Theme colors updated";
+        if (!sameActiveFacility(state, action.payload.facilityId)) return;
+        const next = themeFromApiPayload(action.payload);
+        if (next) {
+          state.currentTheme = next;
+          if (action.payload.data && (action.payload.data as Facility)._id) {
+            state.current = action.payload.data;
+          }
+        }
+      })
+      .addCase(updateModeColors.rejected, rejected);
+
+    builder
+      .addCase(updateDefaultMode.pending, (state) => {
+        state.saving = true;
+        state.error = null;
+      })
+      .addCase(updateDefaultMode.fulfilled, (state, action) => {
+        state.saving = false;
+        state.message = action.payload.message || "Default display mode updated";
+        if (!sameActiveFacility(state, action.payload.facilityId)) return;
+        const next = themeFromApiPayload(action.payload);
+        if (next) {
+          state.currentTheme = next;
+          if (action.payload.data && (action.payload.data as Facility)._id) {
+            state.current = action.payload.data;
+          }
+        }
+      })
+      .addCase(updateDefaultMode.rejected, rejected);
+
+    builder
+      .addCase(resetCompanyTheme.pending, (state) => {
+        state.saving = true;
+        state.error = null;
+      })
+      .addCase(resetCompanyTheme.fulfilled, (state, action) => {
+        state.saving = false;
+        state.message = action.payload.message || "Theme reset to defaults";
+        if (!sameActiveFacility(state, action.payload.facilityId)) return;
+        state.currentTheme = themeFromApiPayload(action.payload) ?? EMPTY_THEME();
+        if (action.payload.data && (action.payload.data as Facility)._id) {
+          state.current = action.payload.data;
+        }
+      })
+      .addCase(resetCompanyTheme.rejected, rejected);
 
     // Departments Reducers
     builder
@@ -596,7 +856,7 @@ const facilitiesSlice = createSlice({
       })
       .addCase(fetchDepartments.fulfilled, (state, action: any) => {
         state.departmentsLoading = false;
-        
+
         // Handle both direct array responses or wrapped { success, data } responses safely
         const responseData = action.payload?.data !== undefined ? action.payload.data : action.payload;
         const rawDepts = Array.isArray(responseData) ? responseData : [];
@@ -658,6 +918,8 @@ const facilitiesSlice = createSlice({
         state.message = action.payload.message || "Facility created";
         const company = action.payload.data.company;
         state.current = company;
+        const createdTheme = normalizeCompanyTheme(company);
+        if (createdTheme) state.currentTheme = createdTheme;
         state.activeFacilityId = company._id;
         state.activeFacility = {
           id: company._id,
@@ -679,6 +941,8 @@ const facilitiesSlice = createSlice({
         state.saving = false;
         state.message = action.payload.message || "Facility updated";
         state.current = action.payload.data;
+        const updatedTheme = normalizeCompanyTheme(action.payload.data);
+        if (updatedTheme) state.currentTheme = updatedTheme;
         if (state.activeFacility && state.activeFacility.id === action.payload.data._id) {
           state.activeFacility = {
             ...state.activeFacility,
@@ -732,6 +996,8 @@ const facilitiesSlice = createSlice({
         state.message = action.payload.message || "Switched facility";
         const d = action.payload.data;
         state.activeFacilityId = d.activeCompanyId || d.companyId;
+        const switched = normalizeCompanyTheme(d.activeCompany);
+        state.currentTheme = switched;
         if (d.activeCompany) {
           state.activeFacility = d.activeCompany;
         } else if (d.companyId) {
@@ -896,11 +1162,17 @@ const facilitiesSlice = createSlice({
         if (state.activeFacilityId === action.payload.facilityId) {
           state.activeFacilityId = action.payload.data?.activeCompanyId ?? null;
           state.activeFacility = null;
+          state.currentTheme = null;
         }
       })
       .addCase(leaveFacility.rejected, rejected);
   },
 });
 
-export const { clearFacilitiesError, clearCurrentMemberDetail, setActiveFacilityFromLogin } = facilitiesSlice.actions;
+export const {
+  clearFacilitiesError,
+  clearCurrentMemberDetail,
+  setActiveFacilityFromLogin,
+  patchFacilityTheme,
+} = facilitiesSlice.actions;
 export default facilitiesSlice.reducer;

@@ -36,7 +36,6 @@ const footerColumns: FooterColumn[] = [
       },
       { label: "Electronic Medical Record (EMR)", href: "/solutions#emr" },
       { label: "Industry Clinic System", href: "/solutions#industry-clinic" },
-      { label: "Dental Clinic Management", href: "/solutions#dental-clinic" },
       {
         label: "Pharmacy Management System",
         href: "/solutions#pharmacy-management",
@@ -59,10 +58,10 @@ const footerColumns: FooterColumn[] = [
         label: "Security & Compliance",
         href: "/why-choose-us#security",
       },
-      {
-        label: "Implementation & Training",
-        href: "/why-choose-us#implementation",
-      },
+      // {
+      //   label: "Implementation & Training",
+      //   href: "/why-choose-us#implementation",
+      // },
       {
         label: "Support You Can Reach",
         href: "/why-choose-us#support",
@@ -71,7 +70,6 @@ const footerColumns: FooterColumn[] = [
         label: "Data Migration",
         href: "/why-choose-us#data-migration",
       },
-
     ],
   },
   {
@@ -83,18 +81,17 @@ const footerColumns: FooterColumn[] = [
       },
       { label: "For Clinics", href: "/facility-size#clinics" },
       { label: "For Hospitals", href: "/facility-size#hospitals" },
-      {
-        label: "For Hospital Groups",
-        href: "/facility-size#hospital-groups",
-      },
-      
-
+      // {
+      //   label: "For Hospital Groups",
+      //   href: "/facility-size#hospital-groups",
+      // },
     ],
   },
   {
     title: "Company",
     links: [
       { label: "Pricing", href: "/pricing" },
+      { label: "FAQs", href: "/faqs" },
       { label: "Blog", href: "/blog" },
       { label: "Get Started", href: "/get-started" },
       { label: "Book a Demo", href: "/demo" },
@@ -219,7 +216,7 @@ export default function LandingPageFooter() {
             </p>
 
             <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[12px] text-white/40 sm:text-[13px] md:justify-end">
-            <LanguageSwitcher variant="inline" /> 
+              <LanguageSwitcher variant="inline" />
               <Link
                 href="/legal/privacy"
                 className="transition-colors duration-200 hover:text-white"

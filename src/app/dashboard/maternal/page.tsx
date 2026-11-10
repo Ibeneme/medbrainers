@@ -1,269 +1,121 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect } from "react";
 import Link from "next/link";
 import {
-  Baby,
-  Building2,
-  Heart,
-  Loader2,
-  Plus,
-  Search,
-  Syringe,
+  Activity, AlertTriangle, Baby, BarChart3, Bed, CalendarClock, ClipboardList, HeartPulse, Plus,
+  Ruler, Scissors, Stethoscope, Syringe, Users,
 } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/api/hooks";
-import { fetchMyFacilities, fetchAntenatal } from "@/api/slices";
-import { useTheme } from "@/contexts/theme-context";
+import { fetchMaternityDashboard } from "@/api/slices";
 import { PRIMARY_COLOR } from "@/constants/colors";
-import { CustomDropdown } from "@/components/ui/items";
-import DarkBlurOverlayLoader from "@/components/atoms/loaders/DarkBlurOverlayLoader";
+import { BASE, Banner, Btn, Header, Loader, Page, Stat, useMat } from "@/components/maternity/mat-ui";
 
-type UI = {
-  isDark: boolean;
-  page: string;
-  card: string;
-  inner: string;
-  text: string;
-  border: string;
-};
+const SHORTCUTS = [
+  { title: "ANC registration", href: "/anc/register", icon: ClipboardList, desc: "Book a new pregnancy" },
+  { title: "ANC visits & follow-ups", href: "/anc/visits", icon: CalendarClock, desc: "All pregnancies and visits" },
+  { title: "High-risk pregnancies", href: "/anc/high-risk", icon: AlertTriangle, desc: "Active high / very-high risk" },
+  { title: "Labour ward board", href: "/labour", icon: Bed, desc: "Women in labour right now" },
+  { title: "Partograph", href: "/labour/partograph", icon: Activity, desc: "Cervicograph & observations" },
+  { title: "Delivery records", href: "/delivery", icon: HeartPulse, desc: "Mode, blood loss, outcome" },
+  { title: "Caesarean log", href: "/delivery/caesarean", icon: Scissors, desc: "Indication and urgency" },
+  { title: "Postnatal visits", href: "/postnatal", icon: Stethoscope, desc: "Mother follow-up" },
+  { title: "Newborn registry", href: "/newborn", icon: Baby, desc: "Birth weight, Apgar, status" },
+  { title: "Immunization", href: "/immunization", icon: Syringe, desc: "Schedule and administer" },
+  { title: "Growth monitoring", href: "/growth", icon: Ruler, desc: "Weight, length, MUAC" },
+  { title: "Paediatric clinic", href: "/paediatrics", icon: Users, desc: "Child consultations" },
+  { title: "Reports", href: "/reports", icon: BarChart3, desc: "Caesarean rate, LBW, coverage" },
+];
 
-const RISK_STYLE: Record<string, { color: string; bg: string }> = {
-  low: { color: "#059669", bg: "rgba(16,185,129,0.14)" },
-  medium: { color: "#ca8a04", bg: "rgba(202,138,4,0.16)" },
-  high: { color: "#dc2626", bg: "rgba(220,38,38,0.16)" },
-};
+export default function MaternityDashboard() {
+  const { facilityId, act, maternity, activeFacility, ui, softShadow } = useMat();
+  const d = maternity.dashboard;
 
-function SummaryCard({
-  icon: Icon,
-  label,
-  value,
-  color,
-  ui,
-}: {
-  icon: any;
-  label: string;
-  value: number;
-  color: string;
-  ui: UI;
-}) {
+  const load = useCallback(() => {
+    if (facilityId) act(fetchMaternityDashboard({ facilityId }), false);
+  }, [facilityId, act]);
+
+  useEffect(() => {
+    load();
+    if (!facilityId) return;
+    const t = setInterval(load, 30000);
+    return () => clearInterval(t);
+  }, [load, facilityId]);
+
   return (
-    <div className="flex items-center gap-4 rounded-[28px] p-5" style={{ backgroundColor: ui.card }}>
-      <span
-        className="flex h-12 w-12 items-center justify-center rounded-2xl"
-        style={{ backgroundColor: ui.inner, color }}
-      >
-        <Icon size={20} />
-      </span>
+    <Page>
+      <Header
+        icon={<Baby size={22} />}
+        title="Maternal & Child Health"
+        subtitle={activeFacility?.name}
+        actions={
+          <>
+            <Btn href={`${BASE}/labour/admit`} tone="card">Admit to labour</Btn>
+            <Btn href={`${BASE}/anc/register`}>
+              <Plus size={16} /> Register ANC booking
+            </Btn>
+          </>
+        }
+      />
+
+      {!d ? (
+        <Loader text="Loading maternity…" />
+      ) : (
+        <>
+          <div className="space-y-3">
+            {d.highRisk > 0 && (
+              <Banner tone="bad" href={`${BASE}/anc/high-risk`} cta="Review">
+                <AlertTriangle size={18} className="text-red-500" />
+                {d.highRisk} active high-risk pregnanc{d.highRisk === 1 ? "y" : "ies"} under follow-up
+              </Banner>
+            )}
+            {d.inLabour > 0 && (
+              <Banner tone="warn" href={`${BASE}/labour`} cta="Open board">
+                <Bed size={18} style={{ color: PRIMARY_COLOR }} />
+                {d.inLabour} woman{d.inLabour === 1 ? "" : "en"} currently in the labour ward
+              </Banner>
+            )}
+            {d.nicuAdmitted > 0 && (
+              <Banner tone="warn" href={`${BASE}/nicu`} cta="Open NICU">
+                <Baby size={18} style={{ color: PRIMARY_COLOR }} />
+                {d.nicuAdmitted} baby{d.nicuAdmitted === 1 ? "" : "ies"} admitted to NICU / SCBU
+              </Banner>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+            <Stat label="Active ANC" value={d.activeANC} sub="pregnancies under care" href={`${BASE}/anc/visits`} />
+            <Stat label="High-risk" value={d.highRisk} sub="high or very high" tone={d.highRisk ? "bad" : undefined} href={`${BASE}/anc/high-risk`} />
+            <Stat label="In labour" value={d.inLabour} sub="admitted / active labour" tone={d.inLabour ? "warn" : undefined} href={`${BASE}/labour`} />
+            <Stat label="Deliveries today" value={d.deliveriesToday} sub="since midnight" href={`${BASE}/delivery`} />
+            <Stat label="NICU / SCBU" value={d.nicuAdmitted} sub="babies admitted" tone={d.nicuAdmitted ? "warn" : undefined} href={`${BASE}/nicu`} />
+          </div>
+        </>
+      )}
+
       <div>
-        <p className="text-xs opacity-60">{label}</p>
-        <p className="text-3xl font-medium leading-tight tracking-tight">{value}</p>
-      </div>
-    </div>
-  );
-}
-
-function patientLabel(p: any) {
-  if (!p) return "—";
-  if (typeof p === "string") return p.slice(-6);
-  return [p.firstName, p.lastName].filter(Boolean).join(" ") || p.mrn || "—";
-}
-
-export default function MaternalPage() {
-  const dispatch = useAppDispatch();
-  const { theme, colors } = useTheme();
-  const isDark = theme === "dark";
-  const border = isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.08)";
-
-  const ui: UI = {
-    isDark,
-    page: isDark ? "rgba(255,255,255,0.03)" : "#eef2f7",
-    card: isDark ? colors.shadeBg : "#ffffff",
-    inner: isDark ? colors.shadeBgSecond : "#f3f5f9",
-    text: colors.text,
-    border,
-  };
-
-  const { activeFacilityId, activeFacility } = useAppSelector((s) => s.facilities);
-  const { antenatal, listLoading } = useAppSelector((s) => s.maternal);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-
-  useEffect(() => {
-    dispatch(fetchMyFacilities());
-  }, [dispatch]);
-
-  useEffect(() => {
-    if (!activeFacilityId) return;
-    dispatch(
-      fetchAntenatal({
-        facilityId: activeFacilityId,
-        status: statusFilter !== "all" ? statusFilter : undefined,
-      }),
-    );
-  }, [dispatch, activeFacilityId, statusFilter]);
-
-  const filtered = antenatal.filter((r) => {
-    if (!search.trim()) return true;
-    return patientLabel(r.patientId).toLowerCase().includes(search.toLowerCase());
-  });
-
-  if (!activeFacilityId) {
-    return (
-      <div className="max-w-lg mx-auto px-4 py-16 text-center" style={{ color: colors.text }}>
-        <Building2 className="mx-auto opacity-30 mb-3" size={32} />
-        <p className="font-bold">Select a facility first</p>
-      </div>
-    );
-  }
-
-  const active = antenatal.filter((r) => r.status === "active").length;
-  const highRisk = antenatal.filter((r) => r.riskLevel === "high").length;
-
-  return (
-    <div className="mx-auto max-w-6xl px-3 sm:px-6 py-4 sm:py-6">
-      <div
-        className="relative rounded-[32px] p-4 sm:p-6 space-y-5"
-        style={{ backgroundColor: ui.page, color: ui.text }}
-      >
-        {listLoading && <DarkBlurOverlayLoader text="Loading antenatal records..." />}
-
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <p className="mb-1 text-xs opacity-60">{activeFacility?.name}</p>
-            <h1 className="text-3xl sm:text-4xl font-normal tracking-tight">
-              Maternal &amp; child health
-            </h1>
-          </div>
-          <div className="flex flex-wrap gap-2">
+        <h2 className="mb-3 text-sm font-semibold tracking-tight opacity-70">Workflow</h2>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {SHORTCUTS.map((s) => (
             <Link
-              href="/dashboard/maternal/antenatal"
-              className="inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-xs font-semibold"
-              style={{ backgroundColor: ui.card }}
+              key={s.href}
+              href={`${BASE}${s.href}`}
+              className="flex items-center gap-3.5 rounded-2xl p-4 transition-all hover:-translate-y-0.5"
+              style={{ backgroundColor: ui.card, boxShadow: softShadow }}
             >
-              <Heart size={14} /> ANC
+              <span
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+                style={{ backgroundColor: `${PRIMARY_COLOR}18`, color: PRIMARY_COLOR }}
+              >
+                <s.icon size={18} />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold">{s.title}</span>
+                <span className="block truncate text-xs opacity-55">{s.desc}</span>
+              </span>
             </Link>
-            <Link
-              href="/dashboard/maternal/delivery"
-              className="inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-xs font-semibold"
-              style={{ backgroundColor: ui.card }}
-            >
-              <Baby size={14} /> Delivery
-            </Link>
-            <Link
-              href="/dashboard/maternal/immunization"
-              className="inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-xs font-semibold"
-              style={{ backgroundColor: ui.card }}
-            >
-              <Syringe size={14} /> Immunization
-            </Link>
-            <Link
-              href="/dashboard/maternal/pediatrics"
-              className="inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-xs font-semibold"
-              style={{ backgroundColor: ui.card }}
-            >
-              Pediatrics
-            </Link>
-            <button
-              type="button"
-              className="inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-xs font-semibold text-white hover:opacity-90"
-              style={{ backgroundColor: PRIMARY_COLOR }}
-            >
-              <Plus size={14} /> New ANC
-            </button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <SummaryCard icon={Heart} label="ANC records" value={antenatal.length} color={PRIMARY_COLOR} ui={ui} />
-          <SummaryCard icon={Baby} label="Active" value={active} color="#10b981" ui={ui} />
-          <SummaryCard icon={Heart} label="High risk" value={highRisk} color="#dc2626" ui={ui} />
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div
-            className="flex items-center gap-2.5 rounded-full px-4 py-3"
-            style={{ backgroundColor: ui.card }}
-          >
-            <Search size={15} className="opacity-50 shrink-0" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search patient…"
-              className="w-full bg-transparent text-sm outline-none"
-              style={{ color: ui.text }}
-            />
-          </div>
-          <CustomDropdown
-            value={statusFilter}
-            options={[
-              { label: "All statuses", value: "all" },
-              { label: "Active", value: "active" },
-              { label: "Delivered", value: "delivered" },
-              { label: "Transferred", value: "transferred" },
-            ]}
-            onChange={(val) => setStatusFilter(val)}
-            placeholder="Filter by status..."
-            isDark={isDark}
-            colors={colors}
-            border={border}
-          />
-        </div>
-
-        <div className="rounded-[28px] p-3 sm:p-4" style={{ backgroundColor: ui.card }}>
-          {listLoading && antenatal.length === 0 ? (
-            <div className="flex items-center justify-center gap-2 p-12 text-xs opacity-60">
-              <Loader2 className="h-4 w-4 animate-spin" /> Loading…
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="p-12 text-center text-sm opacity-60">No antenatal records found.</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="text-xs opacity-50">
-                    <th className="px-3 pb-3 font-medium">Patient</th>
-                    <th className="px-3 pb-3 font-medium hidden sm:table-cell">G/P</th>
-                    <th className="px-3 pb-3 font-medium hidden md:table-cell">EDD</th>
-                    <th className="px-3 pb-3 font-medium">Risk</th>
-                    <th className="px-3 pb-3 font-medium">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((r) => {
-                    const risk = RISK_STYLE[r.riskLevel || ""] || RISK_STYLE.low;
-                    return (
-                      <tr
-                        key={r._id}
-                        className="border-t transition hover:bg-black/[0.03] dark:hover:bg-white/[0.04]"
-                        style={{ borderColor: ui.border }}
-                      >
-                        <td className="px-3 py-3 font-semibold">{patientLabel(r.patientId)}</td>
-                        <td className="px-3 py-3 hidden sm:table-cell opacity-80">
-                          G{r.gravida ?? "—"} / P{r.para ?? "—"}
-                        </td>
-                        <td className="px-3 py-3 hidden md:table-cell text-xs opacity-60">
-                          {r.edd ? new Date(r.edd).toLocaleDateString() : "—"}
-                        </td>
-                        <td className="px-3 py-3">
-                          <span
-                            className="inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold capitalize"
-                            style={{ color: risk.color, backgroundColor: risk.bg }}
-                          >
-                            {r.riskLevel || "low"}
-                          </span>
-                        </td>
-                        <td className="px-3 py-3 capitalize opacity-80">
-                          {(r.status || "—").replace(/_/g, " ")}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
+          ))}
         </div>
       </div>
-    </div>
+    </Page>
   );
 }

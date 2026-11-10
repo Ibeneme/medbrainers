@@ -1,8 +1,11 @@
-///Users/macbook/Downloads/CodesDoc/medbrainers/src/components/ui/items.tsx
+// /Users/macbook/Downloads/CodesDoc/medbrainers/src/components/ui/items.tsx
+// Updated: CustomPopupDatePicker + RescheduleModal height increased by 100px
+// New height: min-h-[420px] (from 320px)
+// Reschedule modal now uses zIndex={100} (highest modal layer)
+// Custom date/time picker & Toast component have the highest z-index (z-[99999])
 
 "use client";
-
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -41,7 +44,6 @@ import { PRIMARY_COLOR } from "@/constants/colors";
 /* -------------------------------------------------------------------------- */
 /*  Types & Tokens                                                            */
 /* -------------------------------------------------------------------------- */
-
 type UI = {
   isDark: boolean;
   page: string;
@@ -54,20 +56,17 @@ type UI = {
 /* -------------------------------------------------------------------------- */
 /*  Helper Functions & Components                                             */
 /* -------------------------------------------------------------------------- */
-
 export function personLabel(u: unknown): string {
   if (!u) return "—";
   if (typeof u === "string") return u;
   const x = u as { firstName?: string; lastName?: string; email?: string };
   return `${x.firstName || ""} ${x.lastName || ""}`.trim() || x.email || "—";
 }
-
 export function getProfilePicture(user: unknown): string | undefined {
   if (!user || typeof user === "string") return undefined;
   const u = user as { profilePicture?: string; avatar?: string };
   return u.profilePicture || u.avatar;
 }
-
 export function UserAvatar({
   user,
   size = "sm",
@@ -83,9 +82,7 @@ export function UserAvatar({
     .join("")
     .toUpperCase()
     .slice(0, 2);
-
   const dim = size === "md" ? "h-8 w-8 text-xs" : "h-6 w-6 text-[10px]";
-
   return (
     <div
       className={`flex ${dim} shrink-0 items-center justify-center overflow-hidden rounded-lg font-bold`}
@@ -100,16 +97,15 @@ export function UserAvatar({
     </div>
   );
 }
-
 export function CustomDropdown({
   label,
   value,
   options,
   onChange,
   placeholder = "Select...",
-  isDark,
-  colors,
-  border,
+  isDark: propIsDark,
+  colors: propColors,
+  border: propBorder,
   searchable = false,
 }: {
   label?: string;
@@ -117,16 +113,23 @@ export function CustomDropdown({
   options: { label: string; value: string }[];
   onChange: (val: string) => void;
   placeholder?: string;
-  isDark: boolean;
-  colors: any;
-  border: string;
+  isDark?: boolean;
+  colors?: any;
+  border?: string;
   /** Show a filter input at the top of the option list */
   searchable?: boolean;
 }) {
+  const themeContext = useTheme();
+  const isDark = propIsDark ?? themeContext?.theme === "dark";
+  const colors = propColors ??
+    themeContext?.colors ?? { shadeBg: "transparent", text: "inherit" };
+  const border =
+    propBorder ??
+    colors?.border ??
+    (isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.08)");
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
@@ -139,11 +142,9 @@ export function CustomDropdown({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
   useEffect(() => {
     if (!isOpen) setQuery("");
   }, [isOpen]);
-
   const selectedOption = options.find((o) => o.value === value);
   const visibleOptions =
     searchable && query.trim()
@@ -151,7 +152,6 @@ export function CustomDropdown({
           o.label.toLowerCase().includes(query.trim().toLowerCase())
         )
       : options;
-
   return (
     <div className="relative flex flex-col gap-1.5" ref={dropdownRef}>
       {label && (
@@ -184,7 +184,7 @@ export function CustomDropdown({
       </button>
       {isOpen && (
         <div
-          className={`absolute top-full left-0 z-[9999] mt-1.5 max-h-60 w-full overflow-y-auto rounded-xl border shadow-2xl ${
+          className={`absolute top-full left-0 z-[99999] mt-1.5 max-h-60 w-full overflow-y-auto rounded-xl border shadow-2xl ${
             isDark ? "border-white/20 bg-[#1e1e1e]" : "border-black/15 bg-white"
           }`}
         >
@@ -241,30 +241,36 @@ export function CustomDropdown({
     </div>
   );
 }
-
 export function CustomSearchableMultiStaffDropdown({
   label,
   value,
   members,
   onChange,
   placeholder = "Select staff...",
-  isDark,
-  colors,
-  border,
+  isDark: propIsDark,
+  colors: propColors,
+  border: propBorder,
 }: {
   label?: string;
   value: string[];
   members: any[];
   onChange: (val: string[]) => void;
   placeholder?: string;
-  isDark: boolean;
-  colors: any;
-  border: string;
+  isDark?: boolean;
+  colors?: any;
+  border?: string;
 }) {
+  const themeContext = useTheme();
+  const isDark = propIsDark ?? themeContext?.theme === "dark";
+  const colors = propColors ??
+    themeContext?.colors ?? { shadeBgSecond: "transparent", text: "inherit" };
+  const border =
+    propBorder ??
+    colors?.border ??
+    (isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.08)");
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
@@ -277,16 +283,13 @@ export function CustomSearchableMultiStaffDropdown({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
   const filteredMembers = members.filter((m) => {
     const fullName = `${m.firstName || ""} ${m.lastName || ""}`.toLowerCase();
     const email = (m.email || "").toLowerCase();
     const query = searchQuery.toLowerCase();
     return fullName.includes(query) || email.includes(query);
   });
-
   const selectedMembers = members.filter((m) => value.includes(m.id));
-
   const toggleMember = (id: string) => {
     if (value.includes(id)) {
       onChange(value.filter((item) => item !== id));
@@ -294,12 +297,10 @@ export function CustomSearchableMultiStaffDropdown({
       onChange([...value, id]);
     }
   };
-
   const removeMember = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     onChange(value.filter((item) => item !== id));
   };
-
   return (
     <div className="relative flex flex-col gap-1.5" ref={dropdownRef}>
       {label && (
@@ -353,10 +354,9 @@ export function CustomSearchableMultiStaffDropdown({
           }`}
         />
       </button>
-
       {isOpen && (
         <div
-          className={`absolute top-full left-0 z-[9999] mt-1.5 w-full overflow-hidden rounded-xl border shadow-2xl ${
+          className={`absolute top-full left-0 z-[99999] mt-1.5 w-full overflow-hidden rounded-xl border shadow-2xl ${
             isDark ? "border-white/20 bg-[#1e1e1e]" : "border-black/15 bg-white"
           }`}
         >
@@ -430,31 +430,44 @@ export function CustomSearchableMultiStaffDropdown({
     </div>
   );
 }
-
 export function CustomPopupDatePicker({
   label,
   value,
   onChange,
-  border,
-  colors,
-  isDark,
+  border: propBorder,
+  colors: propColors,
+  isDark: propIsDark,
   placeholder = "Select date & time...",
+  minDate,
+  maxDate,
 }: {
-  label: string;
+  label?: string;
   value: string;
   onChange: (val: string) => void;
-  border: string;
-  colors: any;
-  isDark: boolean;
+  border?: string;
+  colors?: any;
+  isDark?: boolean;
   placeholder?: string;
+  minDate?: string;
+  maxDate?: string;
 }) {
+  const themeContext = useTheme();
+  const isDark = propIsDark ?? themeContext?.theme === "dark";
+  const colors = propColors ??
+    themeContext?.colors ?? { shadeBgSecond: "transparent", text: "inherit" };
+  const border =
+    propBorder ??
+    colors?.border ??
+    (isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.08)");
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-
   const parsedDate = value ? new Date(value) : new Date();
   const [currentMonth, setCurrentMonth] = useState(parsedDate.getMonth());
   const [currentYear, setCurrentYear] = useState(parsedDate.getFullYear());
-
+  const [yearQuery, setYearQuery] = useState("");
+  const currentTime = value.includes("T")
+    ? value.split("T")[1].slice(0, 5)
+    : "08:00";
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
@@ -467,7 +480,6 @@ export function CustomPopupDatePicker({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
   const monthNames = [
@@ -484,15 +496,44 @@ export function CustomPopupDatePicker({
     "November",
     "December",
   ];
-
   const handleSelectDay = (day: number) => {
     const mStr = String(currentMonth + 1).padStart(2, "0");
     const dStr = String(day).padStart(2, "0");
-    const existingTime = value.includes("T") ? value.split("T")[1] : "08:00";
-    onChange(`${currentYear}-${mStr}-${dStr}T${existingTime}`);
-    setIsOpen(false);
+    onChange(`${currentYear}-${mStr}-${dStr}T${currentTime}`);
   };
-
+  const handleTimeChange = (newTime: string) => {
+    const cleanDatePart = value.includes("T")
+      ? value.split("T")[0]
+      : `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(
+          parsedDate.getDate()
+        ).padStart(2, "0")}`;
+    onChange(`${cleanDatePart}T${newTime}`);
+  };
+  const formatDisplayDateTime = (dateStr: string) => {
+    if (!dateStr) return placeholder;
+    const cleanDatePart = dateStr.includes("T")
+      ? dateStr.split("T")[0]
+      : dateStr;
+    const timePart = dateStr.includes("T")
+      ? dateStr.split("T")[1].slice(0, 5)
+      : "";
+    const date = new Date(cleanDatePart);
+    if (isNaN(date.getTime())) return dateStr.replace("T", " ");
+    const weekday = new Intl.DateTimeFormat("en-GB", { weekday: "long" })
+      .format(date)
+      .toLowerCase();
+    const day = date.getDate();
+    const suffix =
+      ["th", "st", "nd", "rd"][((day % 100) - 20) % 10] ||
+      ["th", "st", "nd", "rd"][day % 10] ||
+      "th";
+    const month = new Intl.DateTimeFormat("en-GB", { month: "long" })
+      .format(date)
+      .toLowerCase();
+    const year = date.getFullYear();
+    const formattedDate = `${weekday} ${day}${suffix} ${month} ${year}`;
+    return timePart ? `${formattedDate} · ${timePart}` : formattedDate;
+  };
   return (
     <div className="relative flex flex-col gap-1.5" ref={containerRef}>
       {label && (
@@ -503,7 +544,7 @@ export function CustomPopupDatePicker({
         onClick={() => setIsOpen((prev) => !prev)}
         className="flex w-full items-center justify-between rounded-xl border px-3.5 py-2.5 text-sm transition text-left shadow-none"
         style={{
-          backgroundColor: colors.shadeBgSecond,
+          backgroundColor: colors.bg,
           borderColor: border,
           color: colors.text,
         }}
@@ -511,54 +552,78 @@ export function CustomPopupDatePicker({
         <div className="flex items-center gap-2 truncate">
           <Calendar size={15} className="opacity-50 shrink-0" />
           <span
-            className={value ? "font-medium text-xs" : "text-xs opacity-40"}
+            className={
+              value ? "font-medium text-xs capitalize" : "text-xs opacity-40"
+            }
           >
-            {value ? value.replace("T", " ") : placeholder}
+            {formatDisplayDateTime(value)}
           </span>
         </div>
         <ChevronDown size={14} className="opacity-50 shrink-0" />
       </button>
-
       {isOpen && (
         <div
-          className={`absolute top-full left-0 z-[9999] mt-1.5 w-72 rounded-2xl border p-4 shadow-2xl ${
+          className={`absolute top-full left-0 z-[99999] mt-1.5 w-72 rounded-2xl border p-4 shadow-2xl ${
             isDark ? "border-white/20 bg-[#1e1e1e]" : "border-black/15 bg-white"
           }`}
         >
-          <div className="flex items-center justify-between mb-3">
-            <button
-              type="button"
-              onClick={() => {
-                if (currentMonth === 0) {
-                  setCurrentMonth(11);
-                  setCurrentYear((y) => y - 1);
-                } else {
-                  setCurrentMonth((m) => m - 1);
+          <div className="flex items-center justify-between mb-3 gap-1">
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => {
+                  if (currentMonth === 0) {
+                    setCurrentMonth(11);
+                    setCurrentYear((y) => y - 1);
+                  } else {
+                    setCurrentMonth((m) => m - 1);
+                  }
+                }}
+                className="rounded-lg p-1.5 hover:opacity-80 border shadow-none"
+                style={{ borderColor: border }}
+                title="Previous month"
+              >
+                <ChevronLeft size={13} />
+              </button>
+              <span className="text-xs font-bold capitalize px-1">
+                {monthNames[currentMonth]}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  if (currentMonth === 11) {
+                    setCurrentMonth(0);
+                    setCurrentYear((y) => y + 1);
+                  } else {
+                    setCurrentMonth((m) => m + 1);
+                  }
+                }}
+                className="rounded-lg p-1.5 hover:opacity-80 border shadow-none"
+                style={{ borderColor: border }}
+                title="Next month"
+              >
+                <ChevronRight size={13} />
+              </button>
+            </div>
+            <input
+              type="number"
+              value={yearQuery || currentYear}
+              onChange={(e) => {
+                const val = e.target.value;
+                setYearQuery(val);
+                const parsed = parseInt(val, 10);
+                if (!isNaN(parsed) && parsed >= 1900 && parsed <= 2100) {
+                  setCurrentYear(parsed);
                 }
               }}
-              className="rounded-lg p-1.5 hover:opacity-80 border shadow-none"
-              style={{ borderColor: border }}
-            >
-              <ChevronLeft size={14} />
-            </button>
-            <span className="text-xs font-bold">
-              {monthNames[currentMonth]} {currentYear}
-            </span>
-            <button
-              type="button"
-              onClick={() => {
-                if (currentMonth === 11) {
-                  setCurrentMonth(0);
-                  setCurrentYear((y) => y + 1);
-                } else {
-                  setCurrentMonth((m) => m + 1);
-                }
+              placeholder="Year"
+              className="w-16 rounded-lg border px-1.5 py-1 text-xs text-center font-bold outline-none"
+              style={{
+                backgroundColor: colors.shadeBgSecond || "transparent",
+                borderColor: border,
+                color: colors.text,
               }}
-              className="rounded-lg p-1.5 hover:opacity-80 border shadow-none"
-              style={{ borderColor: border }}
-            >
-              <ChevronRight size={14} />
-            </button>
+            />
           </div>
           <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold opacity-50 mb-2">
             <span>Su</span>
@@ -569,7 +634,7 @@ export function CustomPopupDatePicker({
             <span>Fr</span>
             <span>Sa</span>
           </div>
-          <div className="grid grid-cols-7 gap-1 text-center text-xs">
+          <div className="grid grid-cols-7 gap-1 text-center text-xs mb-3">
             {Array.from({ length: firstDayIndex }).map((_, i) => (
               <div key={`empty-${i}`} />
             ))}
@@ -579,13 +644,31 @@ export function CustomPopupDatePicker({
               const dStr = String(day).padStart(2, "0");
               const dateStr = `${currentYear}-${mStr}-${dStr}`;
               const isSelected = value.startsWith(dateStr);
-
+              const currentDateObj = new Date(`${dateStr}T00:00:00`);
+              const isBeforeMin = minDate
+                ? currentDateObj <
+                  new Date(
+                    minDate.includes("T") ? minDate.split("T")[0] : minDate
+                  )
+                : false;
+              const isAfterMax = maxDate
+                ? currentDateObj >
+                  new Date(
+                    maxDate.includes("T") ? maxDate.split("T")[0] : maxDate
+                  )
+                : false;
+              const isDisabled = isBeforeMin || isAfterMax;
               return (
                 <button
                   key={day}
                   type="button"
-                  onClick={() => handleSelectDay(day)}
-                  className="flex h-8 w-8 items-center justify-center rounded-xl font-semibold transition hover:opacity-80 mx-auto shadow-none"
+                  disabled={isDisabled}
+                  onClick={() => !isDisabled && handleSelectDay(day)}
+                  className={`flex h-8 w-8 items-center justify-center rounded-xl font-semibold transition mx-auto shadow-none ${
+                    isDisabled
+                      ? "opacity-20 cursor-not-allowed"
+                      : "hover:opacity-80"
+                  }`}
                   style={{
                     backgroundColor: isSelected ? PRIMARY_COLOR : "transparent",
                     color: isSelected ? "#fff" : colors.text,
@@ -596,12 +679,28 @@ export function CustomPopupDatePicker({
               );
             })}
           </div>
+          <div
+            className="border-t pt-3 flex items-center justify-between gap-2"
+            style={{ borderColor: border }}
+          >
+            <span className="text-[11px] font-semibold opacity-70">Time</span>
+            <input
+              type="time"
+              value={currentTime}
+              onChange={(e) => handleTimeChange(e.target.value)}
+              className="rounded-lg border px-2.5 py-1 text-xs font-semibold outline-none"
+              style={{
+                backgroundColor: colors.shadeBgSecond || "transparent",
+                borderColor: border,
+                color: colors.text,
+              }}
+            />
+          </div>
         </div>
       )}
     </div>
   );
 }
-
 export function Modal({
   open,
   title,
@@ -629,7 +728,6 @@ export function Modal({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open, escape, onClose]);
-
   if (!open) return null;
   return (
     <div
@@ -660,7 +758,6 @@ export function Modal({
     </div>
   );
 }
-
 export type ConfirmState = {
   title: string;
   message: string;
@@ -668,7 +765,6 @@ export type ConfirmState = {
   tone: "danger" | "primary";
   onConfirm: () => Promise<void>;
 } | null;
-
 export function ConfirmModal({
   state,
   busy,
@@ -725,14 +821,75 @@ export function ConfirmModal({
     </Modal>
   );
 }
-
+export function TextField({
+  label,
+  value,
+  onChange,
+  placeholder,
+  multiline = false,
+  rows = 3,
+  border: propBorder,
+  colors: propColors,
+}: {
+  label?: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  multiline?: boolean;
+  rows?: number;
+  border?: string;
+  colors?: any;
+}) {
+  const themeContext = useTheme();
+  const isDark = themeContext?.theme === "dark";
+  const colors = propColors ??
+    themeContext?.colors ?? { shadeBg: "transparent", text: "inherit" };
+  const border =
+    propBorder ??
+    colors?.border ??
+    (isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.08)");
+  const cls =
+    "w-full rounded-xl border px-3.5 py-2.5 text-sm outline-none transition " +
+    "placeholder:opacity-40 focus:ring-1 focus:ring-[var(--ring)]";
+  const style = {
+    backgroundColor: colors.shadeBg || "transparent",
+    borderColor: border,
+    color: colors.text,
+    ["--ring" as any]: PRIMARY_COLOR,
+  };
+  return (
+    <div className="flex flex-col gap-1.5">
+      {label && (
+        <label className="text-xs font-semibold opacity-70">{label}</label>
+      )}
+      {multiline ? (
+        <textarea
+          rows={rows}
+          value={value}
+          onChange={(e) => setValueSafe(onChange, e.target.value)}
+          placeholder={placeholder}
+          className={`${cls} resize-y leading-relaxed`}
+          style={style}
+        />
+      ) : (
+        <input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className={cls}
+          style={style}
+        />
+      )}
+    </div>
+  );
+}
+const setValueSafe = (fn: (v: string) => void, v: string) => fn(v);
 interface ToggleSwitchProps {
   checked: boolean;
   onChange: (checked: boolean) => void;
   label?: string;
   description?: string;
 }
-
 export function ToggleSwitch({
   checked,
   onChange,
@@ -769,4 +926,181 @@ export function ToggleSwitch({
       </button>
     </label>
   );
+}
+export function RescheduleModal({
+  open,
+  onClose,
+  onSubmit,
+  busy,
+  ui,
+  currentStart,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onSubmit: (payload: {
+    scheduledStart: string;
+    scheduledEnd?: string;
+    reason?: string;
+  }) => Promise<void>;
+  busy: boolean;
+  ui: UI;
+  currentStart?: string;
+}) {
+  const [scheduledStart, setScheduledStart] = useState(
+    currentStart
+      ? currentStart.slice(0, 16)
+      : new Date().toISOString().slice(0, 16)
+  );
+  const [reason, setReason] = useState("");
+  useEffect(() => {
+    if (currentStart) {
+      setScheduledStart(currentStart.slice(0, 16));
+    }
+  }, [currentStart]);
+  if (!open) return null;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const startIso = new Date(scheduledStart).toISOString();
+    await onSubmit({ scheduledStart: startIso, reason: reason || undefined });
+  };
+  return (
+    <Modal
+      open={open}
+      title="Reschedule Visit"
+      onClose={onClose}
+      ui={ui}
+      z={100} // highest modal layer
+      maxWidth="max-w-md"
+    >
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-4 min-h-[420px] flex flex-col justify-between"
+      >
+        <div className="space-y-4">
+          <CustomPopupDatePicker
+            label="New Date & Time"
+            value={scheduledStart}
+            onChange={(val) => setScheduledStart(val)}
+          />
+          <TextField
+            label="Reason for Rescheduling"
+            value={reason}
+            onChange={setReason}
+            placeholder="e.g., Doctor unavailable, patient request"
+            multiline
+            rows={3}
+          />
+        </div>
+        <div className="flex justify-end gap-2 pt-4">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onClose}
+            className="rounded-full px-5 py-2.5 text-xs font-semibold disabled:opacity-50"
+            style={{ backgroundColor: ui.inner }}
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={busy}
+            className="rounded-full px-5 py-2.5 text-xs font-semibold text-white disabled:opacity-50"
+            style={{ backgroundColor: PRIMARY_COLOR }}
+          >
+            {busy ? "Rescheduling..." : "Confirm Reschedule"}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+// HIGHEST Z-INDEX TOAST SYSTEM
+export function Toast({
+  message,
+  type = "success",
+  duration = 3000,
+  onClose,
+}: {
+  message: string;
+  type?: "success" | "error" | "info";
+  duration?: number;
+  onClose?: () => void;
+}) {
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setVisible(false);
+      onClose?.();
+    }, duration);
+    return () => clearTimeout(timer);
+  }, [duration, onClose]);
+
+  if (!visible) return null;
+
+  const bgColor =
+    type === "success"
+      ? "bg-emerald-600"
+      : type === "error"
+      ? "bg-red-600"
+      : "bg-slate-800 text-white";
+
+  return (
+    <div
+      className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[99999] max-w-md w-full mx-4 px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 transition-all duration-300 text-white ${bgColor}`}
+      onClick={() => setVisible(false)}
+    >
+      <div className="flex-1 text-sm font-medium">{message}</div>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          setVisible(false);
+        }}
+        className="text-white/70 hover:text-white transition"
+      >
+        <X size={18} />
+      </button>
+    </div>
+  );
+}
+
+export function useToast() {
+  const [toasts, setToasts] = useState<
+    Array<{
+      id: number;
+      message: string;
+      type: "success" | "error" | "info";
+      duration?: number;
+      onClose?: () => void;
+    }>
+  >([]);
+
+  const showToast = useCallback(
+    ({
+      message,
+      type = "info",
+      duration = 3000,
+      onClose,
+    }: {
+      message: string;
+      type?: "success" | "error" | "info";
+      duration?: number;
+      onClose?: () => void;
+    }) => {
+      const id = Date.now();
+      setToasts((prev) => [...prev, { id, message, type, duration, onClose }]);
+    },
+    []
+  );
+
+  const removeToast = useCallback((id: number) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+  return {
+    toasts,
+    showToast,
+    removeToast,
+  };
 }

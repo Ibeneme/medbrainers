@@ -1,125 +1,55 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Syringe, Plus, RefreshCw } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/api/hooks";
-import { fetchMyFacilities } from "@/api/slices";
-import api from "@/api/services";
-import { PRIMARY_COLOR } from "@/constants/colors";
+import Link from "next/link";
+import { Plus, Syringe } from "lucide-react";
+import { fetchImmunizations } from "@/api/slices";
 import {
-  ModuleShell,
-  personLabel,
-  StatusPill,
-  EmptyState,
-  useInputStyles,
-  ActionLink,
-} from "@/components/dashboard/ModuleShell";
+  BASE, Banner, Btn, DataTable, ENUMS, Flag, Header, Loader, MPill, Page, PatientCell, Pills, SearchBox, SectionCard, fmtDate, isOverdue,
+  label, matchesPatient, useMat,
+} from "@/components/maternity/mat-ui";
 
-const ENDPOINTS: Record<string, string> = {
-  ambulances: "/emergency/ambulances",
-  critical: "/emergency/critical",
-  catalog: "/labs/catalog",
-  results: "/labs/requests",
-  specimens: "/labs/specimens",
-  prescriptions: "/pharmacy/prescriptions",
-  inventory: "/pharmacy/inventory",
-  dispense: "/pharmacy/prescriptions",
-  controlled: "/pharmacy/controlled",
-  requests: "/radiology/worklist",
-  viewer: "/radiology/worklist",
-  crossmatch: "/blood-bank/crossmatch",
-  transfusions: "/blood-bank/transfusions",
-  schedule: "/theater/schedule",
-  checklist: "/theater/schedule",
-  recovery: "/theater/recovery",
-  antenatal: "/maternal/antenatal",
-  delivery: "/maternal/deliveries",
-  immunization: "/maternal/antenatal",
-  pediatrics: "/maternal/pediatrics",
-};
-
-export default function ModulePage() {
-  const dispatch = useAppDispatch();
-  const { activeFacilityId } = useAppSelector((s) => s.facilities);
-  const { inputStyle, inputCls, cardCls, ui } = useInputStyles();
-  const [items, setItems] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [msg, setMsg] = useState<string | null>(null);
-
-  useEffect(() => { dispatch(fetchMyFacilities()); }, [dispatch]);
-
-  async function load() {
-    if (!activeFacilityId) return;
-    const ep = ENDPOINTS["immunization"] || "";
-    if (!ep) { setItems([]); return; }
-    setLoading(true);
-    setError(null);
-    try {
-      const { data } = await api.get(`/companies/${activeFacilityId}${ep}`);
-      const list = data?.data ?? data ?? [];
-      setItems(Array.isArray(list) ? list : []);
-    } catch (e: any) {
-      setError(e?.response?.data?.message || e?.message || "Failed to load");
-      setItems([]);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => { load(); }, [activeFacilityId]);
-
-  function rowTitle(it: any) {
-    return (
-      it.name || it.procedureName || it.vaccineName || it.vehicleCode || it.unitNumber ||
-      it.drugName || it.barcode || it.modality || it.clinicalDescription ||
-      personLabel(it.patient || it.patientId) || it._id?.slice(-6) || "Record"
-    );
-  }
-
-  function rowDetail(it: any) {
-    const parts = [
-      it.chiefComplaint, it.clinicalIndication, it.batchNumber, it.bloodType,
-      it.theaterRoom, it.specimenType, it.status, it.priority,
-    ].filter(Boolean);
-    return parts.slice(0, 3).join(" · ");
-  }
-
+export default function ImmunizationPage() {
+  const { facilityId, act, maternity, activeFacility } = useMat();
+  const [q, setQ] = useState("");
+  const [status, setStatus] = useState("scheduled");
+  useEffect(() => {
+    if (facilityId) act(fetchImmunizations({ facilityId }), false);
+  }, [facilityId, act]);
+  const all = maternity.immunizations;
+  const overdue = all.filter((r) => isOverdue(r.scheduledDate, r.status)).length;
+  const rows = all.filter((r) => (status === "all" || r.status === status) && matchesPatient(r.patient, q));
   return (
-    <ModuleShell
-      title="Immunization & vaccination"
-      subtitle={`${items.length} records`}
-      icon={Syringe}
-      loading={loading}
-      actions={
-        <>
-          <ActionLink href="/dashboard/dashboard">Dashboard</ActionLink>
-          <button type="button" onClick={load} className="flex items-center gap-1.5 rounded-full border px-4 py-2.5 text-xs font-semibold" style={{ borderColor: ui.border }}>
-            <RefreshCw size={14} /> Refresh
-          </button>
-        </>
-      }
-    >
-      {msg && <div className="rounded-2xl px-4 py-2 text-xs font-semibold" style={{ backgroundColor: "rgba(37,99,235,0.12)", color: "#2563eb" }}>{msg}</div>}
-      {error && <div className="rounded-2xl px-4 py-2 text-xs font-semibold" style={{ backgroundColor: "rgba(220,38,38,0.12)", color: "#dc2626" }}>{error}</div>}
-
-      <div className={cardCls} style={{ backgroundColor: ui.card, borderColor: ui.border }}>
-        {items.length === 0 ? (
-          <EmptyState text="No records yet. Data will appear when the API returns items for this module." />
-        ) : (
-          <div className="space-y-2">
-            {items.map((it: any) => (
-              <div key={it._id || JSON.stringify(it).slice(0, 20)} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl p-4" style={{ backgroundColor: ui.inner }}>
-                <div className="min-w-0">
-                  <p className="font-semibold text-sm truncate">{rowTitle(it)}</p>
-                  <p className="text-xs opacity-55 truncate">{rowDetail(it)}</p>
-                </div>
-                {it.status && <StatusPill status={String(it.status)} />}
-              </div>
-            ))}
-          </div>
+    <Page>
+      <Header icon={<Syringe size={22} />} title="Immunization Schedule" subtitle={activeFacility?.name}
+        actions={<Btn href={`${BASE}/immunization/new`}><Plus size={16} /> Schedule vaccine</Btn>} />
+      {overdue > 0 && (
+        <Banner tone="bad">
+          {overdue} scheduled dose{overdue === 1 ? " is" : "s are"} overdue — trace and recall the children.
+        </Banner>
+      )}
+      <SectionCard title="Doses" count={rows.length}>
+        <SearchBox value={q} onChange={setQ} placeholder="Search patient name or MRN…" />
+        <Pills value={status} onChange={setStatus} options={[{ value: "all", label: "All" }, ...ENUMS.immunizationStatuses.map((s) => ({ value: s, label: label(s) }))]} />
+        {maternity.listLoading && !all.length ? <Loader /> : (
+          <DataTable
+            head={["Patient", "Vaccine", "Dose", "Scheduled", "Given", "Status", ""]}
+            empty="No immunization records match."
+            rows={rows.map((r) => {
+              const od = isOverdue(r.scheduledDate, r.status);
+              return [
+                <PatientCell key="p" p={r.patient} />,
+                <span key="v" className="font-semibold">{r.vaccineName}</span>,
+                r.doseNumber ?? "—",
+                <Flag key="s" tone={od ? "bad" : undefined}>{fmtDate(r.scheduledDate)}{od ? " · overdue" : ""}</Flag>,
+                r.administeredDate ? `${fmtDate(r.administeredDate)}${r.batchNumber ? ` · batch ${r.batchNumber}` : ""}` : "—",
+                <MPill key="st" value={r.status} />,
+                r.status === "scheduled" ? <Link key="a" className="text-xs font-semibold underline" href={`${BASE}/immunization/${r._id}/administer`}>Administer</Link> : null,
+              ];
+            })}
+          />
         )}
-      </div>
-    </ModuleShell>
+      </SectionCard>
+    </Page>
   );
 }

@@ -1136,16 +1136,6 @@ export default function FeaturePage({
           className="relative aspect-[16/9] w-full overflow-hidden rounded-[28px] bg-[#111] md:aspect-[16/7]"
         >
           <div data-image className="absolute inset-0 will-change-transform">
-            {heroImage ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={heroImage}
-                alt={heroImageAlt}
-                className="h-full w-full bg-black object-contain"
-              />
-            ) : (
-              <>
-            {/* Mobile: one illustration */}
             <div className="relative h-full w-full bg-black p-6 md:hidden">
               <Art name={heroTiles[0]?.art ?? "hospital"} />
             </div>
@@ -1160,8 +1150,6 @@ export default function FeaturePage({
                 </div>
               ))}
             </div>
-              </>
-            )}
           </div>
         </div>
       </div>

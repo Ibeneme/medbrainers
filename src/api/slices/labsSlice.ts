@@ -1,7 +1,7 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import api, { getErrorMessage, type ApiSuccess } from "../services";
 
-export interface Department {
+export interface LabDepartment {
   _id?: string;
   name: string;
   code: string;
@@ -12,7 +12,7 @@ export interface Laboratory {
   _id: string;
   company: string;
   name: string;
-  departments: Department[];
+  departments: LabDepartment[];
   isActive: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -368,7 +368,7 @@ export const updateRequestKanbanStatus = createAsyncThunk(
   },
 );
 
-export const addRequestNote = createAsyncThunk(
+export const addLabRequestNote = createAsyncThunk(
   "labs/addRequestNote",
   async ({ facilityId, requestId, text }: { facilityId: string; requestId: string; text: string }, { rejectWithValue }) => {
     try {
@@ -676,7 +676,7 @@ const labsSlice = createSlice({
       }
     });
 
-    b.addCase(addRequestNote.fulfilled, (s, a) => {
+    b.addCase(addLabRequestNote.fulfilled, (s, a) => {
       s.saving = false;
       s.message = "Note added";
       if (a.payload.data) s.activeRequest = a.payload.data;

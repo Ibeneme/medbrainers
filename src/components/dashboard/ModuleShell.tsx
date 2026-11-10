@@ -4,31 +4,14 @@ import { ReactNode } from "react";
 import Link from "next/link";
 import { Building2 } from "lucide-react";
 import { useTheme } from "@/contexts/theme-context";
-import { PRIMARY_COLOR } from "@/constants/colors";
+import { PRIMARY_COLOR, getUI, UI } from "@/constants/colors";
 import { useAppSelector } from "@/api/hooks";
 import DarkBlurOverlayLoader from "@/components/atoms/loaders/DarkBlurOverlayLoader";
 
-export type ModuleUI = {
-  isDark: boolean;
-  page: string;
-  card: string;
-  inner: string;
-  text: string;
-  border: string;
-};
-
-export function useModuleUI(): ModuleUI {
+export function useModuleUI(): UI {
   const { theme, colors } = useTheme();
   const isDark = theme === "dark";
-  const border = isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.08)";
-  return {
-    isDark,
-    page: isDark ? "rgba(255,255,255,0.03)" : "#eef2f7",
-    card: isDark ? colors.shadeBg : "#ffffff",
-    inner: isDark ? colors.shadeBgSecond : "#f3f5f9",
-    text: colors.text,
-    border,
-  };
+  return getUI(isDark, colors);
 }
 
 export function personLabel(p: unknown) {
@@ -58,12 +41,17 @@ export function ModuleShell({
   requireFacility?: boolean;
 }) {
   const ui = useModuleUI();
-  const { activeFacilityId, activeFacility } = useAppSelector((s) => s.facilities);
+  const { activeFacilityId, activeFacility } = useAppSelector(
+    (s) => s.facilities
+  );
   const { colors } = useTheme();
 
   if (requireFacility && !activeFacilityId) {
     return (
-      <div className="max-w-lg mx-auto px-4 py-16 text-center" style={{ color: colors.text }}>
+      <div
+        className="max-w-lg mx-auto px-4 py-16 text-center"
+        style={{ color: colors.text }}
+      >
         <Building2 className="mx-auto opacity-30 mb-3" size={32} />
         <p className="font-bold">Select a facility first</p>
       </div>
@@ -71,29 +59,39 @@ export function ModuleShell({
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-3 sm:px-6 py-4 sm:py-6">
+    <div className="mx-auto max-w-6xl py-4 sm:py-6">
       <div
         className="relative rounded-[32px] p-4 sm:p-6 space-y-5"
-        style={{ backgroundColor: ui.page, color: ui.text }}
+        style={{ color: ui.text }}
       >
-        {loading && <DarkBlurOverlayLoader text={loadingText || "Loading..."} />}
+        {loading && (
+          <DarkBlurOverlayLoader text={loadingText || "Loading..."} />
+        )}
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2.5">
               <span
                 className="flex h-10 w-10 items-center justify-center rounded-2xl border"
-                style={{ backgroundColor: ui.card, borderColor: ui.border, color: PRIMARY_COLOR }}
+                style={{
+                  backgroundColor: ui.card,
+                  borderColor: ui.border,
+                  color: PRIMARY_COLOR,
+                }}
               >
                 <Icon size={20} />
               </span>
-              <h1 className="text-3xl sm:text-4xl font-normal tracking-tight">{title}</h1>
+              <h1 className="text-3xl sm:text-4xl font-normal tracking-tight">
+                {title}
+              </h1>
             </div>
             <p className="text-xs opacity-55 mt-1 ml-1">
               {activeFacility?.name}
               {subtitle ? ` · ${subtitle}` : ""}
             </p>
           </div>
-          {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+          {actions && (
+            <div className="flex flex-wrap items-center gap-2">{actions}</div>
+          )}
         </div>
         {children}
       </div>
@@ -103,14 +101,23 @@ export function ModuleShell({
 
 export function Field({
   label,
+  placeholder,
   children,
 }: {
   label: string;
+  placeholder?: string;
   children: ReactNode;
 }) {
   return (
     <div>
-      <label className="mb-1.5 block text-xs font-semibold opacity-70">{label}</label>
+      <div className="mb-1.5 flex items-center justify-between">
+        <label className="block text-xs font-semibold opacity-70">
+          {label}
+        </label>
+        {placeholder && (
+          <span className="text-[10px] opacity-40 italic">{placeholder}</span>
+        )}
+      </div>
       {children}
     </div>
   );
@@ -118,20 +125,28 @@ export function Field({
 
 export function useInputStyles() {
   const ui = useModuleUI();
+  const { colors } = useTheme();
   return {
     ui,
     inputStyle: {
-      backgroundColor: ui.inner,
+      backgroundColor: colors.shadeBgSecond,
       color: ui.text,
-      borderColor: "transparent",
+      borderColor: colors.text + 21,
+      borderWidth: "1px",
     } as React.CSSProperties,
     inputCls:
-      "w-full rounded-2xl border px-4 py-3 text-sm outline-none focus:outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/25",
+      "w-full rounded-2xl border px-4 py-3 text-sm outline-none placeholder:opacity-40 focus:outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/25",
     cardCls: "rounded-[28px] border p-5 sm:p-6 space-y-4",
   };
 }
 
-export function StatusPill({ status, map }: { status?: string; map?: Record<string, string> }) {
+export function StatusPill({
+  status,
+  map,
+}: {
+  status?: string;
+  map?: Record<string, string>;
+}) {
   const color = map?.[status || ""] || "#6b7280";
   return (
     <span
@@ -147,7 +162,13 @@ export function EmptyState({ text }: { text: string }) {
   return <p className="text-sm opacity-50 py-8 text-center">{text}</p>;
 }
 
-export function ActionLink({ href, children }: { href: string; children: ReactNode }) {
+export function ActionLink({
+  href,
+  children,
+}: {
+  href: string;
+  children: ReactNode;
+}) {
   const ui = useModuleUI();
   return (
     <Link
@@ -157,5 +178,43 @@ export function ActionLink({ href, children }: { href: string; children: ReactNo
     >
       {children}
     </Link>
+  );
+}
+
+export function InputField({
+  label,
+  placeholder,
+  value,
+  onChange,
+  type = "text",
+  required = false,
+  disabled = false,
+  error,
+}: {
+  label: string;
+  placeholder?: string;
+  value: string | number;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  type?: string;
+  required?: boolean;
+  disabled?: boolean;
+  error?: string;
+}) {
+  const { inputCls, inputStyle } = useInputStyles();
+
+  return (
+    <Field label={label} placeholder={placeholder}>
+      <input
+        type={type}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        required={required}
+        disabled={disabled}
+        className={inputCls}
+        style={inputStyle}
+      />
+      {error && <p className="text-[11px] text-red-500 mt-1 ml-1">{error}</p>}
+    </Field>
   );
 }

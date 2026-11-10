@@ -1,245 +1,223 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect } from "react";
 import Link from "next/link";
-import { Building2, Droplets, Loader2, Plus, Search } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/api/hooks";
-import { fetchMyFacilities, fetchBloodInventory } from "@/api/slices";
-import { useTheme } from "@/contexts/theme-context";
+import {
+  AlertTriangle,
+  Boxes,
+  CalendarDays,
+  ClipboardCheck,
+  Droplets,
+  FlaskConical,
+  GitCompare,
+  HeartPulse,
+  Layers,
+  Plus,
+  Send,
+  Snowflake,
+  Syringe,
+  Timer,
+  Users,
+} from "lucide-react";
+import { fetchBloodBankDashboard } from "@/api/slices";
 import { PRIMARY_COLOR } from "@/constants/colors";
-import { CustomDropdown } from "@/components/ui/items";
-import DarkBlurOverlayLoader from "@/components/atoms/loaders/DarkBlurOverlayLoader";
+import {
+  BASE, Banner, Btn, Header, Loader, Page, SectionCard, Stat, RowLink, Empty,
+  fmtDateTime, useBB, Ring, Pill,
+} from "@/components/blood-bank/bb-ui";
 
-type UI = {
-  isDark: boolean;
-  page: string;
-  card: string;
-  inner: string;
-  text: string;
-  border: string;
-};
+const SHORTCUTS = [
+  { title: "Donor registry", href: "/donors", icon: Users, desc: "Register and manage donors" },
+  { title: "Donor screening", href: "/screening", icon: ClipboardCheck, desc: "Vitals, Hb and risk assessment" },
+  { title: "Donations", href: "/donations", icon: Droplets, desc: "Record collections" },
+  { title: "Blood drives", href: "/drives", icon: CalendarDays, desc: "Plan outreach collections" },
+  { title: "Grouping & typing", href: "/grouping", icon: FlaskConical, desc: "ABO / Rh with dual check" },
+  { title: "TTI testing", href: "/testing", icon: Syringe, desc: "HIV, HBsAg, HCV, syphilis…" },
+  { title: "Components", href: "/components", icon: Layers, desc: "Prepare PRC, FFP, platelets" },
+  { title: "Inventory", href: "/inventory", icon: Boxes, desc: "Stock by product and group" },
+  { title: "Storage & cold chain", href: "/storage", icon: Snowflake, desc: "Fridges, freezers, temperatures" },
+  { title: "Expiry & discards", href: "/expiry", icon: Timer, desc: "Near-expiry and wastage" },
+  { title: "Crossmatching", href: "/crossmatch", icon: GitCompare, desc: "Compatibility testing" },
+  { title: "Issue & dispatch", href: "/issue", icon: Send, desc: "Release units to wards" },
+];
 
-const STATUS_STYLE: Record<string, { color: string; bg: string }> = {
-  available: { color: "#059669", bg: "rgba(16,185,129,0.14)" },
-  reserved: { color: "#2563eb", bg: "rgba(37,99,235,0.14)" },
-  issued: { color: "#6b7280", bg: "rgba(107,114,128,0.16)" },
-  expired: { color: "#dc2626", bg: "rgba(220,38,38,0.16)" },
-  discarded: { color: "#6b7280", bg: "rgba(107,114,128,0.16)" },
-};
+export default function BloodBankDashboard() {
+  const bb = useBB();
+  const { facilityId, act, bloodBank, activeFacility, ui, softShadow } = bb;
+  const d = bloodBank.dashboard;
 
-function SummaryCard({
-  icon: Icon,
-  label,
-  value,
-  color,
-  ui,
-}: {
-  icon: any;
-  label: string;
-  value: number;
-  color: string;
-  ui: UI;
-}) {
+  const load = useCallback(() => {
+    if (facilityId) act(fetchBloodBankDashboard({ facilityId }), false);
+  }, [facilityId, act]);
+
+  useEffect(() => {
+    load();
+    if (!facilityId) return;
+    const t = setInterval(load, 30000);
+    return () => clearInterval(t);
+  }, [load, facilityId]);
+
+  const totalStock = d?.redCellsByGroup?.reduce((n, g) => n + g.available, 0) || 0;
+  const minTotal = d?.redCellsByGroup?.reduce((n, g) => n + g.minimum, 0) || 0;
+  const stockPct = minTotal ? Math.min(100, Math.round((totalStock / minTotal) * 100)) : 0;
+
   return (
-    <div className="flex items-center gap-4 rounded-[28px] p-5" style={{ backgroundColor: ui.card }}>
-      <span
-        className="flex h-12 w-12 items-center justify-center rounded-2xl"
-        style={{ backgroundColor: ui.inner, color }}
-      >
-        <Icon size={20} />
-      </span>
+    <Page>
+      <Header
+        icon={<HeartPulse size={22} />}
+        title="Blood Bank"
+        subtitle={activeFacility?.name}
+        actions={
+          <>
+            <Btn href={`${BASE}/donors/new`} tone="card">Register donor</Btn>
+            <Btn href={`${BASE}/requests/new`}>
+              <Plus size={16} /> New blood request
+            </Btn>
+          </>
+        }
+      />
+
+      {!d ? (
+        <Loader text="Loading blood bank…" />
+      ) : (
+        <>
+          <div className="space-y-3">
+            {d.emergencyRequests > 0 && (
+              <Banner tone="bad" href={`${BASE}/requests`} cta="Respond">
+                <AlertTriangle size={18} className="text-red-500" />
+                {d.emergencyRequests} emergency blood request{d.emergencyRequests === 1 ? "" : "s"} open
+              </Banner>
+            )}
+            {d.storageAlarms > 0 && (
+              <Banner tone="bad" href={`${BASE}/storage`}>
+                <AlertTriangle size={18} className="text-red-500" />
+                {d.storageAlarms} storage unit{d.storageAlarms === 1 ? "" : "s"} outside temperature range
+              </Banner>
+            )}
+            {d.openReactions > 0 && (
+              <Banner tone="warn" href={`${BASE}/reactions`}>
+                <AlertTriangle size={18} style={{ color: PRIMARY_COLOR }} />
+                {d.openReactions} transfusion reaction{d.openReactions === 1 ? "" : "s"} still open
+              </Banner>
+            )}
+            {d.pendingRetrospectiveCrossmatches > 0 && (
+              <Banner tone="warn" href={`${BASE}/issue`}>
+                <AlertTriangle size={18} style={{ color: PRIMARY_COLOR }} />
+                {d.pendingRetrospectiveCrossmatches} emergency issue{d.pendingRetrospectiveCrossmatches === 1 ? "" : "s"} waiting for a retrospective crossmatch
+              </Banner>
+            )}
+            {d.expired > 0 && (
+              <Banner tone="bad" href={`${BASE}/expiry`} cta="Clear">
+                <AlertTriangle size={18} className="text-red-500" />
+                {d.expired} expired unit{d.expired === 1 ? "" : "s"} still in stock
+              </Banner>
+            )}
+            {d.lowStockGroups?.length > 0 && (
+              <Banner tone="warn" href={`${BASE}/inventory`}>
+                <AlertTriangle size={18} style={{ color: PRIMARY_COLOR }} />
+                Low red-cell stock: {d.lowStockGroups.join(", ")}
+              </Banner>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <div
+              className="col-span-2 flex items-center gap-5 rounded-3xl p-5 lg:col-span-1"
+              style={{ backgroundColor: ui.card, boxShadow: softShadow }}
+            >
+              <Ring pct={stockPct} size={72} stroke={6} />
+              <div>
+                <p className="text-xs font-medium opacity-55">Red-cell stock</p>
+                <p className="mt-0.5 text-2xl font-semibold tracking-tight">
+                  {totalStock}
+                  <span className="text-base font-normal opacity-50">/{minTotal}</span>
+                </p>
+                <p className="text-[11px] opacity-45">vs. minimum level</p>
+              </div>
+            </div>
+            <Stat label="Available units" value={d.availableUnits} sub="ready to crossmatch" href={`${BASE}/inventory`} />
+            <Stat label="Expiring soon" value={d.expiringSoon} sub={`within ${d.expiryAlertDays} days`} tone={d.expiringSoon ? "warn" : undefined} href={`${BASE}/expiry`} />
+            <Stat label="Open requests" value={d.openRequests} sub="awaiting completion" href={`${BASE}/requests`} />
+            <Stat label="Transfusions running" value={d.transfusionsInProgress} sub="in progress now" href={`${BASE}/transfusions`} />
+            <Stat label="Donations today" value={d.donationsToday} sub={`${d.readyToDonate} screened & ready`} href={`${BASE}/donations`} />
+            <Stat label="Awaiting grouping" value={d.awaitingGrouping} sub="donations to type" href={`${BASE}/grouping`} />
+            <Stat label="Awaiting TTI" value={d.awaitingTti} sub="results outstanding" href={`${BASE}/testing`} />
+            <Stat label="Issued today" value={d.issuedToday} sub="units dispatched" href={`${BASE}/issue`} />
+            <Stat label="Quarantined" value={d.quarantined} sub="not yet cleared" href={`${BASE}/inventory`} />
+            <Stat label="Active donors" value={d.activeDonors} sub="in the registry" href={`${BASE}/donors`} />
+          </div>
+
+          <SectionCard title="Red-cell stock by group" right={<Btn href={`${BASE}/inventory`} tone="ghost">Full inventory</Btn>}>
+            <div className="flex flex-wrap gap-2.5">
+              {d.redCellsByGroup.map((g) => (
+                <Link
+                  key={g.group}
+                  href={`${BASE}/inventory?bloodGroup=${encodeURIComponent(g.group)}`}
+                  className="flex h-20 w-[92px] flex-col items-center justify-center rounded-2xl px-1 transition-all hover:-translate-y-0.5"
+                  style={
+                    g.low
+                      ? { backgroundColor: "#ef444418", color: "#ef4444", border: "1px solid #ef444440" }
+                      : { backgroundColor: ui.inner }
+                  }
+                >
+                  <span className="font-mono text-base font-bold">{g.group}</span>
+                  <span className="text-lg font-semibold leading-none">{g.available}</span>
+                  <span className="mt-0.5 text-[10px] opacity-60">
+                    {g.reserved} reserved · min {g.minimum}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </SectionCard>
+
+          <SectionCard title="Upcoming blood drives" count={d.upcomingDrives?.length || 0} right={<Btn href={`${BASE}/drives/new`} tone="ghost">Schedule drive</Btn>}>
+            {d.upcomingDrives?.length ? (
+              <div className="space-y-3">
+                {d.upcomingDrives.map((dr) => (
+                  <RowLink key={dr._id} href={`${BASE}/drives/${dr._id}`}>
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-[15px] font-semibold">{dr.name}</p>
+                        <p className="truncate text-xs opacity-55">
+                          {dr.driveNumber} · {dr.location} · {fmtDateTime(dr.scheduledAt)}
+                        </p>
+                      </div>
+                      <Pill value={dr.status} />
+                    </div>
+                  </RowLink>
+                ))}
+              </div>
+            ) : (
+              <Empty>No upcoming drives scheduled.</Empty>
+            )}
+          </SectionCard>
+        </>
+      )}
+
       <div>
-        <p className="text-xs opacity-60">{label}</p>
-        <p className="text-3xl font-medium leading-tight tracking-tight">{value}</p>
-      </div>
-    </div>
-  );
-}
-
-export default function BloodBankPage() {
-  const dispatch = useAppDispatch();
-  const { theme, colors } = useTheme();
-  const isDark = theme === "dark";
-  const border = isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.08)";
-
-  const ui: UI = {
-    isDark,
-    page: isDark ? "rgba(255,255,255,0.03)" : "#eef2f7",
-    card: isDark ? colors.shadeBg : "#ffffff",
-    inner: isDark ? colors.shadeBgSecond : "#f3f5f9",
-    text: colors.text,
-    border,
-  };
-
-  const { activeFacilityId, activeFacility } = useAppSelector((s) => s.facilities);
-  const { inventory, listLoading } = useAppSelector((s) => s.bloodBank);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-
-  useEffect(() => {
-    dispatch(fetchMyFacilities());
-  }, [dispatch]);
-
-  useEffect(() => {
-    if (!activeFacilityId) return;
-    dispatch(
-      fetchBloodInventory({
-        facilityId: activeFacilityId,
-        status: statusFilter !== "all" ? statusFilter : undefined,
-      }),
-    );
-  }, [dispatch, activeFacilityId, statusFilter]);
-
-  const filtered = inventory.filter((u) => {
-    if (!search.trim()) return true;
-    const q = search.toLowerCase();
-    return (
-      (u.bloodType || "").toLowerCase().includes(q) ||
-      (u.component || "").toLowerCase().includes(q) ||
-      (u.unitNumber || "").toLowerCase().includes(q)
-    );
-  });
-
-  if (!activeFacilityId) {
-    return (
-      <div className="max-w-lg mx-auto px-4 py-16 text-center" style={{ color: colors.text }}>
-        <Building2 className="mx-auto opacity-30 mb-3" size={32} />
-        <p className="font-bold">Select a facility first</p>
-      </div>
-    );
-  }
-
-  const available = inventory.filter((u) => u.status === "available").length;
-  const reserved = inventory.filter((u) => u.status === "reserved").length;
-
-  return (
-    <div className="mx-auto max-w-6xl px-3 sm:px-6 py-4 sm:py-6">
-      <div
-        className="relative rounded-[32px] p-4 sm:p-6 space-y-5"
-        style={{ backgroundColor: ui.page, color: ui.text }}
-      >
-        {listLoading && <DarkBlurOverlayLoader text="Loading blood inventory..." />}
-
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <p className="mb-1 text-xs opacity-60">{activeFacility?.name}</p>
-            <h1 className="text-3xl sm:text-4xl font-normal tracking-tight">Blood bank inventory</h1>
-          </div>
-          <div className="flex flex-wrap gap-2">
+        <h2 className="mb-3 text-sm font-semibold tracking-tight opacity-70">Workflow</h2>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {SHORTCUTS.map((s) => (
             <Link
-              href="/dashboard/blood-bank/crossmatch"
-              className="inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-xs font-semibold"
-              style={{ backgroundColor: ui.card }}
+              key={s.href}
+              href={`${BASE}${s.href}`}
+              className="flex items-center gap-3.5 rounded-2xl p-4 transition-all hover:-translate-y-0.5"
+              style={{ backgroundColor: ui.card, boxShadow: softShadow }}
             >
-              Crossmatch
+              <span
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+                style={{ backgroundColor: `${PRIMARY_COLOR}18`, color: PRIMARY_COLOR }}
+              >
+                <s.icon size={18} />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold">{s.title}</span>
+                <span className="block truncate text-xs opacity-55">{s.desc}</span>
+              </span>
             </Link>
-            <Link
-              href="/dashboard/blood-bank/transfusions"
-              className="inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-xs font-semibold"
-              style={{ backgroundColor: ui.card }}
-            >
-              Transfusions
-            </Link>
-            <button
-              type="button"
-              className="inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-xs font-semibold text-white hover:opacity-90"
-              style={{ backgroundColor: PRIMARY_COLOR }}
-            >
-              <Plus size={14} /> Add unit
-            </button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <SummaryCard icon={Droplets} label="Units" value={inventory.length} color={PRIMARY_COLOR} ui={ui} />
-          <SummaryCard icon={Droplets} label="Available" value={available} color="#10b981" ui={ui} />
-          <SummaryCard icon={Droplets} label="Reserved" value={reserved} color="#2563eb" ui={ui} />
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div
-            className="flex items-center gap-2.5 rounded-full px-4 py-3"
-            style={{ backgroundColor: ui.card }}
-          >
-            <Search size={15} className="opacity-50 shrink-0" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search type, component, unit #…"
-              className="w-full bg-transparent text-sm outline-none"
-              style={{ color: ui.text }}
-            />
-          </div>
-          <CustomDropdown
-            value={statusFilter}
-            options={[
-              { label: "All statuses", value: "all" },
-              { label: "Available", value: "available" },
-              { label: "Reserved", value: "reserved" },
-              { label: "Issued", value: "issued" },
-              { label: "Expired", value: "expired" },
-            ]}
-            onChange={(val) => setStatusFilter(val)}
-            placeholder="Filter by status..."
-            isDark={isDark}
-            colors={colors}
-            border={border}
-          />
-        </div>
-
-        <div className="rounded-[28px] p-3 sm:p-4" style={{ backgroundColor: ui.card }}>
-          {listLoading && inventory.length === 0 ? (
-            <div className="flex items-center justify-center gap-2 p-12 text-xs opacity-60">
-              <Loader2 className="h-4 w-4 animate-spin" /> Loading…
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="p-12 text-center text-sm opacity-60">No blood units found.</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="text-xs opacity-50">
-                    <th className="px-3 pb-3 font-medium">Blood type</th>
-                    <th className="px-3 pb-3 font-medium">Component</th>
-                    <th className="px-3 pb-3 font-medium hidden sm:table-cell">Unit #</th>
-                    <th className="px-3 pb-3 font-medium hidden md:table-cell">Expiry</th>
-                    <th className="px-3 pb-3 font-medium">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((u) => {
-                    const st = STATUS_STYLE[u.status || ""] || STATUS_STYLE.available;
-                    return (
-                      <tr
-                        key={u._id}
-                        className="border-t transition hover:bg-black/[0.03] dark:hover:bg-white/[0.04]"
-                        style={{ borderColor: ui.border }}
-                      >
-                        <td className="px-3 py-3 font-semibold">{u.bloodType}</td>
-                        <td className="px-3 py-3 opacity-80">{u.component}</td>
-                        <td className="px-3 py-3 hidden sm:table-cell opacity-70">
-                          {u.unitNumber || "—"}
-                        </td>
-                        <td className="px-3 py-3 hidden md:table-cell text-xs opacity-60">
-                          {u.expiryDate ? new Date(u.expiryDate).toLocaleDateString() : "—"}
-                        </td>
-                        <td className="px-3 py-3">
-                          <span
-                            className="inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold capitalize"
-                            style={{ color: st.color, backgroundColor: st.bg }}
-                          >
-                            {u.status || "—"}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
+          ))}
         </div>
       </div>
-    </div>
+    </Page>
   );
 }

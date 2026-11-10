@@ -17,6 +17,8 @@ import {
   Eye,
   ExternalLink,
   CheckCircle2,
+  BedDouble,
+  Siren,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/api/hooks";
 import {
@@ -28,6 +30,7 @@ import {
 import { useTheme } from "@/contexts/theme-context";
 import { PRIMARY_COLOR, getUI } from "@/constants/colors";
 import { CustomDropdown } from "@/components/ui";
+import type { AdmissionPriority } from "@/api/types";
 import {
   saveAttachments,
   loadAttachments,
@@ -93,6 +96,14 @@ export default function NewConsultationPage() {
   const [conNotes, setConNotes] = useState("");
   const [conSummary, setConSummary] = useState("");
   const [conStatus, setConStatus] = useState<"open" | "completed">("open");
+
+  /* inpatient: "Admit patient" toggle (sends an admission request to the wards) */
+  const [conAdmit, setConAdmit] = useState(false);
+  const [admPriority, setAdmPriority] = useState<AdmissionPriority>("routine");
+  const [admReason, setAdmReason] = useState("");
+  const [admWardType, setAdmWardType] = useState("");
+  const [admIsolation, setAdmIsolation] = useState(false);
+  const [admNotes, setAdmNotes] = useState("");
 
   const [conTemp, setConTemp] = useState("");
   const [conSpo2, setConSpo2] = useState("");
@@ -217,6 +228,12 @@ export default function NewConsultationPage() {
       conNotes,
       conSummary,
       conStatus,
+      conAdmit,
+      admPriority,
+      admReason,
+      admWardType,
+      admIsolation,
+      admNotes,
       conTemp,
       conSpo2,
       conPulse,
@@ -238,6 +255,12 @@ export default function NewConsultationPage() {
     conNotes,
     conSummary,
     conStatus,
+    conAdmit,
+    admPriority,
+    admReason,
+    admWardType,
+    admIsolation,
+    admNotes,
     conTemp,
     conSpo2,
     conPulse,
@@ -384,6 +407,12 @@ export default function NewConsultationPage() {
       conNotes,
       conSummary,
       conStatus,
+      conAdmit,
+      admPriority,
+      admReason,
+      admWardType,
+      admIsolation,
+      admNotes,
       conTemp,
       conSpo2,
       conPulse,
@@ -441,6 +470,12 @@ export default function NewConsultationPage() {
     setConNotes(draftData.conNotes || "");
     setConSummary(draftData.conSummary || "");
     setConStatus(draftData.conStatus || "open");
+    setConAdmit(!!draftData.conAdmit);
+    setAdmPriority(draftData.admPriority || "routine");
+    setAdmReason(draftData.admReason || "");
+    setAdmWardType(draftData.admWardType || "");
+    setAdmIsolation(!!draftData.admIsolation);
+    setAdmNotes(draftData.admNotes || "");
     setConTemp(draftData.conTemp || "");
     setConSpo2(draftData.conSpo2 || "");
     setConPulse(draftData.conPulse || "");
@@ -486,6 +521,12 @@ export default function NewConsultationPage() {
     if (missingCatalogId) {
       setSubmissionError(
         "One or more selected lab tests are missing a catalog ID. Please re-select the test from the catalog dropdown."
+      );
+      return;
+    }
+    if (conAdmit && !admReason.trim()) {
+      setSubmissionError(
+        "Admit patient is switched on — please give a reason for admission so the ward team knows why."
       );
       return;
     }
@@ -537,6 +578,16 @@ export default function NewConsultationPage() {
       notes: conNotes.trim() || undefined,
       summary: conSummary.trim() || undefined,
       status: conStatus,
+      admission: conAdmit
+        ? {
+            priority: admPriority,
+            reason: admReason.trim(),
+            admittingDiagnosis: conDiagnosis.trim() || undefined,
+            preferredWardType: admWardType || undefined,
+            isolationRequired: admIsolation || undefined,
+            notes: admNotes.trim() || undefined,
+          }
+        : undefined,
       vitals: cleanedVitals,
       recommendedTests: cleanedTests.length ? cleanedTests : undefined,
       recommendedDrugs: cleanedDrugs.length ? cleanedDrugs : undefined,
@@ -1264,6 +1315,181 @@ export default function NewConsultationPage() {
             />
           </div>
 
+          {/* ───────────── Inpatient care: admit toggle ───────────── */}
+          <div
+            className="rounded-none sm:rounded-[28px] p-4 sm:p-6 space-y-4 -mx-4 sm:mx-0 transition-colors"
+            style={{
+              backgroundColor: ui.card,
+              boxShadow: conAdmit ? `inset 0 0 0 1.5px ${PRIMARY_COLOR}` : "none",
+            }}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <span
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
+                  style={{
+                    backgroundColor: conAdmit ? PRIMARY_COLOR : ui.inner,
+                    color: conAdmit ? "#fff" : PRIMARY_COLOR,
+                  }}
+                >
+                  <BedDouble size={18} />
+                </span>
+                <div>
+                  <h2 className="text-sm font-semibold">Admit patient</h2>
+                  <p className="text-xs opacity-60 mt-0.5 max-w-md">
+                    Needs inpatient care? Switch this on and the ward desk gets
+                    an admission request when you submit. They will assign the
+                    ward and bed.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                role="switch"
+                aria-checked={conAdmit}
+                aria-label="Admit patient"
+                onClick={() => {
+                  const next = !conAdmit;
+                  setConAdmit(next);
+                  // Save the doctor some typing: start from what they already wrote.
+                  if (next && !admReason.trim()) {
+                    setAdmReason(conDiagnosis.trim() || conComplaint.trim());
+                  }
+                }}
+                className="relative h-7 w-12 shrink-0 rounded-full transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                style={{
+                  backgroundColor: conAdmit ? PRIMARY_COLOR : ui.inner,
+                  border: conAdmit ? "none" : `1px solid ${ui.border}`,
+                }}
+              >
+                <span
+                  className="absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform"
+                  style={{
+                    transform: conAdmit ? "translateX(20px)" : "translateX(0)",
+                  }}
+                />
+              </button>
+            </div>
+
+            {conAdmit && (
+              <div className="space-y-4 pt-1">
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium opacity-80">
+                    How urgent is the admission?
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(
+                      [
+                        { v: "routine", label: "Routine", hint: "Next free bed" },
+                        { v: "urgent", label: "Urgent", hint: "Within hours" },
+                        { v: "emergency", label: "Emergency", hint: "Immediately" },
+                      ] as const
+                    ).map((o) => {
+                      const active = admPriority === o.v;
+                      const tone =
+                        o.v === "emergency"
+                          ? "#dc2626"
+                          : o.v === "urgent"
+                          ? "#d97706"
+                          : PRIMARY_COLOR;
+                      return (
+                        <button
+                          key={o.v}
+                          type="button"
+                          onClick={() => setAdmPriority(o.v)}
+                          className="rounded-2xl px-3 py-2.5 text-left transition outline-none"
+                          style={{
+                            backgroundColor: active ? `${tone}1f` : ui.inner,
+                            boxShadow: active ? `inset 0 0 0 1.5px ${tone}` : "none",
+                            color: ui.text,
+                          }}
+                        >
+                          <span
+                            className="flex items-center gap-1 text-xs font-semibold"
+                            style={{ color: active ? tone : ui.text }}
+                          >
+                            {o.v === "emergency" && <Siren size={12} />}
+                            {o.label}
+                          </span>
+                          <span className="block text-[10px] opacity-60 mt-0.5">
+                            {o.hint}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium opacity-80">
+                    Reason for admission *
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={admReason}
+                    onChange={(e) => setAdmReason(e.target.value)}
+                    placeholder="Why does this patient need to be admitted?"
+                    className={inputCls}
+                    style={inputStyle}
+                  />
+                  <p className="text-[10px] opacity-50 mt-1">
+                    The diagnosis above is sent along automatically.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
+                  <CustomDropdown
+                    label="Preferred ward type (optional)"
+                    value={admWardType}
+                    placeholder="Let the ward desk decide"
+                    options={[
+                      { value: "", label: "Let the ward desk decide" },
+                      { value: "general", label: "General" },
+                      { value: "private", label: "Private" },
+                      { value: "surgical", label: "Surgical" },
+                      { value: "maternity", label: "Maternity" },
+                      { value: "pediatric", label: "Pediatric" },
+                      { value: "icu", label: "ICU" },
+                      { value: "nicu", label: "NICU" },
+                      { value: "isolation", label: "Isolation" },
+                    ]}
+                    onChange={setAdmWardType}
+                    isDark={isDark}
+                    colors={colors}
+                    border={border}
+                  />
+                  <label
+                    className="flex items-center gap-2.5 rounded-2xl px-4 py-3 text-xs font-medium cursor-pointer select-none"
+                    style={{ backgroundColor: ui.inner }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={admIsolation}
+                      onChange={(e) => setAdmIsolation(e.target.checked)}
+                      className="h-4 w-4"
+                      style={{ accentColor: PRIMARY_COLOR }}
+                    />
+                    Needs isolation (infectious risk)
+                  </label>
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium opacity-80">
+                    Note to ward team (optional)
+                  </label>
+                  <input
+                    value={admNotes}
+                    onChange={(e) => setAdmNotes(e.target.value)}
+                    placeholder="e.g. needs oxygen on arrival, family waiting"
+                    className={inputCls}
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-3 pt-2">
             <Link
               href={`/dashboard/patients/${patientId}`}
@@ -1440,6 +1666,24 @@ export default function NewConsultationPage() {
                   </ul>
                 )}
               </div>
+              {conAdmit && (
+                <div
+                  className="rounded-2xl p-3"
+                  style={{ backgroundColor: `${PRIMARY_COLOR}1a` }}
+                >
+                  <span className="opacity-70 flex items-center gap-1 font-semibold">
+                    <BedDouble size={12} /> Admission request ·{" "}
+                    <span className="capitalize">{admPriority}</span>
+                    {admIsolation ? " · isolation" : ""}
+                  </span>
+                  <p className="mt-1 font-semibold">{admReason}</p>
+                  {admWardType && (
+                    <p className="opacity-70 mt-0.5 capitalize">
+                      Preferred: {admWardType} ward
+                    </p>
+                  )}
+                </div>
+              )}
               {attachments.length > 0 && (
                 <div>
                   <span className="opacity-60 block mb-1">

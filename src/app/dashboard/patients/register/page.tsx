@@ -83,6 +83,7 @@ export default function RegisterPatientPage() {
   const isDark = theme === "dark";
   const border = isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.08)";
   const ui = getUI(isDark, colors, border);
+  const dd = { border: ui.border };
 
   const { activeFacilityId } = useAppSelector((s) => s.facilities);
   const { saving } = useAppSelector((s) => s.patients);
@@ -114,7 +115,7 @@ export default function RegisterPatientPage() {
     {
       title: "Contact Info",
       description:
-        "Provide a working phone number and correct country code so the clinic can reach them easily.",
+        "Provide a working email address (compulsory), phone number, and correct country code so the clinic can reach them easily.",
     },
     {
       title: "Known Allergies",
@@ -154,6 +155,10 @@ export default function RegisterPatientPage() {
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErr(null);
+    if (!form.email.trim()) {
+      setErr("Email address is compulsory for patient registration.");
+      return;
+    }
     if (
       (form.familyName && !form.familyRel) ||
       (!form.familyName && form.familyRel)
@@ -180,7 +185,7 @@ export default function RegisterPatientPage() {
             gender: form.gender || undefined,
             countryCode: form.countryCode || undefined,
             phone: form.phone || undefined,
-            email: form.email || undefined,
+            email: form.email.trim(),
             allergies: form.allergy
               ? [{ substance: form.allergy, severity: "moderate" }]
               : undefined,
@@ -327,10 +332,8 @@ export default function RegisterPatientPage() {
                 onChange={(v) =>
                   setForm((f) => ({ ...f, gender: v as Gender }))
                 }
-                isDark={isDark}
-                colors={colors}
-                border={border}
                 placeholder="Select gender..."
+                {...dd}
               />
             </Section>
 
@@ -359,6 +362,18 @@ export default function RegisterPatientPage() {
                   onChange={(e) =>
                     set("phone", e.target.value.replace(/\D/g, ""))
                   }
+                  className={inputCls}
+                  style={inputStyle}
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className={labelCls}>Email address *</label>
+                <input
+                  required
+                  type="email"
+                  placeholder="Enter email address..."
+                  value={form.email}
+                  onChange={(e) => set("email", e.target.value)}
                   className={inputCls}
                   style={inputStyle}
                 />

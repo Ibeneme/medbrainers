@@ -1,125 +1,157 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Scissors, Plus, RefreshCw } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/api/hooks";
-import { fetchMyFacilities } from "@/api/slices";
-import api from "@/api/services";
-import { PRIMARY_COLOR } from "@/constants/colors";
+import { useEffect, useMemo, useState } from "react";
+import { Plus, Scissors } from "lucide-react";
 import {
-  ModuleShell,
-  personLabel,
-  StatusPill,
-  EmptyState,
-  useInputStyles,
-  ActionLink,
-} from "@/components/dashboard/ModuleShell";
+  fetchTheaterSchedule,
+  fetchTheatreRooms,
+} from "@/api/slices/theaterSlice";
+import { CustomDropdown, CustomPopupDatePicker } from "@/components/ui/items";
+import {
+  Btn,
+  Empty,
+  Header,
+  Loader,
+  Page,
+  Pill,
+  Pills,
+  RowLink,
+  SectionCard,
+  TBASE,
+  TH,
+  dur,
+  fmtDateTime,
+  fmtDuration,
+  label,
+  nameOf,
+  patientLabel,
+  roomLabel,
+  toDateInput,
+  useTH,
+} from "@/components/theater/th-ui";
 
-const ENDPOINTS: Record<string, string> = {
-  ambulances: "/emergency/ambulances",
-  critical: "/emergency/critical",
-  catalog: "/labs/catalog",
-  results: "/labs/requests",
-  specimens: "/labs/specimens",
-  prescriptions: "/pharmacy/prescriptions",
-  inventory: "/pharmacy/inventory",
-  dispense: "/pharmacy/prescriptions",
-  controlled: "/pharmacy/controlled",
-  requests: "/radiology/worklist",
-  viewer: "/radiology/worklist",
-  crossmatch: "/blood-bank/crossmatch",
-  transfusions: "/blood-bank/transfusions",
-  schedule: "/theater/schedule",
-  checklist: "/theater/schedule",
-  recovery: "/theater/recovery",
-  antenatal: "/maternal/antenatal",
-  delivery: "/maternal/deliveries",
-  immunization: "/maternal/immunizations",
-  pediatrics: "/maternal/pediatrics",
-};
+export default function TheatreSchedulePage() {
+  const { facilityId, act, theater, activeFacility, ui, isDark, colors } =
+    useTH();
+  const [date, setDate] = useState("");
+  const [status, setStatus] = useState("all");
+  const [room, setRoom] = useState("");
 
-export default function ModulePage() {
-  const dispatch = useAppDispatch();
-  const { activeFacilityId } = useAppSelector((s) => s.facilities);
-  const { inputStyle, inputCls, cardCls, ui } = useInputStyles();
-  const [items, setItems] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [msg, setMsg] = useState<string | null>(null);
+  useEffect(() => {
+    if (!facilityId) return;
+    act(fetchTheaterSchedule({ facilityId, date: date || undefined }), false);
+    act(fetchTheatreRooms({ facilityId }), false);
+  }, [facilityId, act, date]);
 
-  useEffect(() => { dispatch(fetchMyFacilities()); }, [dispatch]);
-
-  async function load() {
-    if (!activeFacilityId) return;
-    const ep = ENDPOINTS["schedule"] || "";
-    if (!ep) { setItems([]); return; }
-    setLoading(true);
-    setError(null);
-    try {
-      const { data } = await api.get(`/companies/${activeFacilityId}${ep}`);
-      const list = data?.data ?? data ?? [];
-      setItems(Array.isArray(list) ? list : []);
-    } catch (e: any) {
-      setError(e?.response?.data?.message || e?.message || "Failed to load");
-      setItems([]);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => { load(); }, [activeFacilityId]);
-
-  function rowTitle(it: any) {
-    return (
-      it.name || it.procedureName || it.vaccineName || it.vehicleCode || it.unitNumber ||
-      it.drugName || it.barcode || it.modality || it.clinicalDescription ||
-      personLabel(it.patient || it.patientId) || it._id?.slice(-6) || "Record"
-    );
-  }
-
-  function rowDetail(it: any) {
-    const parts = [
-      it.chiefComplaint, it.clinicalIndication, it.batchNumber, it.bloodType,
-      it.theaterRoom, it.specimenType, it.status, it.priority,
-    ].filter(Boolean);
-    return parts.slice(0, 3).join(" · ");
-  }
+  const rows = useMemo(
+    () =>
+      theater.schedule.filter(
+        (c) =>
+          (status === "all" || c.status === status) &&
+          (!room || (typeof c.room === "object" ? c.room._id : c.room) === room)
+      ),
+    [theater.schedule, status, room]
+  );
 
   return (
-    <ModuleShell
-      title="OR schedule"
-      subtitle={`${items.length} records`}
-      icon={Scissors}
-      loading={loading}
-      actions={
-        <>
-          <ActionLink href="/dashboard/dashboard">Dashboard</ActionLink>
-          <button type="button" onClick={load} className="flex items-center gap-1.5 rounded-full border px-4 py-2.5 text-xs font-semibold" style={{ borderColor: ui.border }}>
-            <RefreshCw size={14} /> Refresh
-          </button>
-        </>
-      }
-    >
-      {msg && <div className="rounded-2xl px-4 py-2 text-xs font-semibold" style={{ backgroundColor: "rgba(37,99,235,0.12)", color: "#2563eb" }}>{msg}</div>}
-      {error && <div className="rounded-2xl px-4 py-2 text-xs font-semibold" style={{ backgroundColor: "rgba(220,38,38,0.12)", color: "#dc2626" }}>{error}</div>}
-
-      <div className={cardCls} style={{ backgroundColor: ui.card, borderColor: ui.border }}>
-        {items.length === 0 ? (
-          <EmptyState text="No records yet. Data will appear when the API returns items for this module." />
+    <Page>
+      <Header
+        icon={<Scissors size={22} />}
+        title="Theatre Schedule"
+        subtitle={activeFacility?.name}
+        actions={
+          <Btn href={`${TBASE}/schedule/new`}>
+            <Plus size={16} /> Schedule case
+          </Btn>
+        }
+      />
+      <>
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="w-48">
+            <CustomPopupDatePicker
+              label="Day"
+              value={date}
+              onChange={(v) => setDate(v.split("T")[0])}
+              border={ui.border}
+              colors={colors}
+              isDark={isDark}
+              placeholder="Pick a day…"
+            />
+          </div>
+          <Btn tone="ghost" onClick={() => setDate("")}>
+            All days
+          </Btn>
+          <Btn
+            tone="ghost"
+            onClick={() => setDate(toDateInput(new Date().toISOString()))}
+          >
+            Today
+          </Btn>
+          <div className="w-52">
+            <CustomDropdown
+              value={room}
+              options={[
+                { label: "All rooms", value: "" },
+                ...theater.rooms.map((r) => ({
+                  label: `${r.code} · ${r.name}`,
+                  value: r._id,
+                })),
+              ]}
+              onChange={setRoom}
+              placeholder="Select room…"
+              isDark={isDark}
+              colors={colors}
+              border={ui.border}
+            />
+          </div>
+        </div>
+        <Pills
+          value={status}
+          onChange={setStatus}
+          options={[
+            { value: "all", label: "Any status" },
+            ...TH.caseStatuses.map((s) => ({ value: s, label: label(s) })),
+          ]}
+        />
+        {theater.listLoading && rows.length === 0 ? (
+          <Loader />
+        ) : rows.length === 0 ? (
+          <Empty>No cases found.</Empty>
         ) : (
-          <div className="space-y-2">
-            {items.map((it: any) => (
-              <div key={it._id || JSON.stringify(it).slice(0, 20)} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl p-4" style={{ backgroundColor: ui.inner }}>
-                <div className="min-w-0">
-                  <p className="font-semibold text-sm truncate">{rowTitle(it)}</p>
-                  <p className="text-xs opacity-55 truncate">{rowDetail(it)}</p>
+          <div className="space-y-3">
+            {rows.map((c) => (
+              <RowLink key={c._id} href={`${TBASE}/schedule/${c._id}`}>
+                <div className="grid items-center gap-3 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1.2fr)_minmax(0,1fr)_auto]">
+                  <div className="min-w-0">
+                    <p className="truncate text-[15px] font-semibold">
+                      {patientLabel(c.patient)}
+                    </p>
+                    <p className="truncate text-xs opacity-55">
+                      {c.procedureName}
+                    </p>
+                  </div>
+                  <p className="text-xs opacity-60">
+                    {fmtDateTime(c.scheduledStart)}
+                    {c.scheduledEnd
+                      ? ` · ${fmtDuration(
+                          dur(c.scheduledStart, c.scheduledEnd)
+                        )}`
+                      : ""}
+                    <br />
+                    {roomLabel(c.room)}
+                  </p>
+                  <p className="text-xs opacity-60">
+                    Surgeon {nameOf(c.surgeon)}
+                    <br />
+                    Anaesthetist {nameOf(c.anaesthetist)}
+                  </p>
+                  <Pill value={c.status} />
                 </div>
-                {it.status && <StatusPill status={String(it.status)} />}
-              </div>
+              </RowLink>
             ))}
           </div>
         )}
-      </div>
-    </ModuleShell>
+      </>
+    </Page>
   );
 }

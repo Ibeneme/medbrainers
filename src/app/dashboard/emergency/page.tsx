@@ -1,270 +1,187 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback } from "react";
 import Link from "next/link";
 import {
-  Activity,
-  Ambulance,
-  Building2,
-  Loader2,
-  Plus,
-  Search,
-  Siren,
+  Activity, AlertTriangle, Ambulance, BarChart3, BedDouble, Eye, FileWarning, HeartPulse, ListChecks, Plus,
+  ArrowRightLeft, Siren, UserPlus, Users, LogOut, FlaskConical,
 } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/api/hooks";
-import { fetchMyFacilities, fetchErBoard } from "@/api/slices";
-import { useTheme } from "@/contexts/theme-context";
+import { fetchErActive, fetchErDashboard, fetchErDispatches } from "@/api/slices";
 import { PRIMARY_COLOR } from "@/constants/colors";
-import { CustomDropdown } from "@/components/ui/items";
-import DarkBlurOverlayLoader from "@/components/atoms/loaders/DarkBlurOverlayLoader";
+import {
+  BASE, Banner, Btn, Empty, ErPill, Header, Loader, Page, RegistrationRow, Ring, RowLink, SectionCard, Stat, TRIAGE, TRIAGE_ORDER,
+  fmtMins, minsSince, sortByPriority, useAutoRefresh, useER, useTick,
+} from "@/components/emergency/er-ui";
 
-type UI = {
-  isDark: boolean;
-  page: string;
-  card: string;
-  inner: string;
-  text: string;
-  border: string;
-};
+const SHORTCUTS = [
+  { title: "Emergency registration", href: "/register", icon: UserPlus, desc: "Log a new arrival" },
+  { title: "Triage board", href: "/triage", icon: ListChecks, desc: "Assess and prioritise" },
+  { title: "Ambulance & dispatch", href: "/ambulance", icon: Ambulance, desc: "Calls, crews and ETAs" },
+  { title: "ER patient tracker", href: "/tracker", icon: Users, desc: "Everyone in the department" },
+  { title: "Resuscitation bay", href: "/resus", icon: HeartPulse, desc: "Critical patients right now" },
+  { title: "Emergency orders", href: "/orders", icon: FlaskConical, desc: "STAT labs, imaging, drugs" },
+  { title: "Observation unit", href: "/observation", icon: Eye, desc: "Short-stay monitoring" },
+  { title: "Trauma cases", href: "/trauma", icon: Activity, desc: "Primary & secondary survey" },
+  { title: "Mass-casualty mode", href: "/mass-casualty", icon: Siren, desc: "Major incident response" },
+  { title: "Medico-legal cases", href: "/medico-legal", icon: FileWarning, desc: "Police and evidence log" },
+  { title: "ER admissions", href: "/admissions", icon: BedDouble, desc: "Handed to the wards" },
+  { title: "Referrals & transfers", href: "/referrals", icon: ArrowRightLeft, desc: "Send to another facility" },
+  { title: "ER discharges", href: "/discharges", icon: LogOut, desc: "Discharge, LAMA, deaths" },
+  { title: "ER reports", href: "/reports", icon: BarChart3, desc: "Throughput and timings" },
+];
 
-const TRIAGE_STYLE: Record<string, { color: string; bg: string }> = {
-  "1": { color: "#dc2626", bg: "rgba(220,38,38,0.16)" },
-  red: { color: "#dc2626", bg: "rgba(220,38,38,0.16)" },
-  "2": { color: "#ea580c", bg: "rgba(234,88,12,0.16)" },
-  orange: { color: "#ea580c", bg: "rgba(234,88,12,0.16)" },
-  "3": { color: "#ca8a04", bg: "rgba(202,138,4,0.16)" },
-  yellow: { color: "#ca8a04", bg: "rgba(202,138,4,0.16)" },
-  "4": { color: "#16a34a", bg: "rgba(22,163,74,0.16)" },
-  green: { color: "#16a34a", bg: "rgba(22,163,74,0.16)" },
-  "5": { color: "#2563eb", bg: "rgba(37,99,235,0.16)" },
-  blue: { color: "#2563eb", bg: "rgba(37,99,235,0.16)" },
-};
+export default function EmergencyDashboard() {
+  const er = useER();
+  const { facilityId, act, emergency, activeFacility, ui, softShadow } = er;
+  const d = emergency.dashboard;
+  useTick();
 
-function SummaryCard({
-  icon: Icon,
-  label,
-  value,
-  color,
-  ui,
-}: {
-  icon: any;
-  label: string;
-  value: number;
-  color: string;
-  ui: UI;
-}) {
+  const load = useCallback(() => {
+    if (!facilityId) return;
+    act(fetchErDashboard({ facilityId }), false);
+    act(fetchErActive({ facilityId }), false);
+    act(fetchErDispatches({ facilityId }), false);
+  }, [facilityId, act]);
+  useAutoRefresh(load, !!facilityId);
+
+  const queue = sortByPriority(emergency.active.filter((r) => r.status === "waiting" || r.status === "triaged")).slice(0, 6);
+  const inbound = emergency.dispatches.filter((x) => ["dispatched", "en-route", "on-scene", "returning"].includes(x.status));
+  const seenPct = d && d.totalActive ? Math.round(((d.totalActive - d.waiting) / d.totalActive) * 100) : 0;
+
   return (
-    <div className="flex items-center gap-4 rounded-[28px] p-5" style={{ backgroundColor: ui.card }}>
-      <span
-        className="flex h-12 w-12 items-center justify-center rounded-2xl"
-        style={{ backgroundColor: ui.inner, color }}
-      >
-        <Icon size={20} />
-      </span>
+    <Page>
+      <Header
+        icon={<Siren size={22} />}
+        title="Emergency Department"
+        subtitle={activeFacility?.name}
+        actions={
+          <>
+            <Btn href={`${BASE}/ambulance/new`} tone="card">Log ambulance call</Btn>
+            <Btn href={`${BASE}/register`}><Plus size={16} /> Register arrival</Btn>
+          </>
+        }
+      />
+
+      {!d ? (
+        <Loader text="Loading emergency department…" />
+      ) : (
+        <>
+          <div className="space-y-3">
+            {d.massCasualty && (
+              <Banner tone="bad" href={`${BASE}/mass-casualty/${d.massCasualty._id}`} cta="Open board">
+                <Siren size={18} className="text-red-500" />
+                Mass-casualty mode is active: {d.massCasualty.name}
+              </Banner>
+            )}
+            {d.awaitingTriage > 0 && (
+              <Banner tone={d.triageDelays ? "bad" : "warn"} href={`${BASE}/triage`} cta="Triage">
+                <AlertTriangle size={18} className={d.triageDelays ? "text-red-500" : ""} style={d.triageDelays ? undefined : { color: PRIMARY_COLOR }} />
+                {d.awaitingTriage} patient{d.awaitingTriage === 1 ? "" : "s"} awaiting triage
+                {d.triageDelays > 0 && ` · ${d.triageDelays} waiting longer than ${d.targets.triageDelayMinutes} min`}
+              </Banner>
+            )}
+            {d.breaches > 0 && (
+              <Banner tone="bad" href={`${BASE}/tracker`} cta="Review">
+                <AlertTriangle size={18} className="text-red-500" />
+                {d.breaches} patient{d.breaches === 1 ? "" : "s"} waiting past their triage target
+              </Banner>
+            )}
+            {d.inResus > 0 && (
+              <Banner tone="info" href={`${BASE}/resus`} cta="Resus bay">
+                <HeartPulse size={18} className="text-blue-500" />
+                {d.inResus} patient{d.inResus === 1 ? "" : "s"} in the resuscitation bay
+              </Banner>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <div className="col-span-2 flex items-center gap-5 rounded-3xl p-5 lg:col-span-1" style={{ backgroundColor: ui.card, boxShadow: softShadow }}>
+              <Ring pct={seenPct} size={72} stroke={6} />
+              <div>
+                <p className="text-xs font-medium opacity-55">Patients being seen</p>
+                <p className="mt-0.5 text-2xl font-semibold tracking-tight">
+                  {d.totalActive - d.waiting}
+                  <span className="text-base font-normal opacity-50">/{d.totalActive}</span>
+                </p>
+                <p className="text-[11px] opacity-45">vs. still waiting</p>
+              </div>
+            </div>
+            <Stat label="In the department" value={d.totalActive} sub="active patients" href={`${BASE}/tracker`} />
+            <Stat label="Waiting" value={d.waiting} sub={d.longestWaitMinutes ? `longest ${fmtMins(d.longestWaitMinutes)}` : "no one waiting"} tone={d.breaches ? "bad" : undefined} href={`${BASE}/triage`} />
+            <Stat label="Red / immediate" value={d.redTriage} sub="highest priority" tone={d.redTriage ? "bad" : undefined} href={`${BASE}/resus`} />
+            <Stat label="In resus" value={d.inResus} sub="resuscitation bay" href={`${BASE}/resus`} />
+            <Stat label="In treatment" value={d.inTreatment} sub="being treated" href={`${BASE}/tracker`} />
+            <Stat label="Observation" value={d.inObservation} sub="short-stay unit" href={`${BASE}/observation`} />
+            <Stat label="Ambulance calls" value={d.activeDispatches} sub="open right now" href={`${BASE}/ambulance`} />
+            <Stat label="Arrivals today" value={d.arrivalsToday} sub="since midnight" href={`${BASE}/tracker`} />
+            <Stat label="Left today" value={d.dispositionsToday} sub="dispositions recorded" href={`${BASE}/discharges`} />
+          </div>
+
+          <SectionCard title="Department by triage category">
+            <div className="flex flex-wrap gap-2.5">
+              {TRIAGE_ORDER.map((k) => (
+                <Link
+                  key={k}
+                  href={`${BASE}/tracker?triage=${k}`}
+                  className="flex h-20 w-[118px] flex-col items-center justify-center rounded-2xl px-1 transition-all hover:-translate-y-0.5"
+                  style={{ backgroundColor: `${TRIAGE[k].color}18`, color: TRIAGE[k].color, border: `1px solid ${TRIAGE[k].color}40` }}
+                >
+                  <span className="text-[11px] font-bold uppercase tracking-wide">{k}</span>
+                  <span className="text-2xl font-semibold leading-none">{d.byTriage?.[k] ?? 0}</span>
+                  <span className="mt-0.5 text-[10px] opacity-70">{TRIAGE[k].label}</span>
+                </Link>
+              ))}
+            </div>
+          </SectionCard>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <SectionCard title="Next to be seen" count={queue.length} right={<Btn href={`${BASE}/triage`} tone="ghost">Triage board</Btn>}>
+              {queue.length ? (
+                <div className="space-y-3">{queue.map((r) => <RegistrationRow key={r._id} r={r} />)}</div>
+              ) : (
+                <Empty>Nobody is waiting.</Empty>
+              )}
+            </SectionCard>
+
+            <SectionCard title="Ambulances in motion" count={inbound.length} right={<Btn href={`${BASE}/ambulance`} tone="ghost">All calls</Btn>}>
+              {inbound.length ? (
+                <div className="space-y-3">
+                  {inbound.map((x) => (
+                    <RowLink key={x._id} href={`${BASE}/ambulance/${x._id}`}>
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-[15px] font-semibold">{x.vehicle || "Unassigned vehicle"} → {x.pickupAddress}</p>
+                          <p className="truncate text-xs opacity-55">{x.chiefComplaint || "No details"} · called {fmtMins(minsSince(x.callReceivedAt))} ago</p>
+                        </div>
+                        <div className="flex gap-2"><ErPill value={x.priority} /><ErPill value={x.status} /></div>
+                      </div>
+                    </RowLink>
+                  ))}
+                </div>
+              ) : (
+                <Empty>No ambulances on the road.</Empty>
+              )}
+            </SectionCard>
+          </div>
+        </>
+      )}
+
       <div>
-        <p className="text-xs opacity-60">{label}</p>
-        <p className="text-3xl font-medium leading-tight tracking-tight">{value}</p>
-      </div>
-    </div>
-  );
-}
-
-function patientLabel(p: any) {
-  if (!p) return "—";
-  if (typeof p === "string") return p.slice(-6);
-  return [p.firstName, p.lastName].filter(Boolean).join(" ") || p.mrn || "—";
-}
-
-export default function EmergencyPage() {
-  const dispatch = useAppDispatch();
-  const { theme, colors } = useTheme();
-  const isDark = theme === "dark";
-  const border = isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.08)";
-
-  const ui: UI = {
-    isDark,
-    page: isDark ? "rgba(255,255,255,0.03)" : "#eef2f7",
-    card: isDark ? colors.shadeBg : "#ffffff",
-    inner: isDark ? colors.shadeBgSecond : "#f3f5f9",
-    text: colors.text,
-    border,
-  };
-
-  const { activeFacilityId, activeFacility } = useAppSelector((s) => s.facilities);
-  const { board, listLoading } = useAppSelector((s) => s.emergency);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-
-  useEffect(() => {
-    dispatch(fetchMyFacilities());
-  }, [dispatch]);
-
-  useEffect(() => {
-    if (!activeFacilityId) return;
-    dispatch(
-      fetchErBoard({
-        facilityId: activeFacilityId,
-        status: statusFilter !== "all" ? statusFilter : undefined,
-      }),
-    );
-  }, [dispatch, activeFacilityId, statusFilter]);
-
-  const filtered = board.filter((e) => {
-    if (!search.trim()) return true;
-    const q = search.toLowerCase();
-    return (
-      patientLabel(e.patientId).toLowerCase().includes(q) ||
-      (e.chiefComplaint || "").toLowerCase().includes(q) ||
-      (e.location || "").toLowerCase().includes(q)
-    );
-  });
-
-  if (!activeFacilityId) {
-    return (
-      <div className="max-w-lg mx-auto px-4 py-16 text-center" style={{ color: colors.text }}>
-        <Building2 className="mx-auto opacity-30 mb-3" size={32} />
-        <p className="font-bold">Select a facility first</p>
-      </div>
-    );
-  }
-
-  const waiting = board.filter((e) => e.status === "waiting").length;
-  const treating = board.filter((e) => e.status === "in_treatment").length;
-
-  return (
-    <div className="mx-auto max-w-6xl px-3 sm:px-6 py-4 sm:py-6">
-      <div
-        className="relative rounded-[32px] p-4 sm:p-6 space-y-5"
-        style={{ backgroundColor: ui.page, color: ui.text }}
-      >
-        {listLoading && <DarkBlurOverlayLoader text="Loading ER board..." />}
-
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <p className="mb-1 text-xs opacity-60">{activeFacility?.name}</p>
-            <h1 className="text-3xl sm:text-4xl font-normal tracking-tight">ER trauma board</h1>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Link
-              href="/dashboard/emergency/ambulance"
-              className="inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-xs font-semibold"
-              style={{ backgroundColor: ui.card }}
-            >
-              <Ambulance size={14} /> Ambulances
+        <h2 className="mb-3 text-sm font-semibold tracking-tight opacity-70">Workflow</h2>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {SHORTCUTS.map((s) => (
+            <Link key={s.href} href={`${BASE}${s.href}`} className="flex items-center gap-3.5 rounded-2xl p-4 transition-all hover:-translate-y-0.5" style={{ backgroundColor: ui.card, boxShadow: softShadow }}>
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: `${PRIMARY_COLOR}18`, color: PRIMARY_COLOR }}>
+                <s.icon size={18} />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold">{s.title}</span>
+                <span className="block truncate text-xs opacity-55">{s.desc}</span>
+              </span>
             </Link>
-            <Link
-              href="/dashboard/emergency/critical"
-              className="inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-xs font-semibold"
-              style={{ backgroundColor: ui.card }}
-            >
-              <Activity size={14} /> Critical care
-            </Link>
-            <button
-              type="button"
-              className="inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-xs font-semibold text-white hover:opacity-90"
-              style={{ backgroundColor: PRIMARY_COLOR }}
-            >
-              <Plus size={14} /> New encounter
-            </button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <SummaryCard icon={Siren} label="On board" value={board.length} color={PRIMARY_COLOR} ui={ui} />
-          <SummaryCard icon={Activity} label="Waiting" value={waiting} color="#ea580c" ui={ui} />
-          <SummaryCard icon={Ambulance} label="In treatment" value={treating} color="#2563eb" ui={ui} />
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div
-            className="flex items-center gap-2.5 rounded-full px-4 py-3"
-            style={{ backgroundColor: ui.card }}
-          >
-            <Search size={15} className="opacity-50 shrink-0" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search patient, complaint, location…"
-              className="w-full bg-transparent text-sm outline-none"
-              style={{ color: ui.text }}
-            />
-          </div>
-          <CustomDropdown
-            value={statusFilter}
-            options={[
-              { label: "All statuses", value: "all" },
-              { label: "Waiting", value: "waiting" },
-              { label: "In treatment", value: "in_treatment" },
-              { label: "Observation", value: "observation" },
-              { label: "Admitted", value: "admitted" },
-              { label: "Discharged", value: "discharged" },
-            ]}
-            onChange={(val) => setStatusFilter(val)}
-            placeholder="Filter by status..."
-            isDark={isDark}
-            colors={colors}
-            border={border}
-          />
-        </div>
-
-        <div className="rounded-[28px] p-3 sm:p-4" style={{ backgroundColor: ui.card }}>
-          {listLoading && board.length === 0 ? (
-            <div className="flex items-center justify-center gap-2 p-12 text-xs opacity-60">
-              <Loader2 className="h-4 w-4 animate-spin" /> Loading…
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="p-12 text-center text-sm opacity-60">No encounters on the board.</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="text-xs opacity-50">
-                    <th className="px-3 pb-3 font-medium">Patient</th>
-                    <th className="px-3 pb-3 font-medium">Triage</th>
-                    <th className="px-3 pb-3 font-medium">Complaint</th>
-                    <th className="px-3 pb-3 font-medium hidden md:table-cell">Location</th>
-                    <th className="px-3 pb-3 font-medium">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((e) => {
-                    const tri = TRIAGE_STYLE[String(e.triageLevel || "").toLowerCase()] || {
-                      color: "#6b7280",
-                      bg: "rgba(107,114,128,0.16)",
-                    };
-                    return (
-                      <tr
-                        key={e._id}
-                        className="border-t transition hover:bg-black/[0.03] dark:hover:bg-white/[0.04]"
-                        style={{ borderColor: ui.border }}
-                      >
-                        <td className="px-3 py-3 font-semibold">{patientLabel(e.patientId)}</td>
-                        <td className="px-3 py-3">
-                          <span
-                            className="inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase"
-                            style={{ color: tri.color, backgroundColor: tri.bg }}
-                          >
-                            {e.triageLevel || "—"}
-                          </span>
-                        </td>
-                        <td className="px-3 py-3 max-w-[200px] truncate opacity-80">
-                          {e.chiefComplaint || "—"}
-                        </td>
-                        <td className="px-3 py-3 hidden md:table-cell opacity-70">
-                          {e.location || "—"}
-                        </td>
-                        <td className="px-3 py-3 capitalize opacity-80">
-                          {(e.status || "—").replace(/_/g, " ")}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
+          ))}
         </div>
       </div>
-    </div>
+    </Page>
   );
 }

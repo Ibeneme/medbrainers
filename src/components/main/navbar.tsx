@@ -35,16 +35,11 @@ const solutionsItems: {
     description: "Clinical notes, vitals & patient history",
     href: "/solutions#emr",
   },
-  {
-    title: "Industry Clinic System",
-    description: "Workplace health & occupational services",
-    href: "/solutions#industry-clinic",
-  },
-  {
-    title: "Dental Clinic Management",
-    description: "Specialized charts & graphical odontograms",
-    href: "/solutions#dental-clinic",
-  },
+  // {
+  //   title: "Industry Clinic System",
+  //   description: "Workplace health & occupational services",
+  //   href: "/solutions#industry-clinic",
+  // },
   {
     title: "Pharmacy Management System",
     description: "Dispensing, stock alerts & prescriptions",
@@ -94,11 +89,11 @@ const whyUs: WhyLinkItem[] = [
     description: "Encrypted records, role-based access & audit trails",
     href: "/why-choose-us#security",
   },
-  {
-    title: "Implementation & Training",
-    description: "Guided setup so your staff are productive fast",
-    href: "/why-choose-us#implementation",
-  },
+  // {
+  //   title: "Implementation & Training",
+  //   description: "Guided setup so your staff are productive fast",
+  //   href: "/why-choose-us#implementation",
+  // },
   {
     title: "Support You Can Reach",
     description: "Responsive help for your clinical and admin teams",
@@ -128,19 +123,14 @@ const whyBySize: WhyLinkItem[] = [
     description: "Wards, departments & staff, fully connected",
     href: "/facility-size#hospitals",
   },
-  {
-    title: "For Hospital Groups",
-    description: "One patient record across every branch",
-    href: "/facility-size#hospital-groups",
-  },
+  // {
+  //   title: "For Hospital Groups",
+  //   description: "One patient record across every branch",
+  //   href: "/facility-size#hospital-groups",
+  // },
 ];
 
 const whyByType: WhyLinkItem[] = [
-  {
-    title: "For Dental Practices",
-    description: "Odontograms & treatment plans",
-    href: "/facility-type#dental-practices",
-  },
   {
     title: "For Pharmacies",
     description: "Dispensing & stock control",
@@ -254,11 +244,7 @@ export default function LandingPageNavbar({
 }: LandingPageNavbarProps) {
   const t = useT();
   const pathname = usePathname();
-  const isHome =
-    pathname === "/" ||
-    pathname === "/en" ||
-    pathname === "/fr" ||
-    pathname === "";
+  const isHome = pathname === "/en" || pathname === "/fr";
 
   const [isScrolled, setIsScrolled] = useState(false);
   const [isSolutionsOpen, setIsSolutionsOpen] = useState(false);
@@ -397,8 +383,8 @@ export default function LandingPageNavbar({
       : "text-neutral-700 hover:text-black";
 
   const navbarContainerStyle = isScrolled
-    ? "top-3 sm:top-4 max-w-6xl w-[calc(100%-1.25rem)] sm:w-[calc(100%-2rem)] rounded-full bg-black border border-white/15 text-white px-4 py-1 sm:px-5 sm:py-1 shadow-lg"
-    : "top-3 max-w-7xl w-full bg-transparent border-b border-transparent shadow-none";
+    ? "top-3 sm:top-4 max-w-6xl w-[calc(100%-1.25rem)] sm:w-[calc(100%-2rem)] rounded-full bg-black border border-white/15 text-white px-6 py-1 sm:px-5 sm:py-1 shadow-lg"
+    : "top-3 max-w-7xl w-full bg-transparent border-b border-transparent shadow-none px-6 md:px-0";
 
   const renderActionButtons = (compact = false) => (
     <Link
@@ -765,6 +751,13 @@ export default function LandingPageNavbar({
               <T>Pricing</T>
             </Link>
 
+            {/* <Link
+              href="/faqs"
+              className={`transition-colors ${navItemColorClass}`}
+            >
+              <T>FAQs</T>
+            </Link> */}
+
             <Link
               href="/blog"
               className={`transition-colors ${navItemColorClass}`}
@@ -826,7 +819,7 @@ export default function LandingPageNavbar({
             className={`relative z-[60] cursor-pointer rounded-lg p-2 transition-colors lg:hidden ${
               isScrolled
                 ? "text-white hover:bg-white/10"
-                : "text-black hover:bg-neutral-100"
+                : "text-white hover:bg-neutral-100"
             }`}
             aria-label={t("Toggle Menu")}
             aria-expanded={isMobileMenuOpen}
@@ -1017,6 +1010,14 @@ export default function LandingPageNavbar({
             className="border-t border-white/10 py-3.5 text-base font-medium text-white"
           >
             <T>Pricing</T>
+          </Link>
+
+          <Link
+            href="/faqs"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="border-t border-white/10 py-3.5 text-base font-medium text-white"
+          >
+            <T>FAQs</T>
           </Link>
 
           <Link
