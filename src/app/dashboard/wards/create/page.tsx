@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { ArrowLeft, BedDouble, Minus, Plus } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/api/hooks";
 import { Modal } from "@/components/ui/items";

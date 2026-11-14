@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAppDispatch } from "@/api/hooks";
 import { fetchTheaterRecords, fetchTheaterSchedule, type TheatreRecordKind } from "@/api/slices/theaterSlice";

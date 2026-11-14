@@ -13,6 +13,7 @@ import {
   ActionLink,
 } from "@/components/dashboard/ModuleShell";
 
+import { Can } from "@/components/access/can";
 export default function VitalsPage() {
   const dispatch = useAppDispatch();
   const { activeFacilityId } = useAppSelector((s) => s.facilities);
@@ -68,9 +69,9 @@ export default function VitalsPage() {
           ))}
         </div>
         <div className="flex justify-end">
-          <button type="button" onClick={handleSubmit} className="flex items-center gap-1.5 rounded-full px-5 py-2.5 text-xs font-semibold text-white" style={{ backgroundColor: PRIMARY_COLOR }}>
+          <Can perm="vitals.write"><button type="button" onClick={handleSubmit} className="flex items-center gap-1.5 rounded-full px-5 py-2.5 text-xs font-semibold text-white" style={{ backgroundColor: PRIMARY_COLOR }}>
             <Plus size={14} /> Save vitals
-          </button>
+          </button></Can>
         </div>
       </div>
       {!(patients as any[])?.length && <EmptyState text="No patients loaded" />}

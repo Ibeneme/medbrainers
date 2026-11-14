@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { Plus, ShoppingCart } from "lucide-react";
 import { fetchPurchaseOrders, type PoStatus } from "@/api/slices";
 import { usePharmacy } from "@/hooks/usePharmacy";

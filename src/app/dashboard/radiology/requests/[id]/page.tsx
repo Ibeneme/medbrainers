@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { useParams } from "next/navigation";
 import {
   ChevronRight,
@@ -23,6 +23,7 @@ import DarkBlurOverlayLoader from "@/components/atoms/loaders/DarkBlurOverlayLoa
 import FileDropzone, { UploadedFile } from "@/components/ui/Filedropzone";
 import type { Priority, RequestStatus } from "@/api/slices/radiologySlice";
 
+import { Can } from "@/components/access/can";
 const cap = (s?: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : "");
 
 function ageOf(dob?: string): string {
@@ -349,14 +350,14 @@ export default function RadiologyRequestDetailsPage() {
             </>
           ) : (
             <>
-              <button
+              <Can perm="radiology.write"><button
                 type="button"
                 onClick={handleOpenEdit}
                 className="inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-xs font-semibold border transition hover:opacity-80"
                 style={{ backgroundColor: ui.inner, borderColor: ui.border }}
               >
                 <Edit3 size={14} /> Edit Request
-              </button>
+              </button></Can>
               <Link
                 href="/dashboard/radiology/requests"
                 className="inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-xs font-semibold border transition hover:opacity-80"
@@ -524,7 +525,7 @@ export default function RadiologyRequestDetailsPage() {
                             )}
 
                             {/* Remove button */}
-                            <button
+                            <Can perm="radiology.write"><button
                               type="button"
                               onClick={() =>
                                 handleRemoveExisting(instance.b2Key)
@@ -533,7 +534,7 @@ export default function RadiologyRequestDetailsPage() {
                               title="Remove image"
                             >
                               <Trash2 size={14} />
-                            </button>
+                            </button></Can>
                           </div>
                         );
                       })}
@@ -686,7 +687,7 @@ export default function RadiologyRequestDetailsPage() {
                           <option value="moderate">Moderate</option>
                           <option value="severe">Severe</option>
                         </select>
-                        <button
+                        <Can perm="patients.write"><button
                           type="button"
                           onClick={() =>
                             setEditAllergies((prev) =>
@@ -698,10 +699,10 @@ export default function RadiologyRequestDetailsPage() {
                           aria-label="Remove allergy"
                         >
                           <X size={12} />
-                        </button>
+                        </button></Can>
                       </div>
                     ))}
-                    <button
+                    <Can perm="patients.write"><button
                       type="button"
                       onClick={() =>
                         setEditAllergies((prev) => [
@@ -713,7 +714,7 @@ export default function RadiologyRequestDetailsPage() {
                       style={{ borderColor: ui.border }}
                     >
                       + Add allergy
-                    </button>
+                    </button></Can>
                   </div>
                 ) : request?.contrast?.allergies?.length ? (
                   <div className="flex flex-wrap gap-2">

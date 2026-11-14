@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { Pencil } from "lucide-react";
 import { fetchDriveById, updateDrive } from "@/api/slices";
 import {

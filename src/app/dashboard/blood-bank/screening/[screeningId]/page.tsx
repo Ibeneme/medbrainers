@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { fetchScreeningById } from "@/api/slices";
 import {
   BASE, BackHeader, Btn, Card, KV, KVGrid, Loader, NotFound, Page, Pill, RISKS,

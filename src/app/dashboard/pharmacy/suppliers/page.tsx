@@ -20,6 +20,7 @@ import {
   usePharmacyUI,
 } from "@/components/dashboard/pharmacy/PharmacyUI";
 
+import { Can } from "@/components/access/can";
 const getInitials = (name?: string) =>
   (name || "?")
     .split(" ")
@@ -125,12 +126,12 @@ export default function SuppliersPage() {
       loadingText="Loading suppliers..."
       onRefresh={load}
       actions={
-        <PrimaryButton
+        <Can path={"/dashboard/pharmacy/suppliers/new"}><PrimaryButton
           icon={Plus}
           onClick={() => router.push("/dashboard/pharmacy/suppliers/new")}
         >
           Add Supplier
-        </PrimaryButton>
+        </PrimaryButton></Can>
       }
     >
       {/* ─── Summary strip ─────────────────────────────── */}
@@ -153,12 +154,12 @@ export default function SuppliersPage() {
           icon={Building2}
           title="No suppliers yet."
           action={
-            <PrimaryButton
+            <Can path={"/dashboard/pharmacy/suppliers/new"}><PrimaryButton
               icon={Plus}
               onClick={() => router.push("/dashboard/pharmacy/suppliers/new")}
             >
               Add your first supplier
-            </PrimaryButton>
+            </PrimaryButton></Can>
           }
         />
       ) : (
@@ -246,7 +247,7 @@ export default function SuppliersPage() {
                 >
                   {s.isActive ? "Deactivate" : "Reactivate"}
                 </GhostButton>
-                <button
+                <Can perm="pharmacy.write"><button
                   type="button"
                   onClick={() => handleEdit(s)}
                   className="ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-colors hover:bg-black/5 dark:hover:bg-white/10 lg:ml-0"
@@ -255,7 +256,7 @@ export default function SuppliersPage() {
                   aria-label="Edit supplier"
                 >
                   <Edit3 size={14} />
-                </button>
+                </button></Can>
               </div>
             </div>
           ))}

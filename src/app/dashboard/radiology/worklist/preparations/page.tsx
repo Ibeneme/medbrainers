@@ -8,6 +8,7 @@ import { useRadiology } from "@/hooks/useRadiology";
 import RequestRow from "@/components/dashboard/radiology/RequestRow";
 import DarkBlurOverlayLoader from "@/components/atoms/loaders/DarkBlurOverlayLoader";
 
+import { Can } from "@/components/access/can";
 export default function PreparationLogsPage() {
   const { theme, colors } = useTheme();
   const ui = getUI(theme === "dark", colors, colors?.border);
@@ -38,13 +39,13 @@ export default function PreparationLogsPage() {
             <RequestRow item={item} ui={ui} href="#" />
             {item.preparationInstructions && <p className="text-[11px] opacity-50 pl-3">Prep: {item.preparationInstructions}</p>}
             {item.preparationLoggedAt && <p className="text-[11px] opacity-50 pl-3">Logged: {new Date(item.preparationLoggedAt).toLocaleString()}</p>}
-            <button type="button" onClick={() => { setSelected(item._id); setInstructions(item.preparationInstructions || ""); }} className="ml-2 rounded-lg border px-2 py-1 text-[11px]" style={{ borderColor: ui.border }}>Log / update prep</button>
+            <Can perm="radiology.write"><button type="button" onClick={() => { setSelected(item._id); setInstructions(item.preparationInstructions || ""); }} className="ml-2 rounded-lg border px-2 py-1 text-[11px]" style={{ borderColor: ui.border }}>Log / update prep</button></Can>
             {selected === item._id && (
               <div className="rounded-2xl border p-4 space-y-3 ml-2" style={{ backgroundColor: ui.card, borderColor: ui.border }}>
                 <textarea value={instructions} onChange={(e) => setInstructions(e.target.value)} rows={3} className="w-full rounded-xl border px-3 py-2 text-sm bg-transparent" style={{ borderColor: ui.border }} placeholder="e.g. Fasting 6h confirmed" />
-                <button type="button" disabled={saving} onClick={submit} className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm text-white" style={{ backgroundColor: PRIMARY_COLOR }}>
+                <Can perm="radiology.write"><button type="button" disabled={saving} onClick={submit} className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm text-white" style={{ backgroundColor: PRIMARY_COLOR }}>
                   {saving && <Loader2 size={14} className="animate-spin" />} Save
-                </button>
+                </button></Can>
               </div>
             )}
           </div>

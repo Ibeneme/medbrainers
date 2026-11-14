@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useRef } from "react";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { useRouter } from "next/navigation";
 import {
   Building2,
@@ -43,6 +43,7 @@ import {
 import DarkBlurOverlayLoader from "@/components/atoms/loaders/DarkBlurOverlayLoader";
 import { useFacilityId } from "@/hooks/useFacilityId";
 
+import { Can } from "@/components/access/can";
 const PRIORITY_COLORS: Record<string, string> = {
   low: "#64748b",
   medium: "#2563eb",
@@ -313,14 +314,14 @@ export default function AllTasksPage() {
           >
             Handover log
           </Link>
-          <button
+          <Can perm="tasks.write"><button
             type="button"
             onClick={() => setShowForm(true)}
             className="inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-semibold text-white"
             style={{ backgroundColor: PRIMARY_COLOR }}
           >
             <Plus size={14} /> New task
-          </button>
+          </button></Can>
         </div>
       </div>
 
@@ -532,14 +533,14 @@ export default function AllTasksPage() {
                         </button>
                       )}
                       {t.status === "open" && (
-                        <button
+                        <Can perm="tasks.write"><button
                           type="button"
                           onClick={() => setStatus(id, "in_progress")}
                           className="rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold"
                           style={{ borderColor: border }}
                         >
                           Start
-                        </button>
+                        </button></Can>
                       )}
                       <button
                         type="button"
@@ -679,7 +680,7 @@ export default function AllTasksPage() {
                                   "Unassigned"}
                               </span>
                             </div>
-                            <button
+                            <Can perm="tasks.delete"><button
                               type="button"
                               onClick={async () => {
                                 try {
@@ -703,7 +704,7 @@ export default function AllTasksPage() {
                               title="Delete task"
                             >
                               <Trash2 size={13} />
-                            </button>
+                            </button></Can>
                           </div>
                         </div>
                       );

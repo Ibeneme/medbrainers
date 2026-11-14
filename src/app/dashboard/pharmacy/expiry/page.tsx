@@ -22,6 +22,7 @@ import {
   usePharmacyUI,
 } from "@/components/dashboard/pharmacy/PharmacyUI";
 
+import { Can } from "@/components/access/can";
 type Filter = "expiring" | "expired" | "in_stock";
 
 function ExpiryInner() {
@@ -145,12 +146,12 @@ function ExpiryInner() {
               >
                 Quarantine selected
               </GhostButton>
-              <GhostButton
+              <Can perm="pharmacy.write"><GhostButton
                 icon={ShieldAlert}
                 onClick={() => handleMultiQuarantine("active")}
               >
                 Release selected
-              </GhostButton>
+              </GhostButton></Can>
               <PrimaryButton icon={Trash2} onClick={handleMultiWriteOff}>
                 Write off selected
               </PrimaryButton>

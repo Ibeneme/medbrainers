@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { useParams } from "next/navigation";
 import { ArrowLeft, Building2, Check, Loader2, Phone } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/api/hooks";
@@ -17,6 +17,7 @@ import { ConfirmModal } from "@/components/ui";
 import DarkBlurOverlayLoader from "@/components/atoms/loaders/DarkBlurOverlayLoader";
 import { useFacilityId } from "@/hooks/useFacilityId";
 
+import { Can } from "@/components/access/can";
 function personLabel(u: unknown): string {
   if (!u) return "—";
   if (typeof u === "string") return u;
@@ -270,14 +271,14 @@ export default function HandoverDetailPage() {
           )}
 
           {canAck && (
-            <button
+            <Can perm="handovers.write"><button
               type="button"
               onClick={() => setAckOpen(true)}
               className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold text-white"
               style={{ backgroundColor: PRIMARY_COLOR }}
             >
               <Check size={14} /> Acknowledge receipt
-            </button>
+            </button></Can>
           )}
         </div>
       )}

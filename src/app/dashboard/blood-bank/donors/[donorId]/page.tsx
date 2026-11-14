@@ -9,7 +9,7 @@ import {
   BASE, BackHeader, Btn, Card, DataTable, ENUMS, GroupBadge, KV, KVGrid, Loader, NotFound, Page, Pill,
   fmtDate, fmtDateTime, label, nameOf, toOpts, useBB,
 } from "@/components/blood-bank/bb-ui";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 
 export default function DonorDetailPage() {
   const { donorId } = useParams() as { donorId: string };

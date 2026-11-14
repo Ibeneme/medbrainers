@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { Building2 } from "lucide-react";
 import { useTheme } from "@/contexts/theme-context";
 import { PRIMARY_COLOR, getUI, UI } from "@/constants/colors";

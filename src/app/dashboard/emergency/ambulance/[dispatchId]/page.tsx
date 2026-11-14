@@ -2,7 +2,7 @@
 
 import { useCallback } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { fetchErDispatch, updateErDispatchStatus } from "@/api/slices";
 import type { ErDispatch } from "@/api/slices/emergencySlice";
 import {

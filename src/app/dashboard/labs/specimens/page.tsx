@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../../store";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import {
   trackRequestBySpecimenCode,
   clearLabsError,

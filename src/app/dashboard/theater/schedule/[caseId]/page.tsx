@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { fetchTheatreCase, updateCaseStatus, type TheatreCaseStatus } from "@/api/slices/theaterSlice";
 import { PRIMARY_COLOR } from "@/constants/colors";
 import { BackHeader, Btn, Card, DataTable, KV, KVGrid, Loader, NotFound, Page, Pill, TBASE, dur, fmtDateTime, fmtDuration, label, nameOf, patientLabel, roomLabel, useConfirm, useTH } from "@/components/theater/th-ui";

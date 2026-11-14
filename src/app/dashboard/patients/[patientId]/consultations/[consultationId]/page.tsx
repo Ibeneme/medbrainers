@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useRef } from "react";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { useParams, useRouter } from "next/navigation";
 import {
   Calendar,
@@ -39,6 +39,7 @@ import { PRIMARY_COLOR, getUI } from "@/constants/colors";
 import { CustomDropdown } from "@/components/ui";
 import DarkBlurOverlayLoader from "@/components/atoms/loaders/DarkBlurOverlayLoader";
 
+import { Can } from "@/components/access/can";
 const inputCls =
   "w-full rounded-2xl border px-4 py-3 text-sm outline-none focus:outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/20";
 
@@ -622,15 +623,15 @@ export default function ConsultationDetailPage() {
             </div>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <button
+            <Can perm="pharmacy.prescribe"><button
               type="button"
               onClick={goToPrescription}
               className="flex-1 sm:flex-none rounded-full px-5 py-2.5 text-xs font-semibold text-white transition hover:opacity-90"
               style={{ backgroundColor: PRIMARY_COLOR }}
             >
               Create prescription
-            </button>
-            <button
+            </button></Can>
+            <Can perm="consultations.write"><button
               type="button"
               disabled={isLocked}
               onClick={() => setIsEditing(!isEditing)}
@@ -638,8 +639,8 @@ export default function ConsultationDetailPage() {
               style={{ backgroundColor: ui.card }}
             >
               {isEditing ? "Cancel Edit" : "Edit Consultation"}
-            </button>
-            <button
+            </button></Can>
+            <Can perm="consultations.delete"><button
               type="button"
               disabled={isLocked}
               onClick={() => setShowDeleteModal(true)}
@@ -647,7 +648,7 @@ export default function ConsultationDetailPage() {
               title="Delete consultation"
             >
               <Trash2 size={16} />
-            </button>
+            </button></Can>
           </div>
         </div>
 
@@ -1288,14 +1289,14 @@ export default function ConsultationDetailPage() {
                   <h3 className="text-sm font-semibold flex items-center gap-1.5">
                     <Pill size={16} /> Prescriptions
                   </h3>
-                  <button
+                  <Can perm="pharmacy.prescribe"><button
                     type="button"
                     onClick={goToPrescription}
                     className="rounded-full px-4 py-2 text-[11px] font-semibold text-white transition hover:opacity-90"
                     style={{ backgroundColor: PRIMARY_COLOR }}
                   >
                     Create prescription
-                  </button>
+                  </button></Can>
                 </div>
                 {consultation.recommendedDrugs?.length > 0 ? (
                   <ul className="space-y-2 text-xs">

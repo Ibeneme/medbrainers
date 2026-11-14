@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import {
   Activity, AlertTriangle, Ambulance, BarChart3, BedDouble, Eye, FileWarning, HeartPulse, ListChecks, Plus,
   ArrowRightLeft, Siren, UserPlus, Users, LogOut, FlaskConical,

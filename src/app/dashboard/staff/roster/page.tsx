@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useMemo } from "react";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import {
   CalendarClock,
   Loader2,
@@ -42,6 +42,7 @@ import { useTheme } from "@/contexts/theme-context";
 import { PRIMARY_COLOR } from "@/constants/colors";
 import DarkBlurOverlayLoader from "@/components/atoms/loaders/DarkBlurOverlayLoader";
 
+import { Can } from "@/components/access/can";
 function personName(user: unknown): string {
   if (!user || typeof user === "string") return "Staff";
   const u = user as { firstName?: string; lastName?: string; email?: string };
@@ -1420,7 +1421,7 @@ export default function RosterPage() {
                         {s.status}
                       </span>
                       {canManage && (
-                        <button
+                        <Can perm="staff.write"><button
                           type="button"
                           title="Delete"
                           onClick={async () => {
@@ -1443,7 +1444,7 @@ export default function RosterPage() {
                           className="rounded-lg p-2 text-red-500 hover:opacity-80 shadow-none"
                         >
                           <Trash2 size={14} />
-                        </button>
+                        </button></Can>
                       )}
                     </div>
                   </li>

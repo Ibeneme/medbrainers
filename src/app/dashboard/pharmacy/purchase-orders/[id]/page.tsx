@@ -33,6 +33,7 @@ import {
   usePharmacyUI,
 } from "@/components/dashboard/pharmacy/PharmacyUI";
 
+import { Can } from "@/components/access/can";
 function DetailRow({
   label,
   children,
@@ -159,13 +160,13 @@ export default function PurchaseOrderDetailPage() {
             </PrimaryButton>
           )}
           {(po.status === "draft" || po.status === "ordered") && (
-            <GhostButton
+            <Can perm="pharmacy.write"><GhostButton
               danger
               icon={XCircle}
               onClick={() => change("cancelled")}
             >
               Cancel
-            </GhostButton>
+            </GhostButton></Can>
           )}
         </>
       }

@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { ChevronRight, Clock } from "lucide-react";
 import { PRIMARY_COLOR } from "@/constants/colors";
 import type { ImagingRequest, Priority, RequestStatus } from "@/api/slices/radiologySlice";

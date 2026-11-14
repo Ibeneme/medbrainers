@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { useSearchParams } from "next/navigation";
 import {
   Activity,

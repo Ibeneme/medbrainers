@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { useRouter } from "next/navigation";
 import {
   Search,
@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/ResultFilePreviews";
 import { useFacilityId } from "@/hooks/useFacilityId";
 
+import { Can } from "@/components/access/can";
 const STATUS_OPTIONS = [
   { id: "all", label: "All Statuses" },
   { id: "ordered", label: "Ordered", color: "#3b82f6" },
@@ -242,7 +243,7 @@ export default function LabRequestsPage() {
           <span className="font-semibold">Patient Requests</span>
         </div>
         <div className="flex items-center gap-2">
-          <button
+          <Can path={"/dashboard/labs"}><button
             type="button"
             onClick={() => router.push("/dashboard/labs")}
             className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold transition hover:opacity-90 border"
@@ -253,7 +254,7 @@ export default function LabRequestsPage() {
             }}
           >
             Dashboard
-          </button>
+          </button></Can>
           <button
             type="button"
             onClick={() => {
@@ -707,7 +708,7 @@ export default function LabRequestsPage() {
                     >
                       {req.status || "ordered"}
                     </span>
-                    <button
+                    <Can path={`/dashboard/labs/requests/${req._id}`}><button
                       type="button"
                       onClick={() =>
                         router.push(`/dashboard/labs/requests/${req._id}`)
@@ -716,7 +717,7 @@ export default function LabRequestsPage() {
                       style={{ backgroundColor: PRIMARY_COLOR }}
                     >
                       View Details <ChevronRight size={12} />
-                    </button>
+                    </button></Can>
                   </div>
                 </div>
 

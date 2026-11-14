@@ -40,6 +40,11 @@ export function clearTokens() {
   Cookies.remove(API_CONFIG.REFRESH_TOKEN_KEY);
   Cookies.remove(API_CONFIG.USER_KEY);
   Cookies.remove(API_CONFIG.ACTIVE_FACILITY_KEY);
+  try {
+    localStorage.removeItem(API_CONFIG.ACCESS_KEY); // cached permissions belong to the signed-out user
+  } catch {
+    /* ignore */
+  }
 }
 
 /* ── axios instance ────────────────────────────────────────── */
@@ -86,6 +91,18 @@ api.interceptors.response.use(
     const original = error.config as InternalAxiosRequestConfig & {
       _retry?: boolean;
     };
+
+    if (error.response?.status === 403 && typeof window !== "undefined") {
+      const url = String(original?.url || "");
+      // /access/me itself failing must not loop
+      if (!url.includes("/access/me")) {
+        window.dispatchEvent(
+          new CustomEvent("mb:forbidden", {
+            detail: { url, message: (error.response.data as { message?: string } | undefined)?.message },
+          }),
+        );
+      }
+    }
 
     if (error.response?.status !== 401 || original._retry) {
       if (error.response?.status === 401) {

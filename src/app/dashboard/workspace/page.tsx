@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useRef } from "react";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import {
   Building2,
   Users,
@@ -49,7 +49,6 @@ import {
   clearCurrentMemberDetail,
 } from "@/api/slices";
 import {
-  FACILITY_ADMIN_ROLES,
   FACILITY_ROLES,
   facilityIdOf,
   formatRole,
@@ -62,6 +61,8 @@ import { useTheme } from "@/contexts/theme-context";
 import DarkBlurOverlayLoader from "@/components/atoms/loaders/DarkBlurOverlayLoader";
 import { CustomDropdown } from "@/components/ui/items";
 
+import { Can } from "@/components/access/can";
+import { useAccess } from "@/hooks/useAccess";
 const MEDICAL_DEPARTMENTS = [
   "Cardiology",
   "Emergency Medicine",
@@ -220,14 +221,14 @@ function LogoCropModal({
           >
             Cancel
           </button>
-          <button
+          <Can perm="settings.manage"><button
             type="button"
             onClick={handleDone}
             className="rounded-xl px-4 py-2 text-xs font-semibold text-white"
             style={{ backgroundColor: colors.primary }}
           >
             Apply & Save Logo
-          </button>
+          </button></Can>
         </div>
       </div>
     </div>
@@ -310,8 +311,11 @@ export default function ActiveFacilityPage() {
     return m?.role || user?.role;
   }, [activeFacility, list, facilityId, user?.role]);
 
-  const canManage =
-    !!myRole && FACILITY_ADMIN_ROLES.includes(myRole as UserRole);
+  // permission-based (was: role in FACILITY_ADMIN_ROLES)
+  const { can } = useAccess();
+  const canMembers = can("members.manage");
+  const canSettings = can("settings.manage");
+  const canManage = canMembers || canSettings;
 
   const activeFacOwner = current?.owner || activeFacility?.owner;
   const isOwner =
@@ -772,7 +776,7 @@ export default function ActiveFacilityPage() {
           </p>
         </div>
         <div className="flex items-center gap-2.5 flex-wrap">
-          {(canManage || isOwner) && (
+          {(canSettings || isOwner) && (
             <button
               type="button"
               onClick={() => setIsEditingFacility((v) => !v)}
@@ -914,7 +918,7 @@ export default function ActiveFacilityPage() {
       </div>
 
       {/* Edit form */}
-      {isEditingFacility && (canManage || isOwner) ? (
+      {isEditingFacility && (canSettings || isOwner) ? (
         <form
           onSubmit={handleUpdateFacility}
           className={`flex flex-col gap-5 rounded-2xl border p-6 ${
@@ -1097,7 +1101,7 @@ export default function ActiveFacilityPage() {
                     />
                   </label>
                   {logoPreview && (
-                    <button
+                    <Can perm="settings.manage"><button
                       type="button"
                       onClick={() => {
                         setLogoFile(null);
@@ -1106,7 +1110,7 @@ export default function ActiveFacilityPage() {
                       className="inline-flex items-center gap-1 text-xs text-red-500 hover:underline"
                     >
                       <Trash2 className="h-3 w-3" /> Remove logo
-                    </button>
+                    </button></Can>
                   )}
                 </div>
               </div>
@@ -1206,7 +1210,7 @@ export default function ActiveFacilityPage() {
       )}
 
       {/* Invite */}
-      {inviteOpen && (canManage || isOwner) && (
+      {inviteOpen && (canMembers || isOwner) && (
         <form
           onSubmit={onInvite}
           className={`flex flex-col gap-4 rounded-2xl border p-6 ${borderCls}`}
@@ -1336,7 +1340,7 @@ export default function ActiveFacilityPage() {
       )}
 
       {/* Pending Invitations Section */}
-      {(canManage || isOwner) &&
+      {(canMembers || isOwner) &&
         (outgoingInvitesLoading ||
           currentFacilityPendingInvites.length > 0) && (
           <div className="flex flex-col gap-3">
@@ -1404,7 +1408,7 @@ export default function ActiveFacilityPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <button
+                      <Can perm="members.manage"><button
                         type="button"
                         disabled={inviteBusy}
                         onClick={() =>
@@ -1421,8 +1425,8 @@ export default function ActiveFacilityPage() {
                       >
                         <Send className="h-3 w-3" />
                         <span className="hidden sm:inline">Resend</span>
-                      </button>
-                      <button
+                      </button></Can>
+                      <Can perm="members.manage"><button
                         type="button"
                         disabled={inviteBusy}
                         onClick={() =>
@@ -1438,7 +1442,7 @@ export default function ActiveFacilityPage() {
                       >
                         <X className="h-3 w-3" />
                         <span className="hidden sm:inline">Retract</span>
-                      </button>
+                      </button></Can>
                     </div>
                   </div>
                 );
@@ -1455,15 +1459,15 @@ export default function ActiveFacilityPage() {
             Team Members{" "}
             <span className="font-normal opacity-50">({members.length})</span>
           </h3>
-          {(canManage || isOwner) && !inviteOpen && (
-            <button
+          {(canMembers || isOwner) && !inviteOpen && (
+            <Can perm="members.manage"><button
               type="button"
               onClick={() => setInviteOpen(true)}
               className="inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-semibold text-white"
               style={{ backgroundColor: colors.primary }}
             >
               <UserPlus className="h-3.5 w-3.5" /> Invite
-            </button>
+            </button></Can>
           )}
         </div>
 
@@ -1486,10 +1490,10 @@ export default function ActiveFacilityPage() {
                 <div
                   key={m.id}
                   onClick={() => {
-                    if (canManage || isOwner) openMemberDetail(m);
+                    if (canMembers || isOwner) openMemberDetail(m);
                   }}
                   className={`flex items-center justify-between rounded-2xl border p-4 transition ${borderCls} ${
-                    canManage || isOwner
+                    canMembers || isOwner
                       ? "cursor-pointer hover:opacity-80"
                       : ""
                   }`}
@@ -1799,7 +1803,7 @@ export default function ActiveFacilityPage() {
               {isOwner &&
                 resolvedOwnerId &&
                 String(selectedMember.id) !== String(resolvedOwnerId) && (
-                  <button
+                  <Can perm="settings.manage"><button
                     type="button"
                     disabled={memberBusy}
                     onClick={handleTransferOwnership}
@@ -1807,11 +1811,11 @@ export default function ActiveFacilityPage() {
                   >
                     <Crown className="h-4 w-4" /> Transfer ownership to this
                     member
-                  </button>
+                  </button></Can>
                 )}
               {resolvedOwnerId &&
                 String(selectedMember.id) !== String(resolvedOwnerId) && (
-                  <button
+                  <Can perm="members.manage"><button
                     type="button"
                     disabled={memberBusy}
                     onClick={() => handleRemoveMember(selectedMember.id)}
@@ -1820,7 +1824,7 @@ export default function ActiveFacilityPage() {
                     }`}
                   >
                     <UserMinus className="h-4 w-4" /> Remove from facility
-                  </button>
+                  </button></Can>
                 )}
             </div>
           </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { useParams } from "next/navigation";
 import { Video } from "lucide-react";
 import { fetchStaffDirectory } from "@/api/slices/staffSlice";
@@ -49,6 +49,7 @@ import {
   who,
 } from "@/components/telemedicine/tm-ui";
 
+import { Can } from "@/components/access/can";
 const TYPE_DROPDOWN_OPTIONS = (Object.keys(TYPE_LABEL) as TeleType[]).map(
   (t) => ({
     value: t,
@@ -238,21 +239,21 @@ export default function SessionDetailPage() {
             </div>
             {session.status === "scheduled" && !editing && (
               <div className="flex flex-wrap gap-2">
-                <button
+                <Can perm="telemedicine.write"><button
                   type="button"
                   onClick={() => setEditing(true)}
                   className="rounded-full border px-4 py-2 text-xs font-semibold"
                   style={{ borderColor: ui.border }}
                 >
                   Edit
-                </button>
-                <button
+                </button></Can>
+                <Can perm="telemedicine.write"><button
                   type="button"
                   onClick={() => setShowCancel((v) => !v)}
                   className="rounded-full px-4 py-2 text-xs font-semibold text-red-600"
                 >
                   Cancel visit
-                </button>
+                </button></Can>
               </div>
             )}
             {session.status === "live" && (

@@ -37,6 +37,29 @@ if (typeof window !== "undefined") {
   });
 }
 
+/* Remember the last known permissions so the first paint after a reload is correct.
+   (Kept in localStorage — the user cookie is limited to ~4KB and can't hold this.) */
+if (typeof window !== "undefined") {
+  let lastAccess: unknown;
+  store.subscribe(() => {
+    const { byFacility } = store.getState().access;
+    if (byFacility === lastAccess) return;
+    lastAccess = byFacility;
+    try {
+      const u = store.getState().auth.user;
+      const userId = u?._id || u?.id;
+      // tagged with the user id so a different person logging in on this browser never inherits it
+      if (userId && Object.keys(byFacility).length) {
+        localStorage.setItem(API_CONFIG.ACCESS_KEY, JSON.stringify({ userId, byFacility }));
+      } else {
+        localStorage.removeItem(API_CONFIG.ACCESS_KEY);
+      }
+    } catch {
+      /* ignore */
+    }
+  });
+}
+
 export type AppDispatch = typeof store.dispatch;
 export type { RootState } from "./slices";
 

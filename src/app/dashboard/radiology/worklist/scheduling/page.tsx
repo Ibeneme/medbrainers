@@ -8,6 +8,7 @@ import { useRadiology } from "@/hooks/useRadiology";
 import RequestRow from "@/components/dashboard/radiology/RequestRow";
 import DarkBlurOverlayLoader from "@/components/atoms/loaders/DarkBlurOverlayLoader";
 
+import { Can } from "@/components/access/can";
 export default function SchedulingArrivalPage() {
   const { theme, colors } = useTheme();
   const ui = getUI(theme === "dark", colors, colors?.border);
@@ -37,7 +38,7 @@ export default function SchedulingArrivalPage() {
           <div key={item._id} className="space-y-2">
             <RequestRow item={item} ui={ui} href="#" />
             <div className="flex flex-wrap gap-2 pl-2">
-              <button type="button" onClick={() => setSelected(item._id)} className="rounded-lg border px-2 py-1 text-[11px]" style={{ borderColor: ui.border }}>Schedule</button>
+              <Can perm="radiology.write"><button type="button" onClick={() => setSelected(item._id)} className="rounded-lg border px-2 py-1 text-[11px]" style={{ borderColor: ui.border }}>Schedule</button></Can>
               <button type="button" disabled={saving} onClick={async () => { await markArrived(item._id); loadWorklist(); }} className="rounded-lg border px-2 py-1 text-[11px]" style={{ borderColor: ui.border }}>Mark arrived</button>
               {item.scheduledAt && <span className="text-[11px] opacity-50">Scheduled: {new Date(item.scheduledAt).toLocaleString()}</span>}
               {item.arrivedAt && <span className="text-[11px] opacity-50">Arrived: {new Date(item.arrivedAt).toLocaleString()}</span>}
@@ -45,9 +46,9 @@ export default function SchedulingArrivalPage() {
             {selected === item._id && (
               <div className="rounded-2xl border p-4 space-y-3 ml-2" style={{ backgroundColor: ui.card, borderColor: ui.border }}>
                 <input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} className="w-full rounded-xl border px-3 py-2 text-sm bg-transparent" style={{ borderColor: ui.border }} />
-                <button type="button" disabled={saving} onClick={schedule} className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm text-white" style={{ backgroundColor: PRIMARY_COLOR }}>
+                <Can perm="radiology.write"><button type="button" disabled={saving} onClick={schedule} className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm text-white" style={{ backgroundColor: PRIMARY_COLOR }}>
                   {saving && <Loader2 size={14} className="animate-spin" />} Save schedule
-                </button>
+                </button></Can>
               </div>
             )}
           </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { fetchErMedicoLegalById } from "@/api/slices";
 import type { ErMedicoLegal } from "@/api/slices/emergencySlice";
 import { BASE, BackHeader, Btn, Card, ErPill, KV, KVGrid, Loader, NotFound, Page, TriageBadge, fmtDateTime, refId, rowPatientName, useER, useLoad } from "@/components/emergency/er-ui";

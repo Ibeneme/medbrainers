@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { useParams, useRouter } from "next/navigation";
 import {
   ChevronRight,
@@ -37,6 +37,7 @@ import {
   deleteAttachments,
 } from "@/lib/attachment-store";
 
+import { Can } from "@/components/access/can";
 const inputCls =
   "w-full rounded-2xl border px-4 py-3 text-sm outline-none focus:outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/20";
 
@@ -1344,7 +1345,7 @@ export default function NewConsultationPage() {
                 </div>
               </div>
 
-              <button
+              <Can perm="wards.write"><button
                 type="button"
                 role="switch"
                 aria-checked={conAdmit}
@@ -1369,7 +1370,7 @@ export default function NewConsultationPage() {
                     transform: conAdmit ? "translateX(20px)" : "translateX(0)",
                   }}
                 />
-              </button>
+              </button></Can>
             </div>
 
             {conAdmit && (

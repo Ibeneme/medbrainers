@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import {
   BadgeCheck,
   Building2,
@@ -22,6 +22,7 @@ import { formatRole } from "@/api/types";
 import { useTheme } from "@/contexts/theme-context";
 import { PRIMARY_COLOR } from "@/constants/colors";
 
+import { Can } from "@/components/access/can";
 const COMMON_PRIVILEGES = [
   "prescribe",
   "admit",
@@ -321,7 +322,7 @@ export default function CredentialsPage() {
                     className="flex-1 rounded-xl border px-3 py-2 text-xs"
                     style={inputStyle}
                   />
-                  <button
+                  <Can perm="staff.manage"><button
                     type="button"
                     onClick={() => {
                       const v = customPriv.trim().toLowerCase().replace(/\s+/g, "_");
@@ -334,7 +335,7 @@ export default function CredentialsPage() {
                     style={{ borderColor: border }}
                   >
                     Add
-                  </button>
+                  </button></Can>
                 </div>
               </div>
 
@@ -343,14 +344,14 @@ export default function CredentialsPage() {
                   <p className="flex items-center gap-1.5 text-xs font-bold">
                     <BadgeCheck size={13} /> Credentials / licenses
                   </p>
-                  <button
+                  <Can perm="staff.manage"><button
                     type="button"
                     onClick={addCredential}
                     className="inline-flex items-center gap-1 text-xs font-semibold"
                     style={{ color: PRIMARY_COLOR }}
                   >
                     <Plus size={13} /> Add
-                  </button>
+                  </button></Can>
                 </div>
                 <div className="space-y-3">
                   {credentials.map((c, i) => (

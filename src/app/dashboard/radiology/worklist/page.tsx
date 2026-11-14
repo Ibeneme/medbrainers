@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { Columns3, RefreshCw, Search } from "lucide-react";
 import { PRIMARY_COLOR, getUI } from "@/constants/colors";
 import { useTheme } from "@/contexts/theme-context";

@@ -2,7 +2,7 @@
 
 import { useCallback } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { fetchErMassCasualtyById, updateErMassCasualty } from "@/api/slices";
 import type { ErMassCasualty, ErMassCasualtyStatus } from "@/api/slices/emergencySlice";
 import {

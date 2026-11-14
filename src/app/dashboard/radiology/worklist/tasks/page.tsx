@@ -8,6 +8,7 @@ import { useRadiology } from "@/hooks/useRadiology";
 import RequestRow from "@/components/dashboard/radiology/RequestRow";
 import DarkBlurOverlayLoader from "@/components/atoms/loaders/DarkBlurOverlayLoader";
 
+import { Can } from "@/components/access/can";
 export default function TechAllocationPage() {
   const { theme, colors } = useTheme();
   const ui = getUI(theme === "dark", colors, colors?.border);
@@ -44,9 +45,9 @@ export default function TechAllocationPage() {
                   <option value="">Select room</option>
                   {rooms.map((r) => (<option key={r._id} value={r._id}>{r.name} ({r.modality})</option>))}
                 </select>
-                <button type="button" disabled={saving} onClick={submit} className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm text-white" style={{ backgroundColor: PRIMARY_COLOR }}>
+                <Can perm="radiology.write"><button type="button" disabled={saving} onClick={submit} className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm text-white" style={{ backgroundColor: PRIMARY_COLOR }}>
                   {saving && <Loader2 size={14} className="animate-spin" />} Assign
-                </button>
+                </button></Can>
               </div>
             )}
           </div>

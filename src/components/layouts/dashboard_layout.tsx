@@ -71,6 +71,11 @@ import { T, useT } from "@/i18n/provider";
 import { DashboardLanguageToggle } from "@/i18n/dashboard-provider";
 import MedbrainersLoader from "@/components/atoms/loaders/Medbrainersloader";
 import { useFeedbacks } from "@/hooks/useFeedbacks";
+import { useAccess } from "@/hooks/useAccess";
+import AccessProvider from "@/components/access/access-provider";
+import RouteGuard from "@/components/access/route-guard";
+import type { Need } from "@/lib/access/permissions";
+import { filterNav } from "@/lib/access/filter-nav";
 
 // ─── Cookie Helper Utilities ─────────────────────────────────
 const setCookie = (name: string, value: string, days = 365) => {
@@ -263,6 +268,8 @@ interface DashboardLayoutProps {
 interface NavChild {
   label: string;
   href?: string;
+  /** Explicit access requirement (needed for entries without an href). Entries WITH an href use the route rule table. */
+  need?: Need;
   isComingSoon?: boolean;
   isBeta?: boolean;
   children?: NavChild[];
@@ -271,6 +278,7 @@ interface NavChild {
 interface NavItem {
   label: string;
   href?: string;
+  need?: Need;
   icon: ReactNode;
   category?: string;
   children?: NavChild[];
@@ -754,6 +762,7 @@ const NAV_ITEMS: NavItem[] = [
     icon: <Building2 size={16} />,
     children: [
       { label: "Active Facility", href: "/dashboard/workspace" },
+      { label: "Roles & Access", href: "/dashboard/workspace/access" },
       { label: "Subscriptions", href: "/dashboard/workspace/subscriptions" },
       {
         label: "Facilities Setup",
@@ -801,7 +810,7 @@ const NAV_ITEMS: NavItem[] = [
     label: "Feedbacks & Complaints",
     icon: <MessageSquareCode size={16} />,
     children: [
-      { label: "Submit Feedback" },
+      { label: "Submit Feedback", need: ["feedbacks.write"] },
       { label: "My Feedbacks", href: "/dashboard/feedbacks" },
     ],
   },
@@ -1379,6 +1388,8 @@ function SidebarContent({
   const pathname = usePathname();
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const { canPath, canNeed, can } = useAccess();
+  const navItems = React.useMemo(() => filterNav(NAV_ITEMS, canPath, canNeed), [canPath, canNeed]);
 
   const { user } = useAppSelector((state) => state.auth);
   const { me } = useAppSelector((state) => state.users);
@@ -1924,17 +1935,19 @@ function SidebarContent({
         </div>
       </div>
 
-      <SidebarPatientSearch
-        isCollapsed={isCollapsed}
-        hasFacility={hasFacility}
-        onNavigate={onNavigate}
-      />
+      {can("patients.view") && (
+        <SidebarPatientSearch
+          isCollapsed={isCollapsed}
+          hasFacility={hasFacility}
+          onNavigate={onNavigate}
+        />
+      )}
 
       <nav
         ref={navRef}
         className="flex-1 px-3 py-1 space-y-4 overflow-y-auto [scrollbar-width:thin] [scrollbar-color:var(--sb-scroll)_transparent]"
       >
-        {NAV_ITEMS.map((item, index) => {
+        {navItems.map((item, index) => {
           const showCategoryHeader = item.category && !isCollapsed;
           const active = isPathActive(item.href);
           const isFacilityWorkspaceGroup =
@@ -2404,6 +2417,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     useTheme();
   const dispatch = useAppDispatch();
   const { accessToken } = useAppSelector((state) => state.auth);
+  const { can: canDo } = useAccess();
+  const canSubmitFeedback = canDo("feedbacks.write");
 
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [isFeedbackTrayOpen, setIsFeedbackTrayOpen] = useState(false);
@@ -2671,6 +2686,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         )}
       </AnimatePresence>
 
+      <AccessProvider />
+
       <FeedbackTrayModal
         isOpen={isFeedbackTrayOpen}
         onClose={handleCloseFeedback}
@@ -2840,6 +2857,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </Link>
 
             {/* Feedbacks Button - filled icon, solid primary bg, white icon */}
+            {canSubmitFeedback && (
             <button
               type="button"
               onClick={() => setIsFeedbackTrayOpen(true)}
@@ -2858,6 +2876,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 strokeWidth={0}
               />
             </button>
+            )}
           </div>
         </header>
 
@@ -2867,7 +2886,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <MedbrainersLoader showText={false} size={72} />
             </div>
           ) : (
-            children
+            <RouteGuard>{children}</RouteGuard>
           )}
         </main>
       </div>

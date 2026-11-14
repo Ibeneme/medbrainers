@@ -23,6 +23,8 @@ import telemedicineReducer from "./slices/telemedicineSlice";
 import dataManagementReducer from "./slices/datamanagementSlice";
 import feedbacksReducer from "./slices/feedbacksSlice"; // 1. Import your feedbacks reducer
 import notificationsReducer from "./slices/notificationsSlice";
+import accessReducer from "./slices/accessSlice";
+import billingReducer from "./slices/billingSlice";
 
 const rootReducer = combineReducers({
   auth: authReducer,
@@ -49,6 +51,8 @@ const rootReducer = combineReducers({
   dataManagement: dataManagementReducer,
   feedbacks: feedbacksReducer, // 2. Add feedbacks slice to the root reducer
   notifications: notificationsReducer,
+  access: accessReducer,
+  billing: billingReducer,
 });
 
 export type RootState = ReturnType<typeof rootReducer>;
@@ -80,3 +84,5 @@ export * from "./slices/telemedicineSlice";
 export * from "./slices/datamanagementSlice";
 export * from "./slices/feedbacksSlice"; // 3. Export feedbacks actions/thunks
 export * from "./slices/notificationsSlice";
+export * from "./slices/accessSlice";
+export * from "./slices/billingSlice";

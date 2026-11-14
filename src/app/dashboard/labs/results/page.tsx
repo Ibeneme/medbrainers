@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../../store";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { fetchLabRequests } from "@/api";
 import { useFacilityId } from "@/hooks/useFacilityId";
 import { useTheme } from "@/contexts/theme-context";

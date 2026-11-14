@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, type ReactNode } from "react";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { useRouter } from "next/navigation";
 import {
   Building2,
@@ -38,6 +38,7 @@ import {
   usePageUI,
 } from "@/components/dashboard/PageFrame";
 
+import { useAccess } from "@/hooks/useAccess";
 /* -------------------------------------------------------------------------- */
 /*  Options & labels                                                          */
 /* -------------------------------------------------------------------------- */
@@ -138,15 +139,10 @@ export const editHref = (id?: string) =>
 export const deleteHref = (id?: string) =>
   id ? `${RULES_HREF}/delete?id=${id}` : `${RULES_HREF}/delete`;
 
-/** Only facility owners / admins / managers may add, edit or delete rules (the API enforces this too). */
+/** Permission-based: compliance.manage (the API enforces this too). */
 export function useCanManageCompliance(): boolean {
-  const { activeFacility } = useFacilityId();
-  const roles = new Set<string>(
-    [...(activeFacility?.roles || []), activeFacility?.role || ""].filter(
-      Boolean
-    )
-  );
-  return ["super_admin", "ceo", "admin", "manager"].some((r) => roles.has(r));
+  const { can } = useAccess();
+  return can("compliance.manage");
 }
 
 export const fmtDate = (iso?: string | null) =>

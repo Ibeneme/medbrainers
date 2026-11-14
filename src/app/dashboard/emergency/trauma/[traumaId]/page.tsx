@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { fetchErTraumaById } from "@/api/slices";
 import type { ErTrauma } from "@/api/slices/emergencySlice";
 import { BASE, BackHeader, Btn, Card, ErPill, GcsChip, KV, KVGrid, Loader, NotFound, Page, TriageBadge, fmtDateTime, refId, rowPatientName, useER, useLoad } from "@/components/emergency/er-ui";

@@ -27,7 +27,7 @@ import {
   Smartphone,
   CheckCircle2,
   Trash2,
-  Lock,
+  Clock,
 } from "lucide-react";
 import { PRIMARY_COLOR } from "@/constants/colors";
 import { useAppDispatch, useAppSelector } from "@/api/hooks";
@@ -36,6 +36,10 @@ import {
   fetchMe,
   updateMe,
   uploadProfilePicture,
+  fetchNotificationPreferences,
+  updateNotificationPreferences,
+  unsubscribeEmails,
+  deleteAccount,
   logout,
   clearUsersError,
   clearAuthError,
@@ -48,7 +52,7 @@ type TabId = "personal" | "security" | "notifications";
 // Helper function to create cropped image blob from canvas
 async function getCroppedImg(
   imageSrc: string,
-  pixelCrop: { x: number; y: number; width: number; height: number }
+  pixelCrop: { x: number; y: number; width: number; height: number },
 ): Promise<File> {
   const image = new Image();
   image.src = imageSrc;
@@ -72,7 +76,7 @@ async function getCroppedImg(
     0,
     0,
     pixelCrop.width,
-    pixelCrop.height
+    pixelCrop.height,
   );
 
   return new Promise((resolve, reject) => {
@@ -97,12 +101,13 @@ export default function SettingsPage() {
 
   const {
     me,
+    notificationPreferences,
     loading: usersLoading,
     error: usersError,
     message,
   } = useAppSelector((s) => s.users);
   const { user: authUser, loading: authLoading } = useAppSelector(
-    (s) => s.auth
+    (s) => s.auth,
   );
   const profile = me || authUser;
 
@@ -111,8 +116,8 @@ export default function SettingsPage() {
     tabParam === "security"
       ? "security"
       : tabParam === "notifications"
-      ? "notifications"
-      : "personal"
+        ? "notifications"
+        : "personal",
   );
 
   const [isEditing, setIsEditing] = useState(false);
@@ -123,6 +128,7 @@ export default function SettingsPage() {
   const [otpSent, setOtpSent] = useState(false);
   const [otpCode, setOtpCode] = useState("");
   const [sudoInput, setSudoInput] = useState("");
+  const [deletePassword, setDeletePassword] = useState("");
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const sudoTargetString = "DELETE-ACCOUNT-PERMANENT";
 
@@ -150,18 +156,24 @@ export default function SettingsPage() {
     bio: "",
   });
 
-  // Notification Preferences State
+  // Notification Preferences State (Synced with Backend Schema)
   const [notifPrefs, setNotifPrefs] = useState({
-    pushCritical: true,
-    pushLabs: true,
-    pushPharmacy: true,
-    pushWards: true,
-    emailDailyDigest: false,
-    emailEmergency: true,
-    smsAlerts: false,
-    soundAlerts: true,
+    push: {
+      emergency: true,
+      labs: true,
+      pharmacy: true,
+      wards: true,
+    },
+    channels: {
+      emailDigest: false,
+      smsEmergency: false,
+      inAppAudio: false, // Locked / Coming Soon
+    },
   });
   const [notifSaved, setNotifSaved] = useState(false);
+  const [isSavingNotif, setIsSavingNotif] = useState(false);
+  const [isUnsubscribing, setIsUnsubscribing] = useState(false);
+  const [unsubscribeSuccess, setUnsubscribeSuccess] = useState(false);
 
   const [saved, setSaved] = useState(false);
 
@@ -173,7 +185,27 @@ export default function SettingsPage() {
 
   useEffect(() => {
     dispatch(fetchMe());
+    dispatch(fetchNotificationPreferences());
   }, [dispatch]);
+
+  // Sync notification preferences state when fetched from backend
+  useEffect(() => {
+    if (notificationPreferences) {
+      setNotifPrefs({
+        push: {
+          emergency: notificationPreferences.push?.emergency ?? true,
+          labs: notificationPreferences.push?.labs ?? true,
+          pharmacy: notificationPreferences.push?.pharmacy ?? true,
+          wards: notificationPreferences.push?.wards ?? true,
+        },
+        channels: {
+          emailDigest: notificationPreferences.channels?.emailDigest ?? false,
+          smsEmergency: notificationPreferences.channels?.smsEmergency ?? false,
+          inAppAudio: false, // Locked feature coming soon
+        },
+      });
+    }
+  }, [notificationPreferences]);
 
   // Close custom dropdown on outside click
   useEffect(() => {
@@ -240,9 +272,38 @@ export default function SettingsPage() {
     }
   };
 
-  const handleSaveNotifications = () => {
-    setNotifSaved(true);
-    setTimeout(() => setNotifSaved(false), 2500);
+  const handleSaveNotifications = async () => {
+    setIsSavingNotif(true);
+    setNotifSaved(false);
+    dispatch(clearUsersError());
+    try {
+      await dispatch(updateNotificationPreferences(notifPrefs)).unwrap();
+      setNotifSaved(true);
+      setTimeout(() => setNotifSaved(false), 2500);
+    } catch (err) {
+      console.error("[SETTINGS] updateNotificationPreferences failed", err);
+    } finally {
+      setIsSavingNotif(false);
+    }
+  };
+
+  const handleUnsubscribeEmails = async () => {
+    setIsUnsubscribing(true);
+    setUnsubscribeSuccess(false);
+    dispatch(clearUsersError());
+    try {
+      await dispatch(unsubscribeEmails()).unwrap();
+      setUnsubscribeSuccess(true);
+      setNotifPrefs((prev) => ({
+        ...prev,
+        channels: { ...prev.channels, emailDigest: false },
+      }));
+      setTimeout(() => setUnsubscribeSuccess(false), 3000);
+    } catch (err) {
+      console.error("[SETTINGS] unsubscribeEmails failed", err);
+    } finally {
+      setIsUnsubscribing(false);
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -260,7 +321,7 @@ export default function SettingsPage() {
     (_croppedArea: any, croppedAreaPixels: any) => {
       setCroppedAreaPixels(croppedAreaPixels);
     },
-    []
+    [],
   );
 
   const handleConfirmCrop = async () => {
@@ -285,7 +346,7 @@ export default function SettingsPage() {
     try {
       await dispatch(logout()).unwrap();
       router.push("/en/login");
-    } catch (err) {
+    } catch {
       router.push("/en/login");
     }
   };
@@ -295,13 +356,15 @@ export default function SettingsPage() {
   };
 
   const handleConfirmDeleteAccount = async () => {
-    if (sudoInput !== sudoTargetString || !otpCode.trim()) return;
+    if (sudoInput !== sudoTargetString || !deletePassword.trim()) return;
     setIsDeletingAccount(true);
+    dispatch(clearUsersError());
     try {
-      await dispatch(logout()).unwrap();
+      await dispatch(deleteAccount({ password: deletePassword })).unwrap();
       router.push("/en/login");
-    } catch {
-      router.push("/en/login");
+    } catch (err) {
+      console.error("[SETTINGS] deleteAccount failed", err);
+      setIsDeletingAccount(false);
     }
   };
 
@@ -309,12 +372,12 @@ export default function SettingsPage() {
 
   return (
     <div
-      className="mx-auto max-w-7xl py-6 sm:py-8 transition-colors duration-200"
+      className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8 transition-colors duration-200 overflow-x-hidden"
       style={{ color: colors.text }}
     >
       {/* Page Header */}
       <div
-        className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b pb-5"
+        className="mb-8 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b pb-5"
         style={{
           borderColor:
             theme === "dark" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
@@ -332,7 +395,7 @@ export default function SettingsPage() {
 
         {/* Tabs switcher */}
         <div
-          className="flex flex-wrap gap-1 rounded-xl border p-1 w-full sm:w-fit shadow-xs"
+          className="flex flex-col sm:flex-row gap-1 rounded-xl border p-1 w-full lg:w-fit shadow-xs"
           style={{
             backgroundColor: colors.shadeBgSecond,
             borderColor:
@@ -343,7 +406,7 @@ export default function SettingsPage() {
             [
               {
                 id: "personal" as const,
-                label: "Professional Profile",
+                label: "Profile",
                 icon: User,
               },
               {
@@ -353,7 +416,7 @@ export default function SettingsPage() {
               },
               {
                 id: "security" as const,
-                label: "Security & Access",
+                label: "Security",
                 icon: KeyRound,
               },
             ] as const
@@ -365,7 +428,7 @@ export default function SettingsPage() {
                 setTab(id);
                 router.replace(`/dashboard/settings?tab=${id}`);
               }}
-              className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-xs sm:text-sm font-medium transition-all cursor-pointer ${
+              className={`flex-1 inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-xs sm:text-sm font-medium transition-all cursor-pointer ${
                 tab === id
                   ? "font-semibold shadow-sm"
                   : "opacity-60 hover:opacity-100"
@@ -386,7 +449,7 @@ export default function SettingsPage() {
               }}
             >
               <Icon size={15} />
-              {label}
+              <span>{label}</span>
             </button>
           ))}
         </div>
@@ -395,10 +458,10 @@ export default function SettingsPage() {
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 items-start">
         {/* Left Column */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 w-full min-w-0">
           {tab === "personal" && (
             <div
-              className="rounded-2xl border p-5 sm:p-8 space-y-6"
+              className="rounded-2xl border p-4 sm:p-6 lg:p-8 space-y-6"
               style={{
                 backgroundColor: colors.shadeBg,
                 borderColor:
@@ -945,7 +1008,7 @@ export default function SettingsPage() {
           {/* NOTIFICATIONS TAB CONTENT */}
           {tab === "notifications" && (
             <div
-              className="rounded-2xl border p-5 sm:p-8 space-y-6"
+              className="rounded-2xl border p-4 sm:p-6 lg:p-8 space-y-6"
               style={{
                 backgroundColor: colors.shadeBg,
                 borderColor:
@@ -955,7 +1018,7 @@ export default function SettingsPage() {
               }}
             >
               <div
-                className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b"
+                className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b"
                 style={{
                   borderColor:
                     theme === "dark"
@@ -972,15 +1035,43 @@ export default function SettingsPage() {
                     warnings, and digests.
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleSaveNotifications}
-                  style={{ backgroundColor: PRIMARY_COLOR }}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl px-4 text-xs font-semibold text-white hover:opacity-90 transition-all cursor-pointer shadow-sm shrink-0"
-                >
-                  <Save size={14} />
-                  <span>Save Preferences</span>
-                </button>
+                <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+                  <button
+                    type="button"
+                    onClick={handleUnsubscribeEmails}
+                    disabled={isUnsubscribing}
+                    className="flex-1 sm:flex-initial inline-flex h-10 items-center justify-center gap-2 rounded-xl px-4 text-xs font-semibold border hover:opacity-80 transition-all cursor-pointer shrink-0"
+                    style={{
+                      borderColor:
+                        theme === "dark"
+                          ? "rgba(255,255,255,0.2)"
+                          : "rgba(0,0,0,0.2)",
+                      backgroundColor: colors.shadeBgSecond,
+                    }}
+                  >
+                    {isUnsubscribing ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <Mail size={14} />
+                    )}
+                    <span>Unsubscribe Emails</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleSaveNotifications}
+                    disabled={isSavingNotif}
+                    style={{ backgroundColor: PRIMARY_COLOR }}
+                    className="flex-1 sm:flex-initial inline-flex h-10 items-center justify-center gap-2 rounded-xl px-4 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-55 transition-all cursor-pointer shadow-sm shrink-0"
+                  >
+                    {isSavingNotif ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <Save size={14} />
+                    )}
+                    <span>Save Preferences</span>
+                  </button>
+                </div>
               </div>
 
               {notifSaved && (
@@ -997,6 +1088,20 @@ export default function SettingsPage() {
                 </div>
               )}
 
+              {unsubscribeSuccess && (
+                <div
+                  className="rounded-xl border px-4 py-3 text-sm font-medium flex items-center gap-2"
+                  style={{
+                    backgroundColor: `${PRIMARY_COLOR}15`,
+                    borderColor: `${PRIMARY_COLOR}40`,
+                    color: PRIMARY_COLOR,
+                  }}
+                >
+                  <CheckCircle2 size={16} />
+                  <span>Successfully unsubscribed from email digests.</span>
+                </div>
+              )}
+
               {/* Push Notifications Section */}
               <div className="space-y-4">
                 <h3 className="text-xs font-bold uppercase tracking-wider opacity-50">
@@ -1004,16 +1109,12 @@ export default function SettingsPage() {
                 </h3>
 
                 <div
-                  className="divide-y rounded-xl border"
+                  className="rounded-xl overflow-hidden"
                   style={{
-                    borderColor:
-                      theme === "dark"
-                        ? "rgba(255,255,255,0.08)"
-                        : "rgba(0,0,0,0.08)",
                     backgroundColor: colors.shadeBgSecond,
                   }}
                 >
-                  <div className="flex items-center justify-between p-4">
+                  <div className="flex items-center justify-between p-4 border-b border-black/5 dark:border-white/5">
                     <div className="space-y-0.5 pr-4">
                       <p className="text-sm font-medium">
                         Critical Emergency & Siren Alerts
@@ -1024,14 +1125,17 @@ export default function SettingsPage() {
                       </p>
                     </div>
                     <ToggleSwitch
-                      checked={notifPrefs.pushCritical}
+                      checked={notifPrefs.push.emergency}
                       onChange={(checked) =>
-                        setNotifPrefs({ ...notifPrefs, pushCritical: checked })
+                        setNotifPrefs({
+                          ...notifPrefs,
+                          push: { ...notifPrefs.push, emergency: checked },
+                        })
                       }
                     />
                   </div>
 
-                  <div className="flex items-center justify-between p-4">
+                  <div className="flex items-center justify-between p-4 border-b border-black/5 dark:border-white/5">
                     <div className="space-y-0.5 pr-4">
                       <p className="text-sm font-medium">
                         Laboratory Result Updates
@@ -1042,14 +1146,17 @@ export default function SettingsPage() {
                       </p>
                     </div>
                     <ToggleSwitch
-                      checked={notifPrefs.pushLabs}
+                      checked={notifPrefs.push.labs}
                       onChange={(checked) =>
-                        setNotifPrefs({ ...notifPrefs, pushLabs: checked })
+                        setNotifPrefs({
+                          ...notifPrefs,
+                          push: { ...notifPrefs.push, labs: checked },
+                        })
                       }
                     />
                   </div>
 
-                  <div className="flex items-center justify-between p-4">
+                  <div className="flex items-center justify-between p-4 border-b border-black/5 dark:border-white/5">
                     <div className="space-y-0.5 pr-4">
                       <p className="text-sm font-medium">
                         Pharmacy & Dispensing Orders
@@ -1060,9 +1167,12 @@ export default function SettingsPage() {
                       </p>
                     </div>
                     <ToggleSwitch
-                      checked={notifPrefs.pushPharmacy}
+                      checked={notifPrefs.push.pharmacy}
                       onChange={(checked) =>
-                        setNotifPrefs({ ...notifPrefs, pushPharmacy: checked })
+                        setNotifPrefs({
+                          ...notifPrefs,
+                          push: { ...notifPrefs.push, pharmacy: checked },
+                        })
                       }
                     />
                   </div>
@@ -1078,9 +1188,12 @@ export default function SettingsPage() {
                       </p>
                     </div>
                     <ToggleSwitch
-                      checked={notifPrefs.pushWards}
+                      checked={notifPrefs.push.wards}
                       onChange={(checked) =>
-                        setNotifPrefs({ ...notifPrefs, pushWards: checked })
+                        setNotifPrefs({
+                          ...notifPrefs,
+                          push: { ...notifPrefs.push, wards: checked },
+                        })
                       }
                     />
                   </div>
@@ -1094,22 +1207,18 @@ export default function SettingsPage() {
                 </h3>
 
                 <div
-                  className="divide-y rounded-xl border"
+                  className="rounded-xl overflow-hidden"
                   style={{
-                    borderColor:
-                      theme === "dark"
-                        ? "rgba(255,255,255,0.08)"
-                        : "rgba(0,0,0,0.08)",
                     backgroundColor: colors.shadeBgSecond,
                   }}
                 >
-                  <div className="flex items-center justify-between p-4">
-                    <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-between p-4 border-b border-black/5 dark:border-white/5">
+                    <div className="flex items-center gap-3 min-w-0">
                       <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-500/10 text-blue-500 shrink-0">
                         <Mail size={16} />
                       </div>
-                      <div className="space-y-0.5 pr-4">
-                        <p className="text-sm font-medium">
+                      <div className="space-y-0.5 pr-4 min-w-0">
+                        <p className="text-sm font-medium truncate">
                           Daily Email Digest Summary
                         </p>
                         <p className="text-xs opacity-60">
@@ -1119,23 +1228,26 @@ export default function SettingsPage() {
                       </div>
                     </div>
                     <ToggleSwitch
-                      checked={notifPrefs.emailDailyDigest}
+                      checked={notifPrefs.channels.emailDigest}
                       onChange={(checked) =>
                         setNotifPrefs({
                           ...notifPrefs,
-                          emailDailyDigest: checked,
+                          channels: {
+                            ...notifPrefs.channels,
+                            emailDigest: checked,
+                          },
                         })
                       }
                     />
                   </div>
 
-                  <div className="flex items-center justify-between p-4">
-                    <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-between p-4 border-b border-black/5 dark:border-white/5">
+                    <div className="flex items-center gap-3 min-w-0">
                       <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-green-500/10 text-green-500 shrink-0">
                         <Smartphone size={16} />
                       </div>
-                      <div className="space-y-0.5 pr-4">
-                        <p className="text-sm font-medium">
+                      <div className="space-y-0.5 pr-4 min-w-0">
+                        <p className="text-sm font-medium truncate">
                           SMS Emergency Dispatch
                         </p>
                         <p className="text-xs opacity-60">
@@ -1145,34 +1257,43 @@ export default function SettingsPage() {
                       </div>
                     </div>
                     <ToggleSwitch
-                      checked={notifPrefs.smsAlerts}
+                      checked={notifPrefs.channels.smsEmergency}
                       onChange={(checked) =>
-                        setNotifPrefs({ ...notifPrefs, smsAlerts: checked })
+                        setNotifPrefs({
+                          ...notifPrefs,
+                          channels: {
+                            ...notifPrefs.channels,
+                            smsEmergency: checked,
+                          },
+                        })
                       }
                     />
                   </div>
 
-                  <div className="flex items-center justify-between p-4">
-                    <div className="flex items-center gap-3">
+                  {/* In-App Audio Chimes - Locked / Coming Soon */}
+                  <div className="flex items-center justify-between p-4 opacity-75">
+                    <div className="flex items-center gap-3 min-w-0">
                       <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/10 text-amber-500 shrink-0">
                         <Volume2 size={16} />
                       </div>
-                      <div className="space-y-0.5 pr-4">
-                        <p className="text-sm font-medium">
-                          In-App Audio Chimes
-                        </p>
+                      <div className="space-y-0.5 pr-4 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium truncate">
+                            In-App Audio Chimes
+                          </p>
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/15 text-amber-600 dark:text-amber-400 shrink-0">
+                            <Clock size={10} /> Coming Soon
+                          </span>
+                        </div>
                         <p className="text-xs opacity-60">
                           Play soft notification chimes when new messages or
                           critical alerts arrive.
                         </p>
                       </div>
                     </div>
-                    <ToggleSwitch
-                      checked={notifPrefs.soundAlerts}
-                      onChange={(checked) =>
-                        setNotifPrefs({ ...notifPrefs, soundAlerts: checked })
-                      }
-                    />
+                    <div className="pointer-events-none opacity-50 shrink-0">
+                      <ToggleSwitch checked={false} onChange={() => {}} />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1181,7 +1302,7 @@ export default function SettingsPage() {
 
           {tab === "security" && (
             <div
-              className="rounded-2xl border p-5 sm:p-8 space-y-6"
+              className="rounded-2xl border p-4 sm:p-6 lg:p-8 space-y-6"
               style={{
                 backgroundColor: colors.shadeBg,
                 borderColor:
@@ -1294,6 +1415,7 @@ export default function SettingsPage() {
                       setOtpSent(false);
                       setOtpCode("");
                       setSudoInput("");
+                      setDeletePassword("");
                       setIsDeleteModalOpen(true);
                     }}
                     className="w-full sm:w-auto inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-red-600 hover:bg-red-700 text-white px-4 text-xs font-semibold transition-colors cursor-pointer shadow-xs"
@@ -1381,7 +1503,7 @@ export default function SettingsPage() {
       {isDeleteModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs overflow-y-auto">
           <div
-            className="w-full max-w-md rounded-2xl border p-5 sm:p-6 space-y-5 shadow-2xl my-auto"
+            className="w-full max-w-md rounded-2xl border p-5 sm:p-6 space-y-5 shadow-2xl my-auto max-h-[90vh] overflow-y-auto"
             style={{
               backgroundColor: colors.shadeBg,
               borderColor:
@@ -1417,7 +1539,8 @@ export default function SettingsPage() {
                 you are a part of or created.
               </p>
               <p>
-                To proceed, an OTP has been sent to your registered email (
+                To proceed, verify your account password and enter the email OTP
+                code sent to (
                 <span className="font-semibold">
                   {profile?.email || "your email"}
                 </span>
@@ -1437,6 +1560,26 @@ export default function SettingsPage() {
                 </button>
               ) : (
                 <div className="space-y-3 animate-fadeIn">
+                  <div>
+                    <label className={labelCls}>
+                      Confirm Account Password *
+                    </label>
+                    <input
+                      type="password"
+                      placeholder="Enter your current password"
+                      value={deletePassword}
+                      onChange={(e) => setDeletePassword(e.target.value)}
+                      className={inputCls}
+                      style={{
+                        backgroundColor: colors.shadeBgSecond,
+                        borderColor:
+                          theme === "dark"
+                            ? "rgba(255,255,255,0.15)"
+                            : "rgba(0,0,0,0.15)",
+                      }}
+                    />
+                  </div>
+
                   <div>
                     <label className={labelCls}>Enter Email OTP Code *</label>
                     <input
@@ -1458,7 +1601,7 @@ export default function SettingsPage() {
                   <div>
                     <label className={labelCls}>
                       Copy & Paste Sudo String:{" "}
-                      <code className="text-red-500 font-bold select-all bg-red-500/10 px-1 py-0.5 rounded">
+                      <code className="text-red-500 font-bold select-all bg-red-500/10 px-1 py-0.5 rounded break-all">
                         {sudoTargetString}
                       </code>
                     </label>
@@ -1510,6 +1653,7 @@ export default function SettingsPage() {
                 onClick={handleConfirmDeleteAccount}
                 disabled={
                   !otpSent ||
+                  !deletePassword.trim() ||
                   !otpCode.trim() ||
                   sudoInput !== sudoTargetString ||
                   isDeletingAccount
@@ -1537,7 +1681,7 @@ export default function SettingsPage() {
       {imageSrc && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs overflow-y-auto">
           <div
-            className="w-full max-w-lg rounded-2xl border p-5 sm:p-6 space-y-5 shadow-2xl flex flex-col my-auto"
+            className="w-full max-w-lg rounded-2xl border p-5 sm:p-6 space-y-5 shadow-2xl flex flex-col my-auto max-h-[90vh] overflow-y-auto"
             style={{
               backgroundColor: colors.shadeBg,
               borderColor:

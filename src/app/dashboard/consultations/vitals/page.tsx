@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { useRouter } from "next/navigation";
 import {
   Activity,
@@ -25,6 +25,7 @@ import { UserAvatar, CustomPopupDatePicker } from "@/components/ui/items";
 import { VitalTile } from "@/components/ui/VitalTile";
 import { formatRecordedDate } from "@/utils/dateUtils";
 
+import { Can } from "@/components/access/can";
 /* -------------------------------------------------------------------------- */
 /*  Helpers & ranges                                                          */
 /* -------------------------------------------------------------------------- */
@@ -178,7 +179,7 @@ export default function CompanyVitalsDashboardPage() {
               {companyVitals.length} total vital records
             </p>
           </div>
-          <button
+          <Can path={"/dashboard/consultations/patients?type=vitals"}><button
             type="button"
             onClick={() =>
               router.push("/dashboard/consultations/patients?type=vitals")
@@ -187,7 +188,7 @@ export default function CompanyVitalsDashboardPage() {
             style={{ backgroundColor: PRIMARY_COLOR }}
           >
             <Plus size={15} /> Record Vital
-          </button>
+          </button></Can>
         </div>
 
         {/* Search, Date Picker & Toggle Filters */}

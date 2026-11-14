@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { fetchTeleIceServers } from "@/api/slices/telemedicineSlice";
 import { useTelemedicine } from "@/hooks/useTelemedicine";
 import { TelehealthRoom } from "@/components/telemedicine/TelehealthRoom";

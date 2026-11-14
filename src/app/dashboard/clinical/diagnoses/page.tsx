@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import {
   ChevronRight,
   BookOpen,
@@ -35,6 +35,7 @@ import {
 import { useTheme } from "@/contexts/theme-context";
 import { PRIMARY_COLOR, getUI } from "@/constants/colors";
 
+import { Can } from "@/components/access/can";
 /* -------------------------------------------------------------------------- */
 /*  Helpers                                                                   */
 /* -------------------------------------------------------------------------- */
@@ -390,14 +391,14 @@ export default function IcdBrowserPage() {
                   <RefreshCw size={12} /> Refresh
                 </button>
                 {running ? (
-                  <button
+                  <Can perm="consultations.write"><button
                     type="button"
                     onClick={onStop}
                     disabled={crawlActionLoading}
                     className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold text-red-500 border border-red-500/20 bg-red-500/10 transition hover:opacity-80 disabled:opacity-40"
                   >
                     <Square size={12} /> Stop
-                  </button>
+                  </button></Can>
                 ) : (
                   <button
                     type="button"

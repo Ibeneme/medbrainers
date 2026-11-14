@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import {
   Activity,
   AlertTriangle,

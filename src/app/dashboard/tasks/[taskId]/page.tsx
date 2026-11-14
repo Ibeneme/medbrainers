@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -43,6 +43,8 @@ import {
 } from "@/components/ui/items";
 import { useFacilityId } from "@/hooks/useFacilityId";
 
+import { Can } from "@/components/access/can";
+import { useAccess } from "@/hooks/useAccess";
 function ConfirmModal({
   open,
   title,
@@ -153,32 +155,8 @@ export default function TaskDetailPage() {
   const [toast, setToast] = useState<string | null>(null);
   const [toastErr, setToastErr] = useState(false);
 
-  // Check if current user is admin or manager for the active facility
-  const isManagerOrAdmin = useMemo(() => {
-    if (!user || !activeFacility) return true; // Default fallback to allow editing if role info is missing
-    const userId = (user as any)._id || (user as any).id;
-    // Check if user is owner
-    if (
-      activeFacility.owner &&
-      (String(activeFacility.owner) === String(userId) ||
-        (activeFacility.owner as any)._id === String(userId))
-    ) {
-      return true;
-    }
-    // Check members list for role
-    const membership = members.find(
-      (m) => String(m.id || (m as any)._id) === String(userId)
-    );
-    if (
-      membership &&
-      (membership.role === "admin" ||
-        membership.role === "manager" ||
-        (membership.role as string) === "owner")
-    ) {
-      return true;
-    }
-    return false;
-  }, [user, activeFacility, members]);
+  // permission-based (was: owner/admin/manager role check)
+  const isManagerOrAdmin = useAccess().can("tasks.write");
 
   useEffect(() => {
     dispatch(fetchMyFacilities());
@@ -333,7 +311,7 @@ export default function TaskDetailPage() {
               </div>
               <div className="flex items-center gap-2">
                 {!isEditing && isManagerOrAdmin && (
-                  <button
+                  <Can perm="tasks.write"><button
                     type="button"
                     onClick={() => setIsEditing(true)}
                     className="inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition hover:opacity-80"
@@ -344,7 +322,7 @@ export default function TaskDetailPage() {
                   >
                     <Edit3 size={13} style={{ color: PRIMARY_COLOR }} /> Edit
                     Details
-                  </button>
+                  </button></Can>
                 )}
                 {!isManagerOrAdmin && (
                   <span className="rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-bold text-amber-500">
@@ -480,7 +458,7 @@ export default function TaskDetailPage() {
                   >
                     Cancel
                   </button>
-                  <button
+                  <Can perm="tasks.delete"><button
                     type="button"
                     onClick={() => setDeleteOpen(true)}
                     className="ml-auto inline-flex items-center gap-1.5 rounded-xl border px-4 py-2.5 text-xs font-semibold text-red-500 shadow-none"
@@ -491,7 +469,7 @@ export default function TaskDetailPage() {
                     }}
                   >
                     <Trash2 size={14} /> Delete
-                  </button>
+                  </button></Can>
                 </div>
               </div>
             ) : (
@@ -623,7 +601,7 @@ export default function TaskDetailPage() {
 
                 {isManagerOrAdmin && (
                   <div className="flex justify-end pt-2">
-                    <button
+                    <Can perm="tasks.delete"><button
                       type="button"
                       onClick={() => setDeleteOpen(true)}
                       className="inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-semibold text-red-500 shadow-none transition hover:opacity-80"
@@ -634,7 +612,7 @@ export default function TaskDetailPage() {
                       }}
                     >
                       <Trash2 size={14} /> Delete Task
-                    </button>
+                    </button></Can>
                   </div>
                 )}
               </div>

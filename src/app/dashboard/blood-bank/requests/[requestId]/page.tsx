@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { cancelRequest, closeRequest, fetchRequestById, receiveSample, suggestUnits } from "@/api/slices";
 import {
   BASE, BackHeader, Bar, Btn, Card, DataTable, GroupBadge, KV, KVGrid, Loader, NotFound, Page, Pill, PRODUCT_LABEL,

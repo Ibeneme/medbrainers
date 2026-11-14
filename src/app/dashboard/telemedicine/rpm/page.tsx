@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { Activity } from "lucide-react";
 import { ModuleShell, ActionLink } from "@/components/dashboard/ModuleShell";
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { useRouter } from "next/navigation";
 import {
   Building2,
@@ -26,6 +26,7 @@ import { useTheme } from "@/contexts/theme-context";
 import { useToast } from "@/contexts/toast-context";
 import { PRIMARY_COLOR, getUI } from "@/constants/colors";
 
+import { Can } from "@/components/access/can";
 const personName = (p: unknown) => {
   if (!p || typeof p === "string") return "—";
   const x = p as { firstName?: string; lastName?: string; mrn?: string };
@@ -186,13 +187,13 @@ export default function NursingCarePlansPage() {
                 </button>
               )}
             </div>
-            <button
+            <Can path={"/dashboard/wards/nursing/new"}><button
               onClick={() => router.push("/dashboard/wards/nursing/new")}
               className="inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
               style={{ backgroundColor: PRIMARY_COLOR }}
             >
               <Plus size={15} /> New care plan
-            </button>
+            </button></Can>
           </div>
         </div>
 
@@ -401,13 +402,13 @@ export default function NursingCarePlansPage() {
                     </span>
                     {isActive && (
                       <span className="flex gap-2">
-                        <button
+                        <Can perm="wards.write"><button
                           onClick={() => patch(plan, { status: "completed" })}
                           className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90"
                           style={{ backgroundColor: PRIMARY_COLOR }}
                         >
                           <CheckCircle2 size={13} /> Complete
-                        </button>
+                        </button></Can>
                         <button
                           onClick={() =>
                             patch(plan, { status: "discontinued" })

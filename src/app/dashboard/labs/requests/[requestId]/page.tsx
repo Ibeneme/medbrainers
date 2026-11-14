@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import {
   UserCheck,
   Plus,
@@ -47,6 +47,7 @@ import SpecimenBarcode from "@/components/ui/SpecimenBarcode";
 import { useFacilityId } from "@/hooks/useFacilityId";
 import { useToast } from "@/contexts/toast-context";
 
+import { Can } from "@/components/access/can";
 const TEST_STATUS_OPTIONS = [
   { label: "Ordered", value: "ordered" },
   { label: "Collecting Sample", value: "collecting_sample" },
@@ -904,7 +905,7 @@ function TestResultCard({
                 accept="application/pdf,image/*"
                 className="hidden"
               />
-              <button
+              <Can perm="labs.write"><button
                 type="button"
                 disabled={uploadingFiles}
                 onClick={() => fileInputRef.current?.click()}
@@ -917,7 +918,7 @@ function TestResultCard({
                   <Upload size={13} />
                 )}
                 Upload Photos / Files
-              </button>
+              </button></Can>
             </div>
           </div>
 
@@ -997,7 +998,7 @@ function TestResultCard({
             />
           </div>
 
-          <button
+          <Can perm="labs.write"><button
             type="button"
             disabled={savingTest}
             onClick={handleSaveTestChanges}
@@ -1010,7 +1011,7 @@ function TestResultCard({
               <Save size={14} />
             )}
             Save Changes
-          </button>
+          </button></Can>
         </div>
       </div>
     </div>
@@ -1446,7 +1447,7 @@ export default function LabRequestDetailPage() {
             colors={colors}
             border={border}
           />
-          <button
+          <Can perm="labs.write"><button
             type="button"
             disabled={actionLoading}
             onClick={promptAssignmentConfirmation}
@@ -1455,7 +1456,7 @@ export default function LabRequestDetailPage() {
           >
             {actionLoading && <Loader2 size={13} className="animate-spin" />}
             Update Assignment
-          </button>
+          </button></Can>
         </div>
       </div>
 

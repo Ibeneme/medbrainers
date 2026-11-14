@@ -3,10 +3,25 @@ import api, { getErrorMessage, type ApiSuccess } from "../services";
 import type { QueryUsersParams, UpdateProfilePayload, User } from "../types";
 
 /* ── state ─────────────────────────────────────────────────── */
+export interface NotificationPreferences {
+  push: {
+    emergency: boolean;
+    labs: boolean;
+    pharmacy: boolean;
+    wards: boolean;
+  };
+  channels: {
+    emailDigest: boolean;
+    smsEmergency: boolean;
+    inAppAudio: boolean;
+  };
+}
+
 export interface UsersState {
   me: User | null;
   list: User[];
   selected: User | null;
+  notificationPreferences: NotificationPreferences | null;
   meta: { total: number; page: number; limit: number; pages: number } | null;
   loading: boolean;
   error: string | null;
@@ -17,6 +32,7 @@ const initialState: UsersState = {
   me: null,
   list: [],
   selected: null,
+  notificationPreferences: null,
   meta: null,
   loading: false,
   error: null,
@@ -64,6 +80,60 @@ export const uploadProfilePicture = createAsyncThunk(
       return data;
     } catch (err) {
       return rejectWithValue(getErrorMessage(err, "Failed to upload image"));
+    }
+  },
+);
+
+/** GET /users/me/notification-preferences */
+export const fetchNotificationPreferences = createAsyncThunk(
+  "users/fetchNotificationPreferences",
+  async (_, { rejectWithValue }) => {
+    try {
+      const { data } = await api.get<ApiSuccess<NotificationPreferences>>("/users/me/notification-preferences");
+      return data;
+    } catch (err) {
+      return rejectWithValue(getErrorMessage(err, "Failed to load notification preferences"));
+    }
+  },
+);
+
+/** PUT /users/me/notification-preferences */
+export const updateNotificationPreferences = createAsyncThunk(
+  "users/updateNotificationPreferences",
+  async (payload: Partial<NotificationPreferences>, { rejectWithValue }) => {
+    try {
+      const { data } = await api.put<ApiSuccess<NotificationPreferences>>("/users/me/notification-preferences", payload);
+      return data;
+    } catch (err) {
+      return rejectWithValue(getErrorMessage(err, "Failed to update notification preferences"));
+    }
+  },
+);
+
+/** POST /users/me/unsubscribe (or equivalent email opt-out endpoint) */
+export const unsubscribeEmails = createAsyncThunk(
+  "users/unsubscribeEmails",
+  async (_, { rejectWithValue }) => {
+    try {
+      const { data } = await api.post<ApiSuccess<void>>("/users/me/unsubscribe");
+      return data;
+    } catch (err) {
+      return rejectWithValue(getErrorMessage(err, "Failed to unsubscribe from emails"));
+    }
+  },
+);
+
+/** DELETE /users/me */
+export const deleteAccount = createAsyncThunk(
+  "users/deleteAccount",
+  async (passwordPayload: { password: string }, { rejectWithValue }) => {
+    try {
+      const { data } = await api.delete<ApiSuccess<void>>("/users/me", {
+        data: passwordPayload,
+      });
+      return data;
+    } catch (err) {
+      return rejectWithValue(getErrorMessage(err, "Failed to delete account"));
     }
   },
 );
@@ -159,6 +229,41 @@ const usersSlice = createSlice({
         state.message = action.payload.message ?? "Profile picture updated";
       })
       .addCase(uploadProfilePicture.rejected, rejected);
+
+    builder
+      .addCase(fetchNotificationPreferences.pending, pending)
+      .addCase(fetchNotificationPreferences.fulfilled, (state, action) => {
+        state.loading = false;
+        state.notificationPreferences = action.payload.data;
+      })
+      .addCase(fetchNotificationPreferences.rejected, rejected);
+
+    builder
+      .addCase(updateNotificationPreferences.pending, pending)
+      .addCase(updateNotificationPreferences.fulfilled, (state, action) => {
+        state.loading = false;
+        state.notificationPreferences = action.payload.data;
+        state.message = action.payload.message ?? "Notification preferences saved";
+      })
+      .addCase(updateNotificationPreferences.rejected, rejected);
+
+    builder
+      .addCase(unsubscribeEmails.pending, pending)
+      .addCase(unsubscribeEmails.fulfilled, (state, action) => {
+        state.loading = false;
+        state.message = action.payload.message ?? "Successfully unsubscribed from emails";
+      })
+      .addCase(unsubscribeEmails.rejected, rejected);
+
+    builder
+      .addCase(deleteAccount.pending, pending)
+      .addCase(deleteAccount.fulfilled, (state) => {
+        state.loading = false;
+        state.me = null;
+        state.notificationPreferences = null;
+        state.message = "Account successfully deleted";
+      })
+      .addCase(deleteAccount.rejected, rejected);
 
     builder
       .addCase(fetchUsers.pending, pending)

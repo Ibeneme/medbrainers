@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { useParams, useRouter } from "next/navigation";
 import { ChevronRight, Edit3, User } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/api/hooks";

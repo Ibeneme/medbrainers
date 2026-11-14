@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Plus, Snowflake } from "lucide-react";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { fetchStorage } from "@/api/slices";
 import {
   BASE, Bar, Btn, Empty, Header, Loader, Page, Pill, Pills, SectionCard, fmtDateTime, label, useBB,

@@ -88,7 +88,10 @@ function loadToken(key: string): string | null {
 function persistUser(user: User | null) {
   if (typeof window === "undefined") return;
   if (user) {
-    setCookie(API_CONFIG.USER_KEY, JSON.stringify(user));
+    // `access` (roles + permissions per facility) lives in the access slice / localStorage:
+    // cookies are limited to ~4KB and would silently drop the whole user object.
+    const { access: _omit, ...slim } = user as User & { access?: unknown };
+    setCookie(API_CONFIG.USER_KEY, JSON.stringify(slim));
   } else {
     removeCookie(API_CONFIG.USER_KEY);
   }
@@ -219,7 +222,8 @@ export const login = createAsyncThunk(
       const result = data.data;
       setTokens(result.accessToken, result.refreshToken);
       if (typeof window !== "undefined") {
-        setCookie(API_CONFIG.USER_KEY, JSON.stringify(result.user));
+        const { access: _omit, ...slim } = result.user as User & { access?: unknown };
+        setCookie(API_CONFIG.USER_KEY, JSON.stringify(slim));
       }
       return data;
     } catch (err) {

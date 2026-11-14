@@ -2,7 +2,7 @@
 
 import { useCallback } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { AlertTriangle } from "lucide-react";
 import { fetchErRegistration } from "@/api/slices";
 import type { ErRegistrationDetail } from "@/api/slices/emergencySlice";

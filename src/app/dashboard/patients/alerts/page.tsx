@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { AlertTriangle, Building2, Loader2 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/api/hooks";
 import { fetchMyFacilities, fetchVitalAlerts } from "@/api/slices";

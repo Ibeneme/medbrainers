@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { ArrowLeft, Building2, HelpCircle, type LucideIcon } from "lucide-react";
 import { PRIMARY_COLOR, getUI, type UI } from "@/constants/colors";
 import { useTheme } from "@/contexts/theme-context";

@@ -4,6 +4,8 @@ export type UserRole =
   | "admin"
   | "manager"
   | "audit"
+  | "financial_manager"
+  | "cashier"
   | "doctor"
   | "nurse"
   | "pharmacist"
@@ -110,6 +112,10 @@ export interface ActiveFacilityDetails {
   owner?: string | { _id?: string; id?: string };
   facilityType?: string;
   description?: string;
+  /** Role objects for the active facility (`roles` stays a list of role keys) */
+  roleDetails?: RoleRef[];
+  /** Effective permissions in the active facility */
+  permissions?: string[];
 }
 
 /** Authenticated user (auth slice + /users/me) */
@@ -137,6 +143,8 @@ export interface User {
   companies?: UserCompany[];
   activeCompany?: string;
   activeCompanyDetails?: ActiveFacilityDetails;
+  /** Roles + permissions per facility (never persisted in the user cookie — too large) */
+  access?: AccessPayload;
   isActive?: boolean;
   privileges?: string[];
   isEmailVerified?: boolean;
@@ -150,6 +158,7 @@ export interface AuthTokens {
 }
 
 export interface LoginResponse {
+  access?: AccessPayload;
   user: User;
   accessToken: string;
   refreshToken: string;
@@ -218,6 +227,15 @@ export interface FacilityMember {
   specialty?: string;
   role?: UserRole;
   roles?: UserRole[];
+  /** Role objects (roles stays a list of role keys) */
+  roleDetails?: RoleRef[];
+  roleIds?: string[];
+  /** Sub-permissions granted directly / explicitly denied */
+  permissions?: string[];
+  deniedPermissions?: string[];
+  /** roles + direct grants − denials */
+  effectivePermissions?: string[];
+  modules?: Record<string, string[]>;
   isOwner?: boolean;
   department?: string;
   joinedAt?: string;
@@ -241,6 +259,13 @@ export interface FacilityMemberDetail {
   department?: string;
   role?: UserRole;
   roles?: UserRole[];
+  roleDetails?: RoleRef[];
+  roleIds?: string[];
+  permissions?: string[];
+  deniedPermissions?: string[];
+  effectivePermissions?: string[];
+  modules?: Record<string, string[]>;
+  access?: AccessInfo;
   isOwner?: boolean;
   joinedAt?: string;
   facilitySummary: {
@@ -472,6 +497,8 @@ export const FACILITY_ROLES: UserRole[] = [
   "admin",
   "manager",
   "audit",
+  "financial_manager",
+  "cashier",
   "doctor",
   "nurse",
   "pharmacist",
@@ -1035,4 +1062,66 @@ export interface DashboardAlerts {
   generatedAt: string;
   counts: Record<DashboardAlertSeverity, number>;
   alerts: DashboardAlert[];
+}
+
+/* ── Roles & access control (see backend modules/access) ─────────────────── */
+export interface RoleRef {
+  id?: string;
+  key: string;
+  name: string;
+  isSystem: boolean;
+  /** true for the person's primary (membership.role) role */
+  primary: boolean;
+}
+
+/** Everything the UI needs to decide what to render for ONE facility. */
+export interface AccessInfo {
+  companyId?: string;
+  role: string;
+  /** Every role the person holds here (primary first) */
+  roles: RoleRef[];
+  roleKeys: string[];
+  isOwner: boolean;
+  isSuperAdmin: boolean;
+  /** Concrete permissions, wildcards expanded, denials applied */
+  permissions: string[];
+  directPermissions: string[];
+  deniedPermissions: string[];
+  /** { radiology: ["view","write"] } */
+  modules: Record<string, string[]>;
+}
+
+/** `access` block embedded in login / users/me / switch-company responses */
+export interface AccessPayload {
+  activeCompanyId: string | null;
+  active: AccessInfo | null;
+  companies: Record<string, AccessInfo>;
+}
+
+export interface AccessRole {
+  id: string;
+  key: string;
+  name: string;
+  description?: string;
+  isSystem: boolean;
+  locked: boolean;
+  permissions: string[];
+  memberCount?: number;
+  updatedAt?: string;
+}
+
+export interface AccessCatalogModule {
+  key: string;
+  label: string;
+  group: string;
+  actions: { action: string; permission: string; description: string }[];
+}
+
+export interface MemberAccess {
+  userId: string;
+  role: string;
+  roleIds: string[];
+  permissions: string[];
+  deniedPermissions: string[];
+  effectivePermissions: string[];
 }

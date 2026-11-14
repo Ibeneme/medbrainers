@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { useState, useMemo } from "react";
 import { MonitorPlay, Search, RefreshCw } from "lucide-react";
 import { PRIMARY_COLOR, getUI } from "@/constants/colors";

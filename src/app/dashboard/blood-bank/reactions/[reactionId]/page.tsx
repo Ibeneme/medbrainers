@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { Pencil } from "lucide-react";
 import { fetchReactionById } from "@/api/slices";
 import {

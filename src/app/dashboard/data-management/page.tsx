@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect } from "react";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { Database, History, RefreshCw } from "lucide-react";
 import { fetchCompanySummary, fetchTransfers } from "@/api/slices";
 import { PRIMARY_COLOR } from "@/constants/colors";

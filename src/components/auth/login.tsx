@@ -13,7 +13,7 @@ import { useAppDispatch, useAppSelector } from "@/api/hooks";
 import { login, clearAuthError } from "@/api/slices";
 import DarkBlurOverlayLoader from "../atoms/loaders/DarkBlurOverlayLoader";
 
-const REDIRECT_AFTER_LOGIN = "/dashboard";
+const REDIRECT_AFTER_LOGIN = "/dashboard/dashboard";
 
 /* ---------- Validation ---------- */
 const emailOk = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim());

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { ListChecks, Plus } from "lucide-react";
 import { fetchErActive } from "@/api/slices";
 import {

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import {
   ArrowLeft,
   Building2,
@@ -33,6 +33,7 @@ import { getUI } from "@/constants/colors";
 import DarkBlurOverlayLoader from "@/components/atoms/loaders/DarkBlurOverlayLoader";
 import { useFacilityId } from "@/hooks/useFacilityId";
 
+import { Can } from "@/components/access/can";
 export default function DepartmentDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -273,7 +274,7 @@ export default function DepartmentDetailPage() {
 
         <div className="flex items-center gap-2">
           {/* Edit Department Button */}
-          <button
+          <Can perm="settings.manage"><button
             type="button"
             onClick={() => setShowEditModal(true)}
             className="inline-flex items-center gap-1.5 text-xs font-semibold transition px-3 py-1.5 rounded-full border"
@@ -285,17 +286,17 @@ export default function DepartmentDetailPage() {
           >
             <Edit3 size={13} />
             <span>Edit Department</span>
-          </button>
+          </button></Can>
 
           {/* Delete Department Button */}
-          <button
+          <Can perm="settings.manage"><button
             type="button"
             onClick={() => setShowDeleteModal(true)}
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-red-500 hover:opacity-80 transition px-3 py-1.5 rounded-full border border-red-500/20 bg-red-500/10"
           >
             <Trash2 size={13} />
             <span>Delete</span>
-          </button>
+          </button></Can>
         </div>
       </div>
 
@@ -467,7 +468,7 @@ export default function DepartmentDetailPage() {
                     </div>
                   </div>
 
-                  <button
+                  <Can perm="settings.manage"><button
                     type="button"
                     onClick={() => {
                       setStaffToRemove(staff);
@@ -477,7 +478,7 @@ export default function DepartmentDetailPage() {
                     className="flex h-8 w-8 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:opacity-80 transition shrink-0"
                   >
                     <UserMinus size={14} />
-                  </button>
+                  </button></Can>
                 </div>
               );
             })}
@@ -526,7 +527,7 @@ export default function DepartmentDetailPage() {
                 </div>
 
                 {selectedStaffToAdd.length > 0 && (
-                  <button
+                  <Can perm="settings.manage"><button
                     type="button"
                     onClick={() => setShowAddConfirmModal(true)}
                     className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:opacity-90 shrink-0"
@@ -534,7 +535,7 @@ export default function DepartmentDetailPage() {
                   >
                     <UserPlus size={14} />
                     <span>Assign Selected ({selectedStaffToAdd.length})</span>
-                  </button>
+                  </button></Can>
                 )}
               </div>
             </div>

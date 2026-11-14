@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useRef } from "react";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { useRouter } from "next/navigation";
 import {
   ArrowRightLeft,
@@ -30,6 +30,7 @@ import { PRIMARY_COLOR } from "@/constants/colors";
 import DarkBlurOverlayLoader from "@/components/atoms/loaders/DarkBlurOverlayLoader";
 import { useFacilityId } from "@/hooks/useFacilityId";
 
+import { Can } from "@/components/access/can";
 function personLabel(u: unknown): string {
   if (!u) return "—";
   if (typeof u === "string") return u;
@@ -601,14 +602,14 @@ export default function HandoverLogPage() {
           >
             All tasks
           </Link>
-          <button
+          <Can perm="handovers.write"><button
             type="button"
             onClick={() => setShowForm(true)}
             className="inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-semibold text-white"
             style={{ backgroundColor: PRIMARY_COLOR }}
           >
             <Plus size={14} /> New handover
-          </button>
+          </button></Can>
         </div>
       </div>
 
@@ -823,14 +824,14 @@ export default function HandoverLogPage() {
                         View details
                       </Link>
                       {canAck && (
-                        <button
+                        <Can perm="handovers.write"><button
                           type="button"
                           onClick={() => handleAcknowledge(id)}
                           className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold"
                           style={{ borderColor: border }}
                         >
                           <Check size={12} /> Acknowledge receipt
-                        </button>
+                        </button></Can>
                       )}
                     </div>
                   </li>
@@ -929,14 +930,14 @@ export default function HandoverLogPage() {
                               style={{ borderColor: border }}
                               onClick={(e) => e.stopPropagation()}
                             >
-                              <button
+                              <Can perm="handovers.write"><button
                                 type="button"
                                 onClick={() => handleAcknowledge(id)}
                                 className="inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[10px] font-semibold"
                                 style={{ borderColor: border }}
                               >
                                 <Check size={11} /> Acknowledge
-                              </button>
+                              </button></Can>
                             </div>
                           )}
                         </div>

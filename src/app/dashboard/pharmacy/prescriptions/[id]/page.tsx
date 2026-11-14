@@ -32,6 +32,7 @@ import {
   usePharmacyUI,
 } from "@/components/dashboard/pharmacy/PharmacyUI";
 
+import { Can } from "@/components/access/can";
 export default function PrescriptionDetailPage() {
   const params = useParams();
   const id = String(Array.isArray(params?.id) ? params.id[0] : params?.id || "");
@@ -145,12 +146,12 @@ export default function PrescriptionDetailPage() {
           {rx.priority !== "routine" && <Pill status={rx.priority} />}
           {rx.status === "pending" && (
             <>
-              <GhostButton icon={BadgeCheck} onClick={() => doVerify(false)} disabled={saving}>
+              <Can perm="pharmacy.dispense"><GhostButton icon={BadgeCheck} onClick={() => doVerify(false)} disabled={saving}>
                 Verify
-              </GhostButton>
-              <PrimaryButton icon={PackageCheck} onClick={() => doVerify(true)} disabled={saving}>
+              </GhostButton></Can>
+              <Can perm="pharmacy.dispense"><PrimaryButton icon={PackageCheck} onClick={() => doVerify(true)} disabled={saving}>
                 Verify & dispense
-              </PrimaryButton>
+              </PrimaryButton></Can>
             </>
           )}
           {canDispense && (
@@ -159,9 +160,9 @@ export default function PrescriptionDetailPage() {
             </PrimaryButton>
           )}
           {(rx.status === "pending" || rx.status === "verified" || rx.status === "partially_dispensed") && (
-            <GhostButton danger icon={XCircle} onClick={() => setCancelOpen(true)}>
+            <Can perm="pharmacy.prescribe"><GhostButton danger icon={XCircle} onClick={() => setCancelOpen(true)}>
               Cancel
-            </GhostButton>
+            </GhostButton></Can>
           )}
         </>
       }
@@ -226,9 +227,9 @@ export default function PrescriptionDetailPage() {
                     <FormField label="Refills">
                       <TextInput type="number" min={0} max={12} value={e.refills ?? String(i.refillsAllowed)} onChange={(ev) => setEdits((x) => ({ ...x, [i._id]: { ...x[i._id], refills: ev.target.value } }))} style={{ backgroundColor: ui.card }} />
                     </FormField>
-                    <GhostButton icon={Save} disabled={!dirty || saving} onClick={() => saveItem(i._id, i)}>
+                    <Can perm="pharmacy.dispense"><GhostButton icon={Save} disabled={!dirty || saving} onClick={() => saveItem(i._id, i)}>
                       Save
-                    </GhostButton>
+                    </GhostButton></Can>
                   </div>
                 ) : (
                   <p className="text-xs opacity-70">
@@ -264,7 +265,7 @@ export default function PrescriptionDetailPage() {
       <SectionCard title="Notes & audit trail">
         <div className="flex gap-2">
           <TextInput value={note} onChange={(e) => setNote(e.target.value)} placeholder="Add a note for the pharmacy team..." onKeyDown={(e) => e.key === "Enter" && addNote()} />
-          <PrimaryButton icon={Send} onClick={addNote} disabled={saving || !note.trim()}>Add</PrimaryButton>
+          <Can perm={["pharmacy.prescribe","pharmacy.dispense"]}><PrimaryButton icon={Send} onClick={addNote} disabled={saving || !note.trim()}>Add</PrimaryButton></Can>
         </div>
         {rx.notes && <p className="text-xs rounded-2xl p-3" style={{ backgroundColor: ui.inner }}>Prescriber note: {rx.notes}</p>}
         <div className="space-y-2">

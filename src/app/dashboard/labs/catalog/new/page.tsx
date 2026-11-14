@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { ChevronRight, Save, FlaskConical, Plus, Trash2, Key, Info } from "lucide-react";
 import { useAppDispatch } from "@/api/hooks";
 import { addLabCatalogItem } from "@/api/slices";

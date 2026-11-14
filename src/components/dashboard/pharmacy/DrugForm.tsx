@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { Bookmark, Save, Trash2 } from "lucide-react";
 import { CustomDropdown, ToggleSwitch } from "@/components/ui/items";
 import type { DrugPayload, PharmacyDrug } from "@/api/slices";

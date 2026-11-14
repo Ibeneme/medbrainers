@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import {
   BedDouble,
   ChevronRight,
@@ -25,6 +25,7 @@ import { useTheme } from "@/contexts/theme-context";
 import { PRIMARY_COLOR, getUI } from "@/constants/colors";
 import DarkBlurOverlayLoader from "@/components/atoms/loaders/DarkBlurOverlayLoader";
 
+import { Can } from "@/components/access/can";
 function personName(p: unknown) {
   if (!p || typeof p === "string") return "—";
   const x = p as { firstName?: string; lastName?: string; mrn?: string };
@@ -329,7 +330,7 @@ export default function AdmissionsPage() {
                       >
                         View <ChevronRight size={13} />
                       </Link>
-                      <button
+                      <Can perm="wards.write"><button
                         type="button"
                         onClick={() => setTransferFor(a)}
                         className="inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-medium transition-all hover:opacity-80"
@@ -337,7 +338,7 @@ export default function AdmissionsPage() {
                       >
                         <ArrowRightLeft size={13} />
                         Transfer
-                      </button>
+                      </button></Can>
                       <Link
                         href={`/dashboard/wards/discharges?admissionId=${a._id}`}
                         className="inline-flex items-center rounded-xl px-4 py-2 text-xs font-semibold text-white transition-all hover:opacity-90"

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { useParams, useRouter } from "next/navigation";
 import {
   Activity,
@@ -73,6 +73,8 @@ import {
 import DarkBlurOverlayLoader from "@/components/atoms/loaders/DarkBlurOverlayLoader";
 import { ConfirmModal, ConfirmState, Modal } from "@/components/ui/items";
 
+import { Can } from "@/components/access/can";
+import { useAccess } from "@/hooks/useAccess";
 /* -------------------------------------------------------------------------- */
 /*  Design tokens                                                             */
 /* -------------------------------------------------------------------------- */
@@ -896,7 +898,7 @@ function AllergyCard({
       </div>
       {canManage && (
         <div className="flex items-center gap-1 shrink-0">
-          <button
+          <Can perm="patients.write"><button
             type="button"
             onClick={onEdit}
             className="flex h-8 w-8 items-center justify-center rounded-full opacity-60 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition outline-none focus:outline-none"
@@ -904,8 +906,8 @@ function AllergyCard({
             aria-label="Edit allergy"
           >
             <Edit3 size={15} />
-          </button>
-          <button
+          </button></Can>
+          <Can perm="patients.write"><button
             type="button"
             onClick={onDelete}
             className="flex h-8 w-8 items-center justify-center rounded-full opacity-60 hover:opacity-100 hover:bg-red-500/10 hover:text-red-500 transition outline-none focus:outline-none"
@@ -913,7 +915,7 @@ function AllergyCard({
             aria-label="Remove allergy"
           >
             <Trash2 size={15} />
-          </button>
+          </button></Can>
         </div>
       )}
     </div>
@@ -999,17 +1001,8 @@ export default function PatientDetailPage() {
 
   const currentUser = useAppSelector((s: any) => s.auth?.user);
 
-  const canManageAllergies = useMemo(() => {
-    const role = currentUser?.role?.toLowerCase() || "";
-    return (
-      role.includes("admin") ||
-      role.includes("doctor") ||
-      role.includes("physician") ||
-      role.includes("provider") ||
-      role.includes("nurse") ||
-      role.includes("clinician")
-    );
-  }, [currentUser]);
+  // permission-based (was: guessed from the role name)
+  const canManageAllergies = useAccess().can("patients.write");
 
   const [tab, setTab] = useState<
     | "overview"
@@ -1896,7 +1889,7 @@ export default function PatientDetailPage() {
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <button
+            <Can path={`/dashboard/patients/${patientId}/edit`}><button
               type="button"
               onClick={() =>
                 router.push(`/dashboard/patients/${patientId}/edit`)
@@ -1905,7 +1898,7 @@ export default function PatientDetailPage() {
               style={{ backgroundColor: PRIMARY_COLOR }}
             >
               <Edit3 size={13} /> Edit Patient
-            </button>
+            </button></Can>
             <span
               className="rounded-full px-3 py-1.5 text-[11px] font-medium"
               style={{ backgroundColor: ui.card }}
@@ -2371,14 +2364,14 @@ export default function PatientDetailPage() {
                               {draft.updatedAt}
                             </p>
                           </div>
-                          <button
+                          <Can perm="consultations.delete"><button
                             type="button"
                             onClick={(e) => handleDeleteDraft(draft.id, e)}
                             className="opacity-40 group-hover:opacity-100 text-red-500 p-1 rounded-lg hover:bg-red-500/10"
                             title="Delete draft"
                           >
                             <X size={14} />
-                          </button>
+                          </button></Can>
                         </div>
                       ))}
                     </div>
@@ -2462,7 +2455,7 @@ export default function PatientDetailPage() {
                           >
                             <Edit3 size={15} />
                           </Link>
-                          <button
+                          <Can perm="consultations.delete"><button
                             type="button"
                             onClick={() => confirmRemoveConsultation(c)}
                             className="flex h-9 w-9 items-center justify-center rounded-full opacity-70 hover:opacity-100 hover:bg-red-500/10 hover:text-red-500 transition outline-none focus:outline-none"
@@ -2470,7 +2463,7 @@ export default function PatientDetailPage() {
                             aria-label="Delete consultation"
                           >
                             <Trash2 size={15} />
-                          </button>
+                          </button></Can>
                         </div>
                       </div>
 
@@ -2985,7 +2978,7 @@ export default function PatientDetailPage() {
                                 Alert
                               </span>
                             )}
-                            <button
+                            <Can perm="vitals.write"><button
                               type="button"
                               onClick={() => openEditVital(v)}
                               className="flex h-8 w-8 items-center justify-center rounded-full opacity-60 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition outline-none focus:outline-none"
@@ -2993,8 +2986,8 @@ export default function PatientDetailPage() {
                               aria-label="Edit vitals"
                             >
                               <Edit3 size={14} />
-                            </button>
-                            <button
+                            </button></Can>
+                            <Can perm="vitals.delete"><button
                               type="button"
                               onClick={() => confirmRemoveVital(v)}
                               className="flex h-8 w-8 items-center justify-center rounded-full opacity-60 hover:opacity-100 hover:bg-red-500/10 hover:text-red-500 transition outline-none focus:outline-none"
@@ -3002,7 +2995,7 @@ export default function PatientDetailPage() {
                               aria-label="Remove vitals"
                             >
                               <Trash2 size={14} />
-                            </button>
+                            </button></Can>
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
@@ -3150,13 +3143,13 @@ export default function PatientDetailPage() {
                         </Link>
                       ))}
                     </div>
-                    <button
+                    <Can perm="patients.write"><button
                       type="button"
                       onClick={confirmRemoveFromGroup}
                       className="text-xs font-semibold text-red-500 outline-none focus:outline-none"
                     >
                       Remove this patient from group
-                    </button>
+                    </button></Can>
                   </div>
                 )}
 

@@ -28,6 +28,7 @@ import {
   usePharmacyUI,
 } from "@/components/dashboard/pharmacy/PharmacyUI";
 
+import { Can } from "@/components/access/can";
 const NEUTRAL_CHIP = "rgba(128,128,128,0.18)";
 
 export default function DrugCatalogPage() {
@@ -390,7 +391,7 @@ export default function DrugCatalogPage() {
                     className="px-3 py-3.5 text-right"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <button
+                    <Can path={`/dashboard/pharmacy/catalog/${d._id}/edit`}><button
                       type="button"
                       onClick={() =>
                         router.push(`/dashboard/pharmacy/catalog/${d._id}/edit`)
@@ -401,7 +402,7 @@ export default function DrugCatalogPage() {
                       aria-label="Edit drug"
                     >
                       <Edit3 size={13} />
-                    </button>
+                    </button></Can>
                   </td>
                 </tr>
               );
@@ -465,14 +466,14 @@ export default function DrugCatalogPage() {
               >
                 {detail.isActive ? "Deactivate" : "Reactivate"}
               </GhostButton>
-              <PrimaryButton
+              <Can path={`/dashboard/pharmacy/catalog/${detail._id}/edit`}><PrimaryButton
                 icon={Edit3}
                 onClick={() =>
                   router.push(`/dashboard/pharmacy/catalog/${detail._id}/edit`)
                 }
               >
                 Edit Drug
-              </PrimaryButton>
+              </PrimaryButton></Can>
             </div>
           </div>
         )}
@@ -491,12 +492,12 @@ export default function DrugCatalogPage() {
             Clear
           </GhostButton>
           {selectedActive.length > 0 && (
-            <GhostButton
+            <Can perm="pharmacy.write"><GhostButton
               danger
               onClick={() => confirmBulk(selectedActive, false)}
             >
               Deactivate ({selectedActive.length})
-            </GhostButton>
+            </GhostButton></Can>
           )}
           {selectedInactive.length > 0 && (
             <PrimaryButton onClick={() => confirmBulk(selectedInactive, true)}>

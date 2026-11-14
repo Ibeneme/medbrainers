@@ -30,6 +30,7 @@ import {
   usePharmacyUI,
 } from "@/components/dashboard/pharmacy/PharmacyUI";
 
+import { Can } from "@/components/access/can";
 const TYPES: Array<{ value: AdjustmentType; label: string; sign: 1 | -1 }> = [
   { value: "damaged", label: "Damaged", sign: -1 },
   { value: "expired", label: "Expired – write off", sign: -1 },
@@ -93,12 +94,12 @@ export default function AdjustmentsPage() {
       loadingText="Loading adjustments..."
       onRefresh={load}
       actions={
-        <PrimaryButton
+        <Can path={"/dashboard/pharmacy/adjustments/new"}><PrimaryButton
           icon={Plus}
           onClick={() => router.push("/dashboard/pharmacy/adjustments/new")}
         >
           New Adjustment
-        </PrimaryButton>
+        </PrimaryButton></Can>
       }
       guide={{
         title: "Adjustment Guide",
@@ -116,12 +117,12 @@ export default function AdjustmentsPage() {
           icon={Undo2}
           title="No adjustments recorded."
           action={
-            <PrimaryButton
+            <Can path={"/dashboard/pharmacy/adjustments/new"}><PrimaryButton
               icon={Plus}
               onClick={() => router.push("/dashboard/pharmacy/adjustments/new")}
             >
               Record your first adjustment
-            </PrimaryButton>
+            </PrimaryButton></Can>
           }
         />
       ) : (

@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import {
   ArrowLeft,
   Calendar,
@@ -19,6 +19,7 @@ import { useRadiology } from "@/hooks/useRadiology";
 import DarkBlurOverlayLoader from "@/components/atoms/loaders/DarkBlurOverlayLoader";
 import InstancesGallery from "@/components/ui/ImageViewer";
 
+import { Can } from "@/components/access/can";
 /* -------------------------------------------------------------------------- */
 /*  Helpers                                                                   */
 /* -------------------------------------------------------------------------- */
@@ -143,14 +144,14 @@ export default function RadiologyResultDetailPage() {
           style={{ backgroundColor: ui.card, borderColor: ui.border }}
         >
           <div className="flex items-center gap-3.5 min-w-0">
-            <button
+            <Can path={"/dashboard/radiology/results"}><button
               type="button"
               onClick={() => router.push("/dashboard/radiology/results")}
               className="flex h-10 w-10 items-center justify-center rounded-xl shrink-0 border transition hover:opacity-80"
               style={{ backgroundColor: ui.inner, borderColor: ui.border }}
             >
               <ArrowLeft size={18} />
-            </button>
+            </button></Can>
             <span
               className="flex h-12 w-12 items-center justify-center rounded-2xl shrink-0"
               style={{ backgroundColor: ui.inner, color: PRIMARY_COLOR }}

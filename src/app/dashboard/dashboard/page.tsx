@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { Building2 } from "lucide-react";
 import { useAppSelector } from "@/api/hooks";
 import { useTheme } from "@/contexts/theme-context";

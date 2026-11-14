@@ -10,6 +10,8 @@ export const API_CONFIG = {
   REFRESH_TOKEN_KEY: "mb_refresh_token",
   USER_KEY: "mb_user",
   ACTIVE_FACILITY_KEY: "mb_active_facility",
+  /** last known roles/permissions per facility (localStorage) */
+  ACCESS_KEY: "mb_access",
 } as const;
 
 export default API_CONFIG;

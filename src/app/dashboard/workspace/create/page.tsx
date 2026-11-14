@@ -17,7 +17,7 @@ import {
   X,
   ShieldCheck,
 } from "lucide-react";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { PRIMARY_COLOR } from "@/constants/colors";
 import { useAppDispatch, useAppSelector } from "@/api/hooks";
 import {

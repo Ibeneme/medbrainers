@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { Baby, Plus } from "lucide-react";
 import { fetchNewborns } from "@/api/slices";
 import {

@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { usePathname } from "next/navigation";
 import { PRIMARY_COLOR } from "@/constants/colors";
 

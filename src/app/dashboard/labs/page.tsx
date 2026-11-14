@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { useParams, useRouter } from "next/navigation";
 import {
   Search,
@@ -30,6 +30,7 @@ import {
 import { useTheme } from "@/contexts/theme-context";
 import DarkBlurOverlayLoader from "@/components/atoms/loaders/DarkBlurOverlayLoader";
 
+import { Can } from "@/components/access/can";
 type UI = {
   isDark: boolean;
   page: string;
@@ -166,14 +167,14 @@ export default function LabHomePage() {
               </span>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <button
+              <Can path={`/dashboard/labs/setup`}><button
                 type="button"
                 onClick={() => router.push(`/dashboard/labs/setup`)}
                 className="inline-flex items-center gap-1.5 rounded-full px-3.5 sm:px-4 py-1.5 text-xs font-semibold text-white transition hover:opacity-95 outline-none focus:outline-none"
                 style={{ backgroundColor: PRIMARY_COLOR }}
               >
                 <Settings size={13} /> Lab Setup & Depts
-              </button>
+              </button></Can>
             </div>
           </div>
 
@@ -392,14 +393,14 @@ export default function LabHomePage() {
                     {companyDisplayName}
                   </p>
                 </div>
-                <button
+                <Can path={`/dashboard/labs/setup`}><button
                   type="button"
                   onClick={() => router.push(`/dashboard/labs/setup`)}
                   className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold text-white transition hover:opacity-90 self-start sm:self-auto"
                   style={{ backgroundColor: PRIMARY_COLOR }}
                 >
                   <Settings size={13} /> Manage Departments
-                </button>
+                </button></Can>
               </div>
 
               {!laboratory?.departments ||

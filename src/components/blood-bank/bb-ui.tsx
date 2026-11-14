@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,

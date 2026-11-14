@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { BookOpen, ChevronDown, ChevronRight } from "lucide-react";
 import { PRIMARY_COLOR } from "@/constants/colors";
 import { BASE, Banner, Card, Header, Page, Pill, useUI } from "@/components/blood-bank/bb-ui";

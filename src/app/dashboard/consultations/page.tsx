@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { useRouter } from "next/navigation";
 import {
   ChevronRight,
@@ -27,6 +27,7 @@ import { useFacilityId } from "@/hooks/useFacilityId";
 import { CustomPopupDatePicker } from "@/components/ui/items";
 import { formatRecordedDate } from "@/utils/dateUtils";
 
+import { Can } from "@/components/access/can";
 export default function AllConsultationsPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -137,14 +138,14 @@ export default function AllConsultationsPage() {
             <span className="font-semibold shrink-0">All Consultations</span>
           </div>
           <div className="flex items-center gap-2">
-            <button
+            <Can path={"/dashboard/consultations/patients"}><button
               type="button"
               onClick={() => router.push("/dashboard/consultations/patients")}
               className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold text-white transition hover:opacity-90"
               style={{ backgroundColor: PRIMARY_COLOR }}
             >
               <Plus size={14} /> New Consultation
-            </button>
+            </button></Can>
             <button
               type="button"
               onClick={() => {
@@ -432,7 +433,7 @@ export default function AllConsultationsPage() {
                       >
                         {con.status || "open"}
                       </span>
-                      <button
+                      <Can path={`/dashboard/patients/${item.patientId}/consultations/${con._id}`}><button
                         type="button"
                         onClick={() =>
                           router.push(
@@ -443,7 +444,7 @@ export default function AllConsultationsPage() {
                         style={{ backgroundColor: PRIMARY_COLOR }}
                       >
                         View Details <ChevronRight size={12} />
-                      </button>
+                      </button></Can>
                     </div>
                   </div>
 
@@ -597,7 +598,7 @@ export default function AllConsultationsPage() {
                                     ? `MRN: ${item.patientMrn}`
                                     : "—"}
                                 </span>
-                                <button
+                                <Can path={`/dashboard/patients/${item.patientId}/consultations/${con._id}`}><button
                                   type="button"
                                   onClick={() =>
                                     router.push(
@@ -608,7 +609,7 @@ export default function AllConsultationsPage() {
                                   style={{ color: PRIMARY_COLOR }}
                                 >
                                   View <ChevronRight size={10} />
-                                </button>
+                                </button></Can>
                               </div>
                             </div>
                           );

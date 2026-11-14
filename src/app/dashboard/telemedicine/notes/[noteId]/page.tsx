@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { StickyNote } from "lucide-react";
 import {
   addTeleAddendum,
@@ -31,6 +31,7 @@ import {
   who,
 } from "@/components/telemedicine/tm-ui";
 
+import { Can } from "@/components/access/can";
 const TYPE_OPTIONS: { value: TeleNoteType; label: string }[] = [
   { value: "soap", label: "SOAP" },
   { value: "general", label: "General" },
@@ -208,7 +209,7 @@ export default function NoteEditorPage() {
                 >
                   Save draft
                 </button>
-                <button
+                <Can perm="telemedicine.write"><button
                   type="button"
                   className="rounded-full border px-4 py-2.5 text-xs font-semibold"
                   style={{ borderColor: ui.border }}
@@ -221,8 +222,8 @@ export default function NoteEditorPage() {
                   }}
                 >
                   Sign
-                </button>
-                <button
+                </button></Can>
+                <Can perm="telemedicine.write"><button
                   type="button"
                   className="rounded-full px-4 py-2.5 text-xs font-semibold text-red-600"
                   onClick={async () => {
@@ -235,7 +236,7 @@ export default function NoteEditorPage() {
                   }}
                 >
                   Delete draft
-                </button>
+                </button></Can>
               </div>
             )}
             {signed && (
@@ -278,7 +279,7 @@ export default function NoteEditorPage() {
                   style={inputStyle}
                 />
               </Field>
-              <button
+              <Can perm="telemedicine.write"><button
                 type="button"
                 disabled={!addendum.trim() || telemedicine.saving}
                 className="rounded-full px-4 py-2.5 text-xs font-semibold text-white disabled:opacity-60"
@@ -299,7 +300,7 @@ export default function NoteEditorPage() {
                 }}
               >
                 Add addendum
-              </button>
+              </button></Can>
             </section>
           )}
           <Link

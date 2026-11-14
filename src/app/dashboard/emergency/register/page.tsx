@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect } from "react";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import { useSearchParams } from "next/navigation";
 import { fetchErDispatch, registerErPatient, updateErDispatch } from "@/api/slices";
 import { BASE, ER, Loader, Page, SpecForm, clean, erLabel, idOf, useER, useForm } from "@/components/emergency/er-ui";

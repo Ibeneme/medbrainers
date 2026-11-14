@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/access/guarded-link";
 import {
   AlertTriangle,
   BedDouble,
@@ -39,6 +39,7 @@ import {
   wardStats,
 } from "@/components/wards/bed-ui";
 
+import { Can } from "@/components/access/can";
 /* ------------------------------ helpers ------------------------------ */
 const PRIORITY_LABEL: Record<AdmissionPriority, string> = {
   emergency: "Emergency",
@@ -586,7 +587,7 @@ function RequestCard({
           >
             Decline
           </button>
-          <button
+          <Can perm="wards.write"><button
             type="button"
             onClick={onAssign}
             className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
@@ -594,7 +595,7 @@ function RequestCard({
           >
             <BedDouble size={15} />
             Assign bed
-          </button>
+          </button></Can>
         </div>
       )}
 
