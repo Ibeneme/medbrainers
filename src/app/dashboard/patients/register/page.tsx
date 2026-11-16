@@ -164,7 +164,7 @@ export default function RegisterPatientPage() {
       (!form.familyName && form.familyRel)
     ) {
       setErr(
-        "Enter both the emergency contact's name and relationship, or leave both empty."
+        "Enter both the emergency contact's name and relationship, or leave both empty.",
       );
       return;
     }
@@ -182,7 +182,7 @@ export default function RegisterPatientPage() {
             firstName: form.firstName.trim(),
             lastName: form.lastName.trim(),
             dateOfBirth: form.dateOfBirth || undefined,
-            gender: form.gender || undefined,
+            gender: (form.gender || undefined) as Gender | undefined,
             countryCode: form.countryCode || undefined,
             phone: form.phone || undefined,
             email: form.email.trim(),
@@ -202,7 +202,7 @@ export default function RegisterPatientPage() {
                   ]
                 : undefined,
           },
-        })
+        }),
       ).unwrap();
       router.push("/dashboard/patients");
     } catch (e: unknown) {
@@ -328,6 +328,7 @@ export default function RegisterPatientPage() {
                   { value: "female", label: "Female" },
                   { value: "other", label: "Other" },
                   { value: "unknown", label: "Unknown" },
+                  { value: "prefer_not_to_say", label: "Prefer not to say" },
                 ]}
                 onChange={(v) =>
                   setForm((f) => ({ ...f, gender: v as Gender }))

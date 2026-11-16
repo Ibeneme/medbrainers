@@ -110,7 +110,7 @@ export default function CreateBatchConsultationPage() {
     patientVitalsLoading,
   } = useAppSelector((s) => s.patients);
   const { catalog: labCatalog, listLoading: catalogLoading } = useAppSelector(
-    (s) => s.labs
+    (s) => s.labs,
   );
 
   // Selected Department ID state
@@ -125,10 +125,11 @@ export default function CreateBatchConsultationPage() {
     });
   }, [dispatch, facilityId]);
 
-  // Auto-select first available department if none selected
+  // Auto-select first available department if none selected (Fixed property 'id' TS error by typing dept as any)
   useEffect(() => {
     if (departments && departments.length > 0 && !selectedDepartmentId) {
-      const firstDeptId = departments[0]._id || departments[0].id;
+      const firstDeptId =
+        (departments[0] as any)._id || (departments[0] as any).id;
       if (firstDeptId) setSelectedDepartmentId(String(firstDeptId));
     }
   }, [departments, selectedDepartmentId]);
@@ -178,7 +179,7 @@ export default function CreateBatchConsultationPage() {
   useEffect(() => {
     if (!facilityId || !activeTabId) return;
     dispatch(
-      fetchPatientVitals({ facilityId, patientId: activeTabId, limit: 1 })
+      fetchPatientVitals({ facilityId, patientId: activeTabId, limit: 1 }),
     );
   }, [dispatch, facilityId, activeTabId]);
 
@@ -234,7 +235,7 @@ export default function CreateBatchConsultationPage() {
 
   const updateActiveForm = (
     field: keyof PatientConsultationFormState,
-    value: any
+    value: any,
   ) => {
     if (!activeTabId) return;
     setPatientForms((prev) => ({
@@ -251,10 +252,10 @@ export default function CreateBatchConsultationPage() {
     : DEFAULT_FORM;
 
   const activePatientObj = selectedPatientsList.find(
-    (p) => p._id === activeTabId
+    (p) => p._id === activeTabId,
   );
 
-  // Save draft with confirmation modal
+  // Save draft with confirmation modal (Fixed async return type mismatch)
   const promptSaveDraft = () => {
     if (!activeTabId) return;
     setConfirm({
@@ -264,7 +265,7 @@ export default function CreateBatchConsultationPage() {
       }?`,
       confirmLabel: "Save Draft",
       tone: "primary",
-      onConfirm: () => {
+      onConfirm: async () => {
         const formToSave = patientForms[activeTabId] || DEFAULT_FORM;
         // Strip raw file objects / blob URLs from storage serialization
         const sanitizedForm = {
@@ -273,14 +274,14 @@ export default function CreateBatchConsultationPage() {
         };
         localStorage.setItem(
           `batch_draft_${activeTabId}`,
-          JSON.stringify(sanitizedForm)
+          JSON.stringify(sanitizedForm),
         );
         setSavedDrafts((prev) => ({ ...prev, [activeTabId]: true }));
       },
     });
   };
 
-  // Remove draft with confirmation modal
+  // Remove draft with confirmation modal (Fixed async return type mismatch)
   const promptRemoveDraft = () => {
     if (!activeTabId) return;
     setConfirm({
@@ -290,7 +291,7 @@ export default function CreateBatchConsultationPage() {
       }?`,
       confirmLabel: "Remove Draft",
       tone: "danger",
-      onConfirm: () => {
+      onConfirm: async () => {
         localStorage.removeItem(`batch_draft_${activeTabId}`);
         setPatientForms((prev) => ({
           ...prev,
@@ -301,7 +302,7 @@ export default function CreateBatchConsultationPage() {
     });
   };
 
-  // Close a tab = remove that patient from the batch
+  // Close a tab = remove that patient from the batch (Fixed async return type mismatch)
   const promptCloseTab = (patientId: string) => {
     const p = selectedPatientsList.find((x) => x._id === patientId);
     const name = p ? `${p.firstName} ${p.lastName}` : "this patient";
@@ -310,7 +311,7 @@ export default function CreateBatchConsultationPage() {
       message: `Remove ${name} from this batch? Their unsaved consultation details and any local draft will be discarded.`,
       confirmLabel: "Remove",
       tone: "danger",
-      onConfirm: () => {
+      onConfirm: async () => {
         localStorage.removeItem(`batch_draft_${patientId}`);
         setPatientForms((prev) => {
           const next = { ...prev };
@@ -330,7 +331,7 @@ export default function CreateBatchConsultationPage() {
           router.replace("/dashboard/consultations/patients");
         } else {
           router.replace(
-            `${pathname}?patients=${encodeURIComponent(remaining.join(","))}`
+            `${pathname}?patients=${encodeURIComponent(remaining.join(","))}`,
           );
         }
       },
@@ -348,7 +349,7 @@ export default function CreateBatchConsultationPage() {
       const resolvedDepartmentId = selectedDepartmentId.trim();
       console.log(
         "Submitting batch consultation department ID:",
-        resolvedDepartmentId
+        resolvedDepartmentId,
       );
 
       const consultationsPayload = selectedPatientIds.map((patientId) => {
@@ -357,7 +358,7 @@ export default function CreateBatchConsultationPage() {
         // Map selected test IDs into recommended tests payload format
         const recommendedTests = (form.selectedTests || []).map((testId) => {
           const catalogItem = labCatalog.find(
-            (c: any) => String(c._id || c.id) === String(testId)
+            (c: any) => String(c._id || c.id) === String(testId),
           );
           return {
             catalogId: testId,
@@ -392,7 +393,7 @@ export default function CreateBatchConsultationPage() {
         addBatchConsultations({
           facilityId,
           consultations: consultationsPayload,
-        })
+        }),
       ).unwrap();
 
       selectedPatientIds.forEach((id) => {
@@ -713,7 +714,7 @@ export default function CreateBatchConsultationPage() {
                       color="#f97316"
                       out={isOut(
                         "temperatureC",
-                        latestVitalRecord.temperatureC
+                        latestVitalRecord.temperatureC,
                       )}
                       ui={ui}
                     />

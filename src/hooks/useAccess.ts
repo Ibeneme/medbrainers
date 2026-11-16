@@ -3,7 +3,7 @@
 import { useCallback, useMemo } from "react";
 import { useAppSelector } from "@/api/hooks";
 import type { AccessInfo } from "@/api/types";
-import { hasPermission, satisfies } from "@/lib/access/evaluate";
+import { hasPermission, satisfies, satisfiesRoute } from "@/lib/access/evaluate";
 import type { Need, Permission } from "@/lib/access/permissions";
 import { needForPath } from "@/lib/access/route-access";
 
@@ -50,7 +50,7 @@ export function useAccess() {
     (href: string) => {
       const n = needForPath(href);
       if (!n.mapped) return !!access?.isSuperAdmin;
-      return satisfies(access, n.need);
+      return satisfiesRoute(access, n);
     },
     [access],
   );

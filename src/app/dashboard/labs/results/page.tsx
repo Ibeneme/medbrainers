@@ -2,9 +2,9 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { AppDispatch, RootState } from "../../store";
+
 import Link from "@/components/access/guarded-link";
-import { fetchLabRequests } from "@/api";
+import { fetchLabRequests, AppDispatch, RootState } from "@/api";
 import { useFacilityId } from "@/hooks/useFacilityId";
 import { useTheme } from "@/contexts/theme-context";
 import { PRIMARY_COLOR } from "@/constants/colors";
@@ -78,7 +78,7 @@ export const formatRecordedDate = (dateString?: string | Date) => {
   const formattedHours = hours.toString().padStart(2, "0");
 
   return `${day}${getOrdinalSuffix(
-    day
+    day,
   )} ${monthName} ${year}, ${weekday} ${formattedHours}:${minutes}${ampm} GMT +1`;
 };
 
@@ -429,7 +429,7 @@ export default function ResultsVerificationPage() {
   };
 
   const { requests, listLoading } = useSelector(
-    (state: RootState) => state.labs
+    (state: RootState) => state.labs,
   );
 
   useEffect(() => {
@@ -444,9 +444,9 @@ export default function ResultsVerificationPage() {
   };
 
   // Filter requests that contain completed or verified tests
-  const completedRequests = requests.filter((req) => {
+  const completedRequests = requests.filter((req: any) => {
     const hasCompletedTest = req.tests?.some(
-      (t) => t.status === "resulted" || t.status === "verified"
+      (t: any) => t.status === "resulted" || t.status === "verified",
     );
     return (
       hasCompletedTest || req.status === "resulted" || req.status === "verified"
@@ -454,7 +454,7 @@ export default function ResultsVerificationPage() {
   });
 
   // Filter based on active search query and date range
-  const filteredRequests = completedRequests.filter((req) => {
+  const filteredRequests = completedRequests.filter((req: any) => {
     if (!activeFilter && !startDateFilter && !endDateFilter) return false; // Display nothing until user searches or filters
 
     const query = activeFilter.toLowerCase();
@@ -463,12 +463,12 @@ export default function ResultsVerificationPage() {
       (() => {
         const matchesSpecimen =
           (req as any).specimens?.some((s: any) =>
-            s.barcode?.toLowerCase().includes(query)
+            s.barcode?.toLowerCase().includes(query),
           ) ||
           (req as any).specimenCode?.toLowerCase().includes(query) ||
           (req as any).barcode?.toLowerCase().includes(query) ||
           req.specimenIds?.some((id: string) =>
-            id.toLowerCase().includes(query)
+            id.toLowerCase().includes(query),
           );
 
         const patient =
@@ -681,7 +681,7 @@ export default function ResultsVerificationPage() {
                     Tested Items & Metadata
                   </h4>
                   <div className="space-y-3">
-                    {req.tests.map((test, tIdx) => {
+                    {req.tests.map((test: any, tIdx: any) => {
                       const badgeStyle = getStatusBadgeStyle(test.status);
                       return (
                         <div
@@ -792,7 +792,7 @@ export default function ResultsVerificationPage() {
                                         <ExternalLink size={13} />
                                       </a>
                                     </div>
-                                  )
+                                  ),
                                 )}
                               </div>
                             </div>

@@ -199,7 +199,7 @@ export default function DepartmentDetailPage() {
       String(s._id || s)
     );
 
-    const updatedStaffIds = currentStaffIds.filter((id) => id !== staffId);
+    const updatedStaffIds = currentStaffIds.filter((id: any) => id !== staffId);
 
     try {
       await dispatch(

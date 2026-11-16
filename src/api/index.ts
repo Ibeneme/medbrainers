@@ -7,3 +7,6 @@ export { default as rootReducer } from "./slices";
 
 export * from "./types";
 export * from "./slices";
+
+// Resolve ambiguity by explicitly exporting them from ./types
+export type { Appointment, AppointmentStatus, QueueTicket } from "./types";

@@ -42,6 +42,7 @@ import {
   Search,
   Info,
   HelpCircle,
+  Receipt,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/api/hooks";
 import {
@@ -1889,6 +1890,17 @@ export default function PatientDetailPage() {
             </span>
           </div>
           <div className="flex items-center gap-2">
+            {/* opens a new bill already linked to this patient; hidden unless the role may use the POS (billing.write) */}
+            <Can path="/dashboard/billing/pos"><button
+              type="button"
+              onClick={() =>
+                router.push(`/dashboard/billing/pos?patientId=${encodeURIComponent(patientId)}`)
+              }
+              className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-semibold transition hover:opacity-90 outline-none focus:outline-none"
+              style={{ backgroundColor: ui.card }}
+            >
+              <Receipt size={13} /> Bill Patient
+            </button></Can>
             <Can path={`/dashboard/patients/${patientId}/edit`}><button
               type="button"
               onClick={() =>

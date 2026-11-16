@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { personLabel } from "@/components/dashboard/ModuleShell";
 import type { TelePerson, TeleRole, TeleSession, TeleStatus, TeleType } from "@/api/slices/telemedicineSlice";
+import Link from "next/link";
 
 export const TM = "/dashboard/telemedicine";
 

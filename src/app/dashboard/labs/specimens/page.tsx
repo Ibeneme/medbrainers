@@ -2,12 +2,14 @@
 
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { AppDispatch, RootState } from "../../store";
+
 import Link from "@/components/access/guarded-link";
 import {
   trackRequestBySpecimenCode,
   clearLabsError,
   clearActiveLabRequest,
+  AppDispatch,
+  RootState,
 } from "@/api";
 import { useFacilityId } from "@/hooks/useFacilityId";
 import { useTheme } from "@/contexts/theme-context";
@@ -63,7 +65,7 @@ export default function SpecimenTracker() {
   };
 
   const { activeRequest, detailLoading, error, message } = useSelector(
-    (state: RootState) => state.labs
+    (state: RootState) => state.labs,
   );
 
   const handleSearch = (e: React.FormEvent) => {
@@ -79,7 +81,7 @@ export default function SpecimenTracker() {
       trackRequestBySpecimenCode({
         facilityId,
         specimenCode: barcodeInput.trim(),
-      })
+      }),
     );
   };
 
@@ -276,7 +278,7 @@ export default function SpecimenTracker() {
                       className="inline-block rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider border"
                       style={{
                         backgroundColor: getStatusBadgeStyle(
-                          activeRequest.status
+                          activeRequest.status,
                         ).bg,
                         color: getStatusBadgeStyle(activeRequest.status).color,
                         borderColor: border,

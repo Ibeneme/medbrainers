@@ -63,7 +63,7 @@ export default function WorklistHomePage() {
     worklistLoading,
     loadWorklist,
     hasFacility,
-    updateRequestStatus,
+    updateStatus,
     loadWorklist: refreshWorklist,
   } = useRadiology({
     autoWorklist: true,
@@ -124,8 +124,8 @@ export default function WorklistHomePage() {
     );
 
     if (item && item.status !== targetStatus) {
-      if (updateRequestStatus) {
-        await updateRequestStatus(draggedItemId, targetStatus as any);
+      if (updateStatus) {
+        await updateStatus(draggedItemId, targetStatus as any);
         if (refreshWorklist) refreshWorklist();
       }
     }

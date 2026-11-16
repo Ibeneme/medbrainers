@@ -17,6 +17,11 @@ import type { Need, Permission } from "./permissions";
 interface Rule {
   re: RegExp;
   need: Need;
+  /**
+   * Optional extra gate: the person's PRIMARY role must be one of these (owner and super_admin always pass).
+   * Used where the server adds a role list on top of the permission (billing financial reports).
+   */
+  roles?: readonly string[];
 }
 
 /** Last path segments that mean "this screen changes data" */
@@ -34,7 +39,13 @@ function moduleRules(seg: string, mod: string, first: Rule[] = []): Rule[] {
   ];
 }
 
-const r = (re: RegExp, need: Need): Rule => ({ re, need });
+const r = (re: RegExp, need: Need, roles?: readonly string[]): Rule => ({ re, need, roles });
+
+/**
+ * Roles allowed to open financial reports, payment logs and audit logs — IN ADDITION to `billing.reports`.
+ * MIRRORS the server's FINANCIAL_REPORT_ROLES (common/enums/user.enums.ts). Change both together.
+ */
+export const FINANCIAL_REPORT_ROLES = ["financial_manager", "admin", "ceo", "audit"] as const;
 
 export const ROUTE_RULES: Rule[] = [
   /* ── always open to a signed-in member ── */
@@ -48,7 +59,15 @@ export const ROUTE_RULES: Rule[] = [
   /* ── overview ── */
   r(new RegExp(`${D}dashboard(?:/|$)`), "dashboard.view"),
   r(new RegExp(`${D}reports(?:/|$)`), "dashboard.view"),
-  r(new RegExp(`${D}billing(?:/|$)`), "dashboard.view"), // scaffold only – no billing backend yet
+
+  /* ── billing & payments (server: modules/billing, permission module "billing") ──
+     Most specific first. Pages only HIDE edit buttons for people who can view but not change;
+     the server enforces every action (a read-only Financial Manager gets 403 on any write). */
+  r(new RegExp(`${D}billing/payments/verify`), "billing.collect"), // Paystack redirect target
+  r(new RegExp(`${D}billing/(?:reports|payments|audit)(?:/|$)`), "billing.reports", FINANCIAL_REPORT_ROLES), // finance roles only (role list + permission, like the server)
+  r(new RegExp(`${D}billing/gateway(?:/|$)`), "billing.gateway"), // Paystack keys
+  r(new RegExp(`${D}billing/pos(?:/|$)`), "billing.write"), // new cart
+  r(new RegExp(`${D}billing(?:/|$)`), "billing.view"), // overview, invoices, catalog, discounts, settings
 
   /* ── AI ── */
   r(new RegExp(`${D}ai(?:/|$)`), "ai.use"),
@@ -153,13 +172,13 @@ export function normalizePath(href: string): string {
   return p;
 }
 
-export type PathNeed = { mapped: true; need: Need } | { mapped: false };
+export type PathNeed = { mapped: true; need: Need; roles?: readonly string[] } | { mapped: false };
 
 /** What does this path need? `mapped:false` = no rule (treated as denied for non-super users). */
 export function needForPath(href: string): PathNeed {
   const p = normalizePath(href);
   if (!p.startsWith("/dashboard")) return { mapped: true, need: null }; // not an app route: not ours to gate
-  for (const rule of ROUTE_RULES) if (rule.re.test(p)) return { mapped: true, need: rule.need };
+  for (const rule of ROUTE_RULES) if (rule.re.test(p)) return { mapped: true, need: rule.need, roles: rule.roles };
   return { mapped: false };
 }
 
@@ -177,6 +196,7 @@ export const LANDING_CANDIDATES = [
   "/dashboard/maternal",
   "/dashboard/theater",
   "/dashboard/blood-bank",
+  "/dashboard/billing",
   "/dashboard/telemedicine",
   "/dashboard/tasks",
   "/dashboard/ai/diagnostics",

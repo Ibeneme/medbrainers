@@ -57,15 +57,15 @@ export default function ConsultationDetailPage() {
 
   const patientId = String(params?.patientId || fallbackPatientId);
   const consultationId = String(
-    params?.consultationId || fallbackConsultationId
+    params?.consultationId || fallbackConsultationId,
   );
 
   /** Open the pharmacy prescription form pre-filled from this consultation. */
   const goToPrescription = () =>
     router.push(
       `/dashboard/pharmacy/prescriptions/new?patients=${encodeURIComponent(patientId)}&consultation=${encodeURIComponent(
-        consultationId
-      )}`
+        consultationId,
+      )}`,
     );
 
   const dispatch = useAppDispatch();
@@ -127,7 +127,7 @@ export default function ConsultationDetailPage() {
   // --- HOOKS HOISTED BEFORE ANY CONDITIONAL RETURNS ---
   const consultation = useMemo(() => {
     return (current?.consultations || []).find(
-      (c: any) => c._id === consultationId
+      (c: any) => c._id === consultationId,
     );
   }, [current, consultationId]);
 
@@ -135,7 +135,7 @@ export default function ConsultationDetailPage() {
     if (!departments) return [];
     return departments.map((dept: any) => ({
       label: `${dept.name}${dept.code ? ` (${dept.code})` : ""}`,
-      value: String(dept._id || dept.id),
+      value: String(dept._id),
     }));
   }, [departments]);
 
@@ -149,7 +149,7 @@ export default function ConsultationDetailPage() {
             log.detail.includes(consultationId))) ||
         log.action?.includes("CONSULTATION") ||
         log.action?.includes("VITAL") ||
-        log.action?.includes("ALLERGY")
+        log.action?.includes("ALLERGY"),
     );
 
     return [...filtered].sort((a: any, b: any) => {
@@ -163,7 +163,7 @@ export default function ConsultationDetailPage() {
   const isLocked = useMemo(() => {
     if (!consultation?.consultedAt && !consultation?.createdAt) return false;
     const timestamp = new Date(
-      consultation.consultedAt || consultation.createdAt
+      consultation.consultedAt || consultation.createdAt || 0,
     ).getTime();
     const now = Date.now();
     const diffHours = (now - timestamp) / (1000 * 60 * 60);
@@ -177,7 +177,7 @@ export default function ConsultationDetailPage() {
       return consultation.department;
     }
     return departments?.find(
-      (d: any) => String(d._id || d.id) === String(consultation.department)
+      (d: any) => String(d._id) === String(consultation.department),
     );
   }, [consultation?.department, departments]);
 
@@ -190,14 +190,14 @@ export default function ConsultationDetailPage() {
             facilityId: activeFacilityId,
             patientId,
             consultationId,
-          })
+          }),
         );
       }
       dispatch(
         fetchLabCatalog({
           facilityId: activeFacilityId,
           includeInactive: false,
-        })
+        }),
       );
       dispatch(fetchDepartments(activeFacilityId));
     }
@@ -214,7 +214,7 @@ export default function ConsultationDetailPage() {
 
       const deptValue = consultation.department;
       if (typeof deptValue === "object" && deptValue !== null) {
-        setConDepartment(String(deptValue._id || deptValue.id || ""));
+        setConDepartment(String(deptValue._id || ""));
       } else {
         setConDepartment(deptValue ? String(deptValue) : "");
       }
@@ -223,27 +223,27 @@ export default function ConsultationDetailPage() {
         setConTemp(
           consultation.vitals.temperatureC != null
             ? String(consultation.vitals.temperatureC)
-            : ""
+            : "",
         );
         setConSpo2(
           consultation.vitals.spo2 != null
             ? String(consultation.vitals.spo2)
-            : ""
+            : "",
         );
         setConPulse(
           consultation.vitals.pulse != null
             ? String(consultation.vitals.pulse)
-            : ""
+            : "",
         );
         setConSys(
           consultation.vitals.bpSystolic != null
             ? String(consultation.vitals.bpSystolic)
-            : ""
+            : "",
         );
         setConDia(
           consultation.vitals.bpDiastolic != null
             ? String(consultation.vitals.bpDiastolic)
-            : ""
+            : "",
         );
       }
 
@@ -256,7 +256,7 @@ export default function ConsultationDetailPage() {
             price: t.price || 0,
             urgency: t.urgency || "routine",
             reason: t.reason,
-          }))
+          })),
         );
       }
 
@@ -269,7 +269,7 @@ export default function ConsultationDetailPage() {
             route: d.route || "",
             duration: d.duration || "",
             instructions: d.instructions || "",
-          }))
+          })),
         );
       }
     }
@@ -325,7 +325,7 @@ export default function ConsultationDetailPage() {
         code: t.code || "LAB",
         name: t.name.trim(),
         price: t.price || 0,
-        urgency: t.urgency || "routine",
+        urgency: (t.urgency || "routine") as "urgent" | "routine" | "stat",
         reason: t.reason,
         status: "ordered" as const,
       }));
@@ -360,7 +360,7 @@ export default function ConsultationDetailPage() {
             recommendedDrugs: cleanedDrugs.length ? cleanedDrugs : undefined,
             totalPrice: grandTotalPrice,
           },
-        })
+        }),
       ).unwrap();
       setIsEditing(false);
       dispatch(
@@ -368,7 +368,7 @@ export default function ConsultationDetailPage() {
           facilityId: activeFacilityId,
           patientId,
           consultationId,
-        })
+        }),
       );
     } catch (err) {}
   };
@@ -385,7 +385,7 @@ export default function ConsultationDetailPage() {
           patientId,
           consultationId,
           files,
-        })
+        }),
       ).unwrap();
 
       dispatch(
@@ -393,7 +393,7 @@ export default function ConsultationDetailPage() {
           facilityId: activeFacilityId,
           patientId,
           consultationId,
-        })
+        }),
       );
     } catch (err) {
       console.error("Upload failed", err);
@@ -411,7 +411,7 @@ export default function ConsultationDetailPage() {
           facilityId: activeFacilityId,
           patientId,
           consultationId,
-        })
+        }),
       ).unwrap();
       setShowDeleteModal(false);
       router.push(`/dashboard/consultations`);
@@ -623,32 +623,38 @@ export default function ConsultationDetailPage() {
             </div>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Can perm="pharmacy.prescribe"><button
-              type="button"
-              onClick={goToPrescription}
-              className="flex-1 sm:flex-none rounded-full px-5 py-2.5 text-xs font-semibold text-white transition hover:opacity-90"
-              style={{ backgroundColor: PRIMARY_COLOR }}
-            >
-              Create prescription
-            </button></Can>
-            <Can perm="consultations.write"><button
-              type="button"
-              disabled={isLocked}
-              onClick={() => setIsEditing(!isEditing)}
-              className="flex-1 sm:flex-none rounded-full px-5 py-2.5 text-xs font-semibold disabled:opacity-40"
-              style={{ backgroundColor: ui.card }}
-            >
-              {isEditing ? "Cancel Edit" : "Edit Consultation"}
-            </button></Can>
-            <Can perm="consultations.delete"><button
-              type="button"
-              disabled={isLocked}
-              onClick={() => setShowDeleteModal(true)}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-500/10 text-red-500 hover:bg-red-500/20 transition disabled:opacity-40"
-              title="Delete consultation"
-            >
-              <Trash2 size={16} />
-            </button></Can>
+            <Can perm="pharmacy.prescribe">
+              <button
+                type="button"
+                onClick={goToPrescription}
+                className="flex-1 sm:flex-none rounded-full px-5 py-2.5 text-xs font-semibold text-white transition hover:opacity-90"
+                style={{ backgroundColor: PRIMARY_COLOR }}
+              >
+                Create prescription
+              </button>
+            </Can>
+            <Can perm="consultations.write">
+              <button
+                type="button"
+                disabled={isLocked}
+                onClick={() => setIsEditing(!isEditing)}
+                className="flex-1 sm:flex-none rounded-full px-5 py-2.5 text-xs font-semibold disabled:opacity-40"
+                style={{ backgroundColor: ui.card }}
+              >
+                {isEditing ? "Cancel Edit" : "Edit Consultation"}
+              </button>
+            </Can>
+            <Can perm="consultations.delete">
+              <button
+                type="button"
+                disabled={isLocked}
+                onClick={() => setShowDeleteModal(true)}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-500/10 text-red-500 hover:bg-red-500/20 transition disabled:opacity-40"
+                title="Delete consultation"
+              >
+                <Trash2 size={16} />
+              </button>
+            </Can>
           </div>
         </div>
 
@@ -671,7 +677,6 @@ export default function ConsultationDetailPage() {
                   isDark={isDark}
                   colors={colors}
                   border={border}
-                  searchable={true}
                 />
               </div>
 
@@ -1289,14 +1294,16 @@ export default function ConsultationDetailPage() {
                   <h3 className="text-sm font-semibold flex items-center gap-1.5">
                     <Pill size={16} /> Prescriptions
                   </h3>
-                  <Can perm="pharmacy.prescribe"><button
-                    type="button"
-                    onClick={goToPrescription}
-                    className="rounded-full px-4 py-2 text-[11px] font-semibold text-white transition hover:opacity-90"
-                    style={{ backgroundColor: PRIMARY_COLOR }}
-                  >
-                    Create prescription
-                  </button></Can>
+                  <Can perm="pharmacy.prescribe">
+                    <button
+                      type="button"
+                      onClick={goToPrescription}
+                      className="rounded-full px-4 py-2 text-[11px] font-semibold text-white transition hover:opacity-90"
+                      style={{ backgroundColor: PRIMARY_COLOR }}
+                    >
+                      Create prescription
+                    </button>
+                  </Can>
                 </div>
                 {consultation.recommendedDrugs?.length > 0 ? (
                   <ul className="space-y-2 text-xs">
@@ -1320,8 +1327,8 @@ export default function ConsultationDetailPage() {
                   </ul>
                 ) : (
                   <p className="text-[11px] opacity-60">
-                    No drugs were recommended in this consultation. You can still create a prescription and add drugs
-                    by hand.
+                    No drugs were recommended in this consultation. You can
+                    still create a prescription and add drugs by hand.
                   </p>
                 )}
               </div>
@@ -1490,7 +1497,7 @@ export default function ConsultationDetailPage() {
 
                           <div className="opacity-95 leading-relaxed font-normal text-[13px]">
                             {renderFormattedDetail(
-                              log.detail || log.description
+                              log.detail || log.description,
                             )}
                           </div>
 

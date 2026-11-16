@@ -127,7 +127,8 @@ export function formatMoney(amount?: number | null, code?: string | null): strin
   } catch {
     /* unknown to this runtime – keep 2 */
   }
-  const body = n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: digits });
+  // whole amounts read cleanly ("₦5,000"); anything with kobo/cents always shows full precision ("₦1,250.50", never "₦1,250.5")
+  const body = n.toLocaleString(undefined, { minimumFractionDigits: Number.isInteger(n) ? 0 : digits, maximumFractionDigits: digits });
   const sym = currencySymbol(c);
   // long textual symbols read better with a space ("CHF 12", "AED 40")
   return /^[A-Za-z]{2,}$/.test(sym) ? `${sym} ${body}` : `${sym}${body}`;

@@ -146,17 +146,18 @@ export default function AppointmentDetailPage() {
     color: ui.text,
   };
 
-  if (detailLoading && !a) {
+if (detailLoading && !a) {
     return (
       <ModuleShell
         title="Appointment"
         icon={CalendarCheck}
         loading
         loadingText="Loading appointment..."
-      />
+      >
+        <></>
+      </ModuleShell>
     );
   }
-
   if (!a) {
     return (
       <ModuleShell title="Appointment" icon={CalendarCheck}>

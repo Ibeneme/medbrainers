@@ -783,10 +783,10 @@ export default function LandingPageNavbar({
             >
               <Flag
                 locale={currentLocale}
-                className="h-4 w-5 rounded-sm object-cover shadow-sm"
+             
               />
               <span>
-                {localeMeta[currentLocale]?.nativeName ||
+                {localeMeta[currentLocale]?.name ||
                   currentLocale.toUpperCase()}
               </span>
               <Chevron

@@ -3,7 +3,15 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "@/components/access/guarded-link";
-import { ChevronRight, Save, FlaskConical, Plus, Trash2, Key, Info } from "lucide-react";
+import {
+  ChevronRight,
+  Save,
+  FlaskConical,
+  Plus,
+  Trash2,
+  Key,
+  Info,
+} from "lucide-react";
 import { useAppDispatch } from "@/api/hooks";
 import { addLabCatalogItem } from "@/api/slices";
 import { useTheme } from "@/contexts/theme-context";
@@ -90,9 +98,8 @@ export default function NewCatalogItemPage() {
             units: units || undefined,
             referenceRange: referenceRange || undefined,
             defaultKeys: defaultKeys.filter((k) => k.trim().length > 0),
-            isActive,
           },
-        })
+        }),
       ).unwrap();
 
       // Clear inputs upon successful submission
@@ -158,7 +165,9 @@ export default function NewCatalogItemPage() {
             <FlaskConical size={24} />
           </span>
           <div>
-            <h1 className="text-lg sm:text-xl font-bold">Add Test to Catalog</h1>
+            <h1 className="text-lg sm:text-xl font-bold">
+              Add Test to Catalog
+            </h1>
             <p className="text-xs opacity-60">
               Create a readily available lab test with pricing, reference
               ranges, and parameter template keys.

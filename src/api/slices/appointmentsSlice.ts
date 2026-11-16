@@ -33,7 +33,7 @@ export type AppointmentKind =
   | "procedure"
   | "review"
   | "other"
-  | "task";
+  //| "task";
 
 export type AppointmentStatus =
   | "scheduled"

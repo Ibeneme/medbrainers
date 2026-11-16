@@ -28,15 +28,15 @@ import {
   CustomDropdown,
   ToggleSwitch,
 } from "@/components/ui/items";
-
 const KINDS: { value: AppointmentKind; label: string }[] = [
   { value: "consultation", label: "Consultation" },
   { value: "follow_up", label: "Follow-up" },
   { value: "procedure", label: "Procedure" },
   { value: "review", label: "Review" },
   { value: "other", label: "Other" },
+  // Remove this line if 'task' is not an allowed AppointmentKind:
+//  { value: "task", label: "task" },
 ];
-
 const PRIORITIES: { value: AppointmentPriority; label: string }[] = [
   { value: "routine", label: "Routine" },
   { value: "urgent", label: "Urgent" },
@@ -54,7 +54,7 @@ function BookAppointmentInner() {
 
   const { facilityId, departments } = useFacilityId();
   const { list: patients, listLoading: patientsLoading } = useAppSelector(
-    (s) => s.patients
+    (s) => s.patients,
   );
   const { saving, error, message } = useAppSelector((s) => s.appointments);
 
@@ -88,7 +88,7 @@ function BookAppointmentInner() {
             facilityId,
             search: patientSearch.trim(),
             limit: 50,
-          })
+          }),
         );
       }, 300);
       return () => clearTimeout(t);
@@ -111,7 +111,7 @@ function BookAppointmentInner() {
 
   const selectedPatient = useMemo(
     () => (patients || []).find((p: any) => p._id === patientId),
-    [patients, patientId]
+    [patients, patientId],
   );
 
   const filteredPatients = useMemo(() => {
@@ -160,9 +160,7 @@ function BookAppointmentInner() {
       tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
     };
 
-    const result = await dispatch(
-      createAppointment({ facilityId, payload })
-    );
+    const result = await dispatch(createAppointment({ facilityId, payload }));
 
     if (createAppointment.fulfilled.match(result)) {
       const appt = result.payload.data?.appointment;

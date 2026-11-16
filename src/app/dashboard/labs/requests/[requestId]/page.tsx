@@ -29,7 +29,7 @@ import { useAppDispatch, useAppSelector } from "@/api/hooks";
 import {
   fetchLabRequestDetail,
   updateRequestAssignment,
-  addRequestNote,
+  addLabRequestNote,
   updateTestResult,
   fetchFacilityMembers,
   uploadTestResultFiles,
@@ -509,52 +509,59 @@ function ConsultationDetailModal({
               </p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {attachments.map((att: any, aIdx: number) => (
-                  <div
-                    key={att._id || aIdx}
-                    className="flex items-center justify-between gap-3 rounded-xl p-2.5 border bg-card"
-                    style={{ borderColor: ui.border }}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      {att.mimeType?.startsWith("image/") ? (
-                        <img
-                          src={att.url}
-                          alt={att.name}
-                          className="h-9 w-9 rounded-lg object-cover border shrink-0"
-                          style={{ borderColor: ui.border }}
-                        />
-                      ) : (
-                        <div
-                          className="flex h-9 w-9 items-center justify-center rounded-lg shrink-0"
-                          style={{
-                            backgroundColor: `${PRIMARY_COLOR}15`,
-                            color: PRIMARY_COLOR,
-                          }}
-                        >
-                          <FileText size={16} />
-                        </div>
-                      )}
-                      <div className="min-w-0">
-                        <p className="text-xs font-semibold truncate">
-                          {att.name}
-                        </p>
-                        <p className="text-[10px] opacity-50">
-                          {(att.size ? (att.size / 1024).toFixed(1) : "0") +
-                            " KB"}
-                        </p>
-                      </div>
-                    </div>
-                    <a
-                      href={att.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-2 rounded-lg hover:opacity-70 transition shrink-0 bg-secondary"
-                      title="View file"
+                {attachments.map((att: any, aIdx: number) => {
+                  const attName = typeof att === "string" ? att : att.name;
+                  const attUrl = typeof att === "string" ? att : att.url;
+                  const attSize = typeof att === "string" ? 0 : att.size;
+                  const attMime = typeof att === "string" ? "" : att.mimeType;
+
+                  return (
+                    <div
+                      key={att._id || aIdx}
+                      className="flex items-center justify-between gap-3 rounded-xl p-2.5 border bg-card"
+                      style={{ borderColor: ui.border }}
                     >
-                      <ExternalLink size={14} />
-                    </a>
-                  </div>
-                ))}
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        {attMime?.startsWith("image/") ? (
+                          <img
+                            src={attUrl}
+                            alt={attName}
+                            className="h-9 w-9 rounded-lg object-cover border shrink-0"
+                            style={{ borderColor: ui.border }}
+                          />
+                        ) : (
+                          <div
+                            className="flex h-9 w-9 items-center justify-center rounded-lg shrink-0"
+                            style={{
+                              backgroundColor: `${PRIMARY_COLOR}15`,
+                              color: PRIMARY_COLOR,
+                            }}
+                          >
+                            <FileText size={16} />
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold truncate">
+                            {attName}
+                          </p>
+                          <p className="text-[10px] opacity-50">
+                            {(attSize ? (attSize / 1024).toFixed(1) : "0") +
+                              " KB"}
+                          </p>
+                        </div>
+                      </div>
+                      <a
+                        href={attUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 rounded-lg hover:opacity-70 transition shrink-0 bg-secondary"
+                        title="View file"
+                      >
+                        <ExternalLink size={14} />
+                      </a>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -613,7 +620,7 @@ function TestResultCard({
         });
       }
       return initial;
-    }
+    },
   );
   const [savingTest, setSavingTest] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState(false);
@@ -635,7 +642,7 @@ function TestResultCard({
     try {
       setSavingTest(true);
       const formattedMetadata = Object.entries(metadataValues).map(
-        ([key, value]) => ({ key, value })
+        ([key, value]) => ({ key, value }),
       );
 
       await dispatch(
@@ -649,7 +656,7 @@ function TestResultCard({
             specialNotes,
             metadata: formattedMetadata,
           },
-        })
+        }),
       ).unwrap();
       showToast(`${testName} results saved successfully!`, "success");
     } catch (err: any) {
@@ -672,7 +679,7 @@ function TestResultCard({
           requestId,
           testId: test._id,
           files: fileArray,
-        })
+        }),
       ).unwrap();
       showToast("Result file(s) uploaded successfully!", "success");
       if (fileInputRef.current) {
@@ -905,20 +912,22 @@ function TestResultCard({
                 accept="application/pdf,image/*"
                 className="hidden"
               />
-              <Can perm="labs.write"><button
-                type="button"
-                disabled={uploadingFiles}
-                onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
-                style={{ backgroundColor: PRIMARY_COLOR }}
-              >
-                {uploadingFiles ? (
-                  <Loader2 size={13} className="animate-spin" />
-                ) : (
-                  <Upload size={13} />
-                )}
-                Upload Photos / Files
-              </button></Can>
+              <Can perm="labs.write">
+                <button
+                  type="button"
+                  disabled={uploadingFiles}
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+                  style={{ backgroundColor: PRIMARY_COLOR }}
+                >
+                  {uploadingFiles ? (
+                    <Loader2 size={13} className="animate-spin" />
+                  ) : (
+                    <Upload size={13} />
+                  )}
+                  Upload Photos / Files
+                </button>
+              </Can>
             </div>
           </div>
 
@@ -998,20 +1007,22 @@ function TestResultCard({
             />
           </div>
 
-          <Can perm="labs.write"><button
-            type="button"
-            disabled={savingTest}
-            onClick={handleSaveTestChanges}
-            className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-2xl px-6 py-3 text-xs font-semibold text-white transition hover:opacity-90 disabled:opacity-50 shrink-0"
-            style={{ backgroundColor: PRIMARY_COLOR }}
-          >
-            {savingTest ? (
-              <Loader2 size={14} className="animate-spin" />
-            ) : (
-              <Save size={14} />
-            )}
-            Save Changes
-          </button></Can>
+          <Can perm="labs.write">
+            <button
+              type="button"
+              disabled={savingTest}
+              onClick={handleSaveTestChanges}
+              className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-2xl px-6 py-3 text-xs font-semibold text-white transition hover:opacity-90 disabled:opacity-50 shrink-0"
+              style={{ backgroundColor: PRIMARY_COLOR }}
+            >
+              {savingTest ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <Save size={14} />
+              )}
+              Save Changes
+            </button>
+          </Can>
         </div>
       </div>
     </div>
@@ -1038,7 +1049,7 @@ export default function LabRequestDetailPage() {
   const requestId = String(params.requestId || "");
   const { facilityId, members, facilitiesLoading } = useFacilityId();
   const { activeRequest, detailLoading, saving } = useAppSelector(
-    (s) => s.labs
+    (s) => s.labs,
   );
 
   const [newNoteText, setNewNoteText] = useState("");
@@ -1048,7 +1059,7 @@ export default function LabRequestDetailPage() {
   const [showGuide, setShowGuide] = useState(false);
   const [selectedNote, setSelectedNote] = useState<any | null>(null);
   const [selectedConsultation, setSelectedConsultation] = useState<any | null>(
-    null
+    null,
   );
 
   useEffect(() => {
@@ -1095,8 +1106,8 @@ export default function LabRequestDetailPage() {
     : "PR";
 
   const specimenCode =
-    activeRequest.specimenCode ||
-    activeRequest.barcode ||
+    (activeRequest as any).specimenCode ||
+    (activeRequest as any).barcode ||
     (activeRequest.specimenIds && activeRequest.specimenIds.length > 0
       ? typeof activeRequest.specimenIds[0] === "object"
         ? (activeRequest.specimenIds[0] as any).barcode ||
@@ -1113,7 +1124,7 @@ export default function LabRequestDetailPage() {
           facilityId,
           requestId,
           assignedTo: assignedStaffId || undefined,
-        })
+        }),
       ).unwrap();
       showToast("Staff assignment updated successfully!", "success");
     } catch (err: any) {
@@ -1130,7 +1141,7 @@ export default function LabRequestDetailPage() {
     try {
       setActionLoading(true);
       await dispatch(
-        addRequestNote({ facilityId, requestId, text: newNoteText })
+        addLabRequestNote({ facilityId, requestId, text: newNoteText }),
       ).unwrap();
       setNewNoteText("");
       showToast("Clinical note added successfully!", "success");
@@ -1142,7 +1153,7 @@ export default function LabRequestDetailPage() {
   };
 
   const selectedStaffMember = members.find(
-    (m) => m.id === assignedStaffId || m._id === assignedStaffId
+    (m: any) => (m.id || m._id) === assignedStaffId,
   );
 
   const staffName = selectedStaffMember
@@ -1194,13 +1205,13 @@ export default function LabRequestDetailPage() {
   const auditList = (activeRequest.notesList || []).filter(
     (n: any) =>
       n.isSystemAudit === true ||
-      (n.isSystemAudit === undefined && isSystemLogText(n.text))
+      (n.isSystemAudit === undefined && isSystemLogText(n.text)),
   );
 
   const clinicalNotesList = (activeRequest.notesList || []).filter(
     (n: any) =>
       n.isSystemAudit === false ||
-      (n.isSystemAudit === undefined && !isSystemLogText(n.text))
+      (n.isSystemAudit === undefined && !isSystemLogText(n.text)),
   );
 
   return (
@@ -1447,16 +1458,18 @@ export default function LabRequestDetailPage() {
             colors={colors}
             border={border}
           />
-          <Can perm="labs.write"><button
-            type="button"
-            disabled={actionLoading}
-            onClick={promptAssignmentConfirmation}
-            className="flex w-full items-center justify-center gap-1.5 rounded-2xl px-4 py-2.5 text-xs font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
-            style={{ backgroundColor: PRIMARY_COLOR }}
-          >
-            {actionLoading && <Loader2 size={13} className="animate-spin" />}
-            Update Assignment
-          </button></Can>
+          <Can perm="labs.write">
+            <button
+              type="button"
+              disabled={actionLoading}
+              onClick={promptAssignmentConfirmation}
+              className="flex w-full items-center justify-center gap-1.5 rounded-2xl px-4 py-2.5 text-xs font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+              style={{ backgroundColor: PRIMARY_COLOR }}
+            >
+              {actionLoading && <Loader2 size={13} className="animate-spin" />}
+              Update Assignment
+            </button>
+          </Can>
         </div>
       </div>
 

@@ -1,6 +1,7 @@
 import type { Dictionary } from "../translate";
 import { productName } from "@/constants/site";
 import frExtra from "./fr.extra";
+import frBilling from "./fr.billing";
 
 /**
 * French (fr). Keys are the exact English text used in the site; values are the French.
@@ -8,6 +9,7 @@ import frExtra from "./fr.extra";
 */
 const fr: Dictionary = {
   ...frExtra,
+  ...frBilling,
   // ---- Blog ----
   "Blog": "Blog",
   "Insights for smarter": "Des idées pour une santé plus",

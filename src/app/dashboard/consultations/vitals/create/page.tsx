@@ -138,7 +138,7 @@ export default function CreateBatchVitalsPage() {
 
   const updateActiveForm = (
     field: keyof PatientVitalFormState,
-    value: string
+    value: string,
   ) => {
     if (!activeTabId) return;
     setPatientForms((prev) => ({
@@ -155,7 +155,7 @@ export default function CreateBatchVitalsPage() {
     : DEFAULT_VITAL_FORM;
 
   const activePatientObj = selectedPatientsList.find(
-    (p) => p._id === activeTabId
+    (p) => p._id === activeTabId,
   );
 
   // Save draft with confirmation modal
@@ -168,11 +168,11 @@ export default function CreateBatchVitalsPage() {
       }?`,
       confirmLabel: "Save Draft",
       tone: "primary",
-      onConfirm: () => {
+      onConfirm: async () => {
         const formToSave = patientForms[activeTabId] || DEFAULT_VITAL_FORM;
         localStorage.setItem(
           `batch_vitals_draft_${activeTabId}`,
-          JSON.stringify(formToSave)
+          JSON.stringify(formToSave),
         );
         setSavedDrafts((prev) => ({ ...prev, [activeTabId]: true }));
       },
@@ -189,7 +189,7 @@ export default function CreateBatchVitalsPage() {
       }?`,
       confirmLabel: "Remove Draft",
       tone: "danger",
-      onConfirm: () => {
+      onConfirm: async () => {
         localStorage.removeItem(`batch_vitals_draft_${activeTabId}`);
         setPatientForms((prev) => ({
           ...prev,
@@ -209,7 +209,7 @@ export default function CreateBatchVitalsPage() {
       message: `Remove ${name} from this batch? Their unsaved vitals and any local draft will be discarded.`,
       confirmLabel: "Remove",
       tone: "danger",
-      onConfirm: () => {
+      onConfirm: async () => {
         localStorage.removeItem(`batch_vitals_draft_${patientId}`);
         setPatientForms((prev) => {
           const next = { ...prev };
@@ -227,13 +227,13 @@ export default function CreateBatchVitalsPage() {
 
         if (remaining.length === 0) {
           router.replace(
-            "/dashboard/consultations/vitals/patients/select?type=vitals"
+            "/dashboard/consultations/vitals/patients/select?type=vitals",
           );
         } else {
           router.replace(
             `${pathname}?patients=${encodeURIComponent(
-              remaining.join(",")
-            )}&type=vitals`
+              remaining.join(","),
+            )}&type=vitals`,
           );
         }
       },
@@ -276,7 +276,7 @@ export default function CreateBatchVitalsPage() {
         if (Object.keys(payload).length === 0) return Promise.resolve();
 
         return dispatch(
-          addPatientVital({ facilityId, patientId: id, payload })
+          addPatientVital({ facilityId, patientId: id, payload }),
         ).unwrap();
       });
 
@@ -676,7 +676,7 @@ export default function CreateBatchVitalsPage() {
               {selectedPatientsList.map((p) => {
                 const form = patientForms[p._id] || DEFAULT_VITAL_FORM;
                 const hasAnyData = Object.values(form).some(
-                  (val) => val.trim() !== ""
+                  (val) => val.trim() !== "",
                 );
 
                 return (

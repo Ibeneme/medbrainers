@@ -352,6 +352,8 @@ export const createCarePlan = createAsyncThunk(
         diagnosis?: string;
         goals?: string[];
         interventions?: Array<{ description: string; frequency?: string }>;
+        startDate?: string; // Add this
+        endDate?: string;   // Add this
         notes?: string;
       };
     },

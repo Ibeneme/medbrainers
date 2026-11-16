@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { useAccess } from "@/hooks/useAccess";
-import { satisfies } from "@/lib/access/evaluate";
+import { satisfiesRoute } from "@/lib/access/evaluate";
 import { needForPath } from "@/lib/access/route-access";
 import AccessDenied from "./access-denied";
 
@@ -42,5 +42,5 @@ export default function RouteGuard({ children }: { children: ReactNode }) {
     return <AccessDenied unmapped />;
   }
 
-  return satisfies(access, n.need) ? <>{children}</> : <AccessDenied need={n.need} />;
+  return satisfiesRoute(access, n) ? <>{children}</> : <AccessDenied need={n.need} />;
 }

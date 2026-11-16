@@ -25,6 +25,7 @@ export interface Department {
   description?: string;
   staff: string[];
   isActive: boolean;
+  id?: any
 }
 
 export interface IThemeModeColors {

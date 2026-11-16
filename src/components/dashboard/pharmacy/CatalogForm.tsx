@@ -10,9 +10,9 @@ import {
   CustomPopupDatePicker,
 } from "@/components/ui/items";
 import {
-  addDrug,
+  createDrug,
   updateDrug,
-  type DrugCatalogItem,
+  type PharmacyDrug,
   type DrugForm,
   type DrugSchedule,
 } from "@/api/slices";
@@ -34,18 +34,19 @@ const FORMS: DrugForm[] = [
 ];
 const SCHEDULES: DrugSchedule[] = ["otc", "pom", "controlled"];
 
-export function CatalogForm({ initial }: { initial?: DrugCatalogItem | null }) {
+export function CatalogForm({ initial }: { initial?: PharmacyDrug | null }) {
   const router = useRouter();
   const { ui, dispatch, facilityId, pharmacy, isDark, colors, currencySymbol } =
     usePharmacyUi();
   const [showGuide, setShowGuide] = useState(false);
+
   const [form, setForm] = useState({
     code: "",
     genericName: "",
     brandName: "",
     strength: "",
     form: "tablet" as DrugForm,
-    route: "",
+    route: "" as string,
     category: "",
     packSize: "",
     unit: "",
@@ -64,6 +65,7 @@ export function CatalogForm({ initial }: { initial?: DrugCatalogItem | null }) {
 
   useEffect(() => {
     if (!initial) return;
+    const initAny = initial as any;
     setForm({
       code: initial.code,
       genericName: initial.genericName,
@@ -72,18 +74,18 @@ export function CatalogForm({ initial }: { initial?: DrugCatalogItem | null }) {
       form: initial.form || "tablet",
       route: initial.route || "",
       category: initial.category,
-      packSize: initial.packSize || "",
+      packSize: initAny.packSize || "",
       unit: initial.unit || "",
       reorderLevel: initial.reorderLevel || 0,
-      reorderQty: initial.reorderQty || 0,
+      reorderQty: initAny.reorderQty || 0,
       costPrice: initial.costPrice || 0,
       sellingPrice: initial.sellingPrice || 0,
       schedule: initial.schedule || "pom",
       isControlled: initial.isControlled,
-      requiresCounsel: initial.requiresCounsel,
+      requiresCounsel: initAny.requiresCounsel || false,
       nafdacNo: initial.nafdacNo || "",
       manufacturer: initial.manufacturer || "",
-      expiryDate: (initial as any).expiryDate || "",
+      expiryDate: initAny.expiryDate || "",
       isActive: initial.isActive,
     });
   }, [initial]);
@@ -94,19 +96,22 @@ export function CatalogForm({ initial }: { initial?: DrugCatalogItem | null }) {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!facilityId) return;
+
     const payload = {
       ...form,
+      route: (form.route || undefined) as any,
       isControlled: form.schedule === "controlled" || form.isControlled,
       brandName: form.brandName || undefined,
       nafdacNo: form.nafdacNo || undefined,
       expiryDate: form.expiryDate || undefined,
     };
+
     if (initial?._id) {
       await dispatch(
-        updateDrug({ facilityId, catalogId: initial._id, payload })
+        updateDrug({ facilityId, catalogId: initial._id, payload } as any),
       ).unwrap();
     } else {
-      await dispatch(addDrug({ facilityId, payload })).unwrap();
+      await dispatch(createDrug({ facilityId, payload } as any)).unwrap();
     }
     router.push("/dashboard/pharmacy/catalog");
   };
@@ -117,12 +122,11 @@ export function CatalogForm({ initial }: { initial?: DrugCatalogItem | null }) {
       s === "pom"
         ? "POM (Prescription Only)"
         : s === "otc"
-        ? "OTC (Over The Counter)"
-        : "Controlled",
+          ? "OTC (Over The Counter)"
+          : "Controlled",
     value: s,
   }));
 
-  // Formats expiry date nicely to display "tuesday 6th july 2026" style when present, falling back to clean formatted date or raw value
   const formatExpiryDisplay = (dateStr: string) => {
     if (!dateStr) return "";
     const date = new Date(dateStr);

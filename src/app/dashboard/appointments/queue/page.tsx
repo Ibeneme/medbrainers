@@ -80,7 +80,7 @@ export default function QueuePage() {
       const withWaiting = myQueues.find((q) => q.waiting > 0);
       setDepartmentId((withWaiting || myQueues[0]).department._id);
     } else if (departments?.length) {
-      setDepartmentId(departments[0]._id || departments[0].id);
+      setDepartmentId(departments[0]._id);
     }
   }, [myQueues, departments, departmentId]);
 

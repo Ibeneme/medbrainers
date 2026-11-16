@@ -96,6 +96,7 @@ export interface TeleSession {
   /** Present only on the schedule response — copy these, they are not stored again. */
   inviteLinks?: TeleInviteLink[];
   createdAt?: string;
+  updatedAt?: any
 }
 
 export interface TeleDashboard {

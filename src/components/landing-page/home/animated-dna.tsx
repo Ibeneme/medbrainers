@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PRIMARY_COLOR, SECONDARY_COLOR } from "@/constants/colors";
-import DnaHelix from "./dna/dna_helix";
 import ProductDescriptionHome from "./dna/product_description";
 import ProductNameHome from "./dna/product_name";
 

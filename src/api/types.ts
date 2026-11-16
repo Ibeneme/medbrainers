@@ -1,4 +1,5 @@
 export type UserRole =
+  "owner"
   | "super_admin"
   | "ceo"
   | "admin"
@@ -15,6 +16,7 @@ export type UserRole =
   | "team_member"
   | "staff"
   | "other";
+
 
 export type MembershipStatus = "pending" | "active" | "rejected";
 
@@ -728,7 +730,7 @@ export interface RegisterPatientPayload {
   lastName: string;
   middleName?: string;
   dateOfBirth?: string | Date;
-  gender?: 'male' | 'female' | 'other' | 'unknown';
+  gender?: 'male' | 'female' | 'other' | 'prefer_not_to_say' | 'unknown';
   bloodGroup?: 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-' | 'unknown';
   phone?: string;
   countryCode?: string;

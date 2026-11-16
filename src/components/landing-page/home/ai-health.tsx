@@ -300,7 +300,7 @@ function renderNote(
   text: string,
   phrases: string[],
   hlCount: number,
-  shownLen: number
+  shownLen: number,
 ) {
   const shown = text.slice(0, shownLen);
   const ranges = phrases
@@ -325,7 +325,7 @@ function renderNote(
         }}
       >
         {shown.slice(r.s, r.e)}
-      </mark>
+      </mark>,
     );
     pos = r.e;
   });
@@ -390,7 +390,7 @@ export default function HealthMeetsAI() {
     if (!el) return;
     const io = new IntersectionObserver(
       ([entry]) => setInView(entry.isIntersecting),
-      { threshold: 0.25 }
+      { threshold: 0.25 },
     );
     io.observe(el);
     return () => io.disconnect();
@@ -443,10 +443,10 @@ export default function HealthMeetsAI() {
     phase === "typing"
       ? 0.25 * (typed / f.input.length)
       : phase === "analyzing"
-      ? 0.25 + 0.35 * (step / f.steps.length)
-      : phase === "output"
-      ? 0.6 + 0.4 * (rowIdx / f.rows.length)
-      : 1;
+        ? 0.25 + 0.35 * (step / f.steps.length)
+        : phase === "output"
+          ? 0.6 + 0.4 * (rowIdx / f.rows.length)
+          : 1;
 
   return (
     <section className="relative w-full overflow-hidden bg-white py-16 text-neutral-950 md:py-24 font-lufga">
@@ -461,7 +461,7 @@ export default function HealthMeetsAI() {
             "linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.3) 20%, #000 50%)",
         }}
       >
-        <Dna brightness={2.0} />
+        <Dna />
       </div>
 
       {/* Fade into the next section */}
@@ -487,7 +487,7 @@ export default function HealthMeetsAI() {
               style={{
                 color: PRIMARY_COLOR,
                 backgroundImage: `linear-gradient(100deg, ${PRIMARY_COLOR} 0%, ${PRIMARY_COLOR} 40%, ${tint(
-                  45
+                  45,
                 )} 50%, ${PRIMARY_COLOR} 60%, ${PRIMARY_COLOR} 100%)`,
                 backgroundSize: "250% 100%",
               }}
@@ -552,7 +552,7 @@ export default function HealthMeetsAI() {
               className="pointer-events-none absolute inset-0"
               style={{
                 backgroundImage: `repeating-linear-gradient(90deg, transparent 0 7px, ${tint(
-                  14
+                  14,
                 )} 7px 8px)`,
                 maskImage: "linear-gradient(to bottom, black, transparent 75%)",
                 WebkitMaskImage:
@@ -607,7 +607,7 @@ export default function HealthMeetsAI() {
               className="pointer-events-none absolute inset-0 animate-[aiGradient_12s_ease-in-out_infinite] motion-reduce:animate-none"
               style={{
                 backgroundImage: `linear-gradient(135deg, #0a0a0b 0%, #0a0a0b 30%, ${PRIMARY_COLOR} 55%, #0a0a0b 80%, ${deep(
-                  55
+                  55,
                 )} 100%)`,
                 backgroundSize: "300% 300%",
               }}
@@ -627,7 +627,7 @@ export default function HealthMeetsAI() {
               className="pointer-events-none absolute -bottom-1/4 -right-1/4 h-3/4 w-3/4 animate-[aiBlobB_11s_ease-in-out_infinite] motion-reduce:animate-none"
               style={{
                 backgroundImage: `radial-gradient(closest-side, ${tint(
-                  45
+                  45,
                 )}, transparent)`,
                 opacity: 0.35,
               }}
@@ -704,9 +704,9 @@ export default function HealthMeetsAI() {
             className="relative overflow-hidden rounded-2xl p-5 md:col-span-2 md:p-6 lg:col-span-1 lg:p-7"
             style={{
               backgroundImage: `radial-gradient(55% 50% at 12% 12%, ${tint(
-                48
+                48,
               )}, transparent 70%), radial-gradient(50% 60% at 92% 88%, ${PRIMARY_COLOR}, transparent 68%), linear-gradient(135deg, ${tint(
-                24
+                24,
               )}, ${tint(55)})`,
             }}
           >
@@ -787,7 +787,7 @@ export default function HealthMeetsAI() {
                         f.input,
                         f.highlights,
                         step,
-                        phase === "typing" ? typed : f.input.length
+                        phase === "typing" ? typed : f.input.length,
                       )}
                       {phase === "typing" && (
                         <span
@@ -805,7 +805,7 @@ export default function HealthMeetsAI() {
                         className="pointer-events-none absolute inset-y-0 w-14 animate-[aiScan_750ms_ease-in-out_1] motion-reduce:animate-none"
                         style={{
                           backgroundImage: `linear-gradient(90deg, transparent, ${tint(
-                            20
+                            20,
                           )})`,
                           borderRight: `1px solid ${PRIMARY_COLOR}`,
                         }}
@@ -825,8 +825,8 @@ export default function HealthMeetsAI() {
                             done
                               ? "text-neutral-700"
                               : current
-                              ? "font-medium text-neutral-950"
-                              : "text-neutral-400"
+                                ? "font-medium text-neutral-950"
+                                : "text-neutral-400"
                           }`}
                         >
                           {done ? (
@@ -1137,7 +1137,7 @@ export default function HealthMeetsAI() {
         @keyframes aiShine { from { background-position: 120% 0 } to { background-position: -120% 0 } }
         @keyframes aiRow {
           from { opacity: 0; transform: translateY(5px); background-color: ${tint(
-            12
+            12,
           )} }
           to   { opacity: 1; transform: none; background-color: transparent }
         }

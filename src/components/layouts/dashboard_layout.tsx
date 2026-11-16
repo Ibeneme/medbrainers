@@ -753,8 +753,26 @@ const NAV_ITEMS: NavItem[] = [
     label: "Billing",
     icon: <Receipt size={16} />,
     children: [
+      { label: "Billing Overview", href: "/dashboard/billing" },
+      { label: "New Sale (POS)", href: "/dashboard/billing/pos" },
       { label: "Patient Invoices & POS", href: "/dashboard/billing/invoices" },
       { label: "Service Price Catalog", href: "/dashboard/billing/catalog" },
+      { label: "Discount Rules", href: "/dashboard/billing/discounts" },
+      {
+        label: "Finance & Audit",
+        children: [
+          { label: "Payment Log", href: "/dashboard/billing/payments" },
+          { label: "Financial Reports", href: "/dashboard/billing/reports" },
+          { label: "Billing Audit Log", href: "/dashboard/billing/audit" },
+        ],
+      },
+      {
+        label: "Billing Setup",
+        children: [
+          { label: "Billing Settings", href: "/dashboard/billing/settings" },
+          { label: "Paystack Gateway", href: "/dashboard/billing/gateway" },
+        ],
+      },
     ],
   },
   {

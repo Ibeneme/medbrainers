@@ -9,19 +9,19 @@ type PersonRef = string | { _id: string; firstName?: string; lastName?: string; 
 type PatientRef =
   | string
   | {
-      _id: string;
-      mrn?: string;
-      firstName?: string;
-      lastName?: string;
-      phone?: string;
-      dateOfBirth?: string;
-      gender?: string;
-      allergies?: Array<{ _id?: string; substance: string; reaction?: string; severity?: string }>;
-    };
+    _id: string;
+    mrn?: string;
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+    dateOfBirth?: string;
+    gender?: string;
+    allergies?: Array<{ _id?: string; substance: string; reaction?: string; severity?: string }>;
+  };
 
 export type DrugForm =
   | "tablet" | "capsule" | "syrup" | "suspension" | "injection" | "infusion" | "cream"
-  | "ointment" | "drops" | "inhaler" | "suppository" | "sachet" | "patch" | "other";
+  | "ointment" | "drops" | "inhaler" | "suppository" | "sachet" | "patch" | "powder" | "other";
 export type DrugRoute =
   | "oral" | "iv" | "im" | "sc" | "topical" | "inhalation" | "rectal" | "ophthalmic" | "otic" | "sublingual" | "other";
 export type ControlledSchedule = "none" | "II" | "III" | "IV" | "V";
@@ -49,32 +49,33 @@ export interface PharmacySetup {
   };
   isActive: boolean;
 }
+export type DrugSchedule = "otc" | "pom" | "controlled";
+export type DrugCatalogItem = PharmacyDrug;
 
 export interface PharmacyDrug {
   _id: string;
-  company: string;
+  company?: string;
   code: string;
   genericName: string;
   brandName?: string;
-  category: string;
-  form: DrugForm;
   strength?: string;
-  route?: DrugRoute;
-  unit: string;
-  manufacturer?: string;
-  barcode?: string;
-  price: number;
-  costPrice: number;
-  reorderLevel: number;
-  requiresPrescription: boolean;
+  form: DrugForm;
+  route?: string;
+  category: string;
+  packSize?: string;
+  unit?: string;
+  reorderLevel?: number;
+  reorderQty?: number;
+  costPrice?: number;
+  sellingPrice: number;
+  schedule: "otc" | "pom" | "controlled";
   isControlled: boolean;
-  controlledSchedule: ControlledSchedule;
-  storage?: string;
-  notes?: string;
+  requiresCounsel?: boolean;
+  nafdacNo?: string;
+  manufacturer?: string;
+  expiryDate?: string;
   isActive: boolean;
-  createdAt?: string;
-  updatedAt?: string;
-  batches?: PharmacyBatch[];
+  batches?: any[];
 }
 
 export interface PharmacyInventoryRow extends PharmacyDrug {
@@ -143,7 +144,7 @@ export interface GoodsReceipt {
 
 export interface PrescriptionItem {
   _id: string;
-  drug?: string | Pick<PharmacyDrug, "_id" | "code" | "genericName" | "brandName" | "strength" | "form" | "unit" | "price" | "isControlled">;
+  drug?: string | Pick<PharmacyDrug, "_id" | "code" | "genericName" | "brandName" | "strength" | "form" | "unit" | "sellingPrice" | "isControlled">;
   name: string;
   dosage?: string;
   frequency?: string;
@@ -212,8 +213,8 @@ export interface DispensePreviewLine {
     genericName: string;
     brandName?: string;
     strength?: string;
-    unit: string;
-    price: number;
+    unit?: string;
+    sellingPrice: number;
     isControlled: boolean;
     sellable: number;
     nearestExpiry: string | null;
@@ -473,6 +474,9 @@ export const cancelPrescription = mk<F & { id: string; reason: string }, Prescri
   async ({ facilityId, id, reason }) => (await api.post(`${base(facilityId)}/prescriptions/${id}/cancel`, { reason })).data);
 export const addPrescriptionNote = mk<F & { id: string; text: string }, Prescription>("noteRx", "Could not add note",
   async ({ facilityId, id, text }) => (await api.post(`${base(facilityId)}/prescriptions/${id}/notes`, { text })).data);
+
+// Export addRequestNote as an alias/wrapper to resolve import mismatches across other modules
+export const addRequestNote = addPrescriptionNote;
 
 /* ---- dispensing ---- */
 export const fetchDispensePreview = mk<F & { id: string }, DispensePreview>("fetchPreview", "Failed to load dispensing details",

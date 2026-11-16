@@ -34,10 +34,12 @@ function ExpiryInner() {
 
   const initial = (sp.get("filter") as Filter) || "expiring";
   const [filter, setFilter] = useState<Filter>(
-    ["expiring", "expired", "in_stock"].includes(initial) ? initial : "expiring"
+    ["expiring", "expired", "in_stock"].includes(initial)
+      ? initial
+      : "expiring",
   );
   const [days, setDays] = useState<number>(
-    setup?.settings?.expiryAlertDays ?? 90
+    setup?.settings?.expiryAlertDays ?? 90,
   );
   const [search, setSearch] = useState("");
 
@@ -47,7 +49,7 @@ function ExpiryInner() {
     message: string;
     confirmLabel: string;
     tone: "danger" | "primary";
-    action: () => Promise<void>;
+    onConfirm: () => Promise<void>;
   } | null>(null);
 
   const load = () =>
@@ -67,7 +69,7 @@ function ExpiryInner() {
         b.drug?.genericName,
         b.drug?.brandName,
         b.drug?.code,
-      ].some((x) => x?.toLowerCase().includes(q))
+      ].some((x) => x?.toLowerCase().includes(q)),
     );
   }, [batches, search]);
 
@@ -81,7 +83,7 @@ function ExpiryInner() {
 
   const toggleSelectOne = (id: string) => {
     setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
     );
   };
 
@@ -99,10 +101,10 @@ function ExpiryInner() {
         ? "Yes, quarantine selected"
         : "Yes, release selected",
       tone: isQuarantine ? "danger" : "primary",
-      action: async () => {
+      onConfirm: async () => {
         for (const id of selectedIds) {
           await act(
-            setBatchStatus({ facilityId, batchId: id, status: targetStatus })
+            setBatchStatus({ facilityId, batchId: id, status: targetStatus }),
           );
         }
         setSelectedIds([]);
@@ -114,10 +116,8 @@ function ExpiryInner() {
 
   const handleMultiWriteOff = () => {
     if (selectedIds.length === 0) return;
-    // For multiple write-offs, route to adjustments with comma-separated batch IDs or handle them
-    // Here we can take the first batch or pass them via query params if supported, or route to the first one.
     router.push(
-      `/dashboard/pharmacy/adjustments/new?batch=${selectedIds[0]}&type=expired`
+      `/dashboard/pharmacy/adjustments/new?batch=${selectedIds[0]}&type=expired`,
     );
   };
 
@@ -146,12 +146,14 @@ function ExpiryInner() {
               >
                 Quarantine selected
               </GhostButton>
-              <Can perm="pharmacy.write"><GhostButton
-                icon={ShieldAlert}
-                onClick={() => handleMultiQuarantine("active")}
-              >
-                Release selected
-              </GhostButton></Can>
+              <Can perm="pharmacy.write">
+                <GhostButton
+                  icon={ShieldAlert}
+                  onClick={() => handleMultiQuarantine("active")}
+                >
+                  Release selected
+                </GhostButton>
+              </Can>
               <PrimaryButton icon={Trash2} onClick={handleMultiWriteOff}>
                 Write off selected
               </PrimaryButton>
@@ -277,8 +279,8 @@ function ExpiryInner() {
                           color: expired
                             ? "#dc2626"
                             : d !== null && d <= 30
-                            ? "#d97706"
-                            : undefined,
+                              ? "#d97706"
+                              : undefined,
                           opacity: expired || (d !== null && d <= 30) ? 1 : 0.5,
                         }}
                       >
@@ -316,7 +318,7 @@ function ExpiryInner() {
                                   ? "Yes, release"
                                   : "Yes, quarantine",
                                 tone: isQuarantined ? "primary" : "danger",
-                                action: async () => {
+                                onConfirm: async () => {
                                   await act(
                                     setBatchStatus({
                                       facilityId,
@@ -324,7 +326,7 @@ function ExpiryInner() {
                                       status: isQuarantined
                                         ? "active"
                                         : "quarantined",
-                                    })
+                                    }),
                                   );
                                   setConfirmModalState(null);
                                   load();
@@ -355,9 +357,9 @@ function ExpiryInner() {
         state={confirmModalState}
         busy={saving}
         onCancel={() => setConfirmModalState(null)}
-        onConfirm={async () => {
-          if (confirmModalState) {
-            await confirmModalState.action();
+        onConfirm={() => {
+          if (confirmModalState?.onConfirm) {
+            confirmModalState.onConfirm();
           }
         }}
         ui={{
