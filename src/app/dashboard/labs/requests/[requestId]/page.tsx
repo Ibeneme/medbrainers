@@ -1296,24 +1296,28 @@ export default function LabRequestDetailPage() {
                 Diagnostic Request · {activeRequest.tests?.length || 0}{" "}
                 {activeRequest.tests?.length === 1 ? "test" : "tests"} ordered
               </p>
-              {activeRequest.consultation && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    setSelectedConsultation(activeRequest.consultation)
-                  }
-                  className="inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition hover:opacity-80 border"
-                  style={{
-                    backgroundColor: `${PRIMARY_COLOR}12`,
-                    borderColor: `${PRIMARY_COLOR}30`,
-                    color: PRIMARY_COLOR,
-                  }}
-                >
-                  <Stethoscope size={13} />
-                  View Source Consultation & Attachments (
-                  {activeRequest.consultation.attachments?.length || 0})
-                </button>
-              )}
+              {/* Check if consultation is an object and has attachments */}
+              {typeof activeRequest.consultation === "object" &&
+                activeRequest.consultation !== null && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSelectedConsultation(activeRequest.consultation)
+                    }
+                    className="inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition hover:opacity-80 border"
+                    style={{
+                      backgroundColor: `${PRIMARY_COLOR}12`,
+                      borderColor: `${PRIMARY_COLOR}30`,
+                      color: PRIMARY_COLOR,
+                    }}
+                  >
+                    <Stethoscope size={13} />
+                    View Source Consultation & Attachments (
+                    {(activeRequest.consultation as any).attachments?.length ||
+                      0}
+                    )
+                  </button>
+                )}
             </div>
           </div>
 

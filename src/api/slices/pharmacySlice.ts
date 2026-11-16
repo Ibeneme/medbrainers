@@ -59,7 +59,7 @@ export interface PharmacyDrug {
   genericName: string;
   brandName?: string;
   strength?: string;
-  form: DrugForm;
+  form: string;
   route?: string;
   category: string;
   packSize?: string;
@@ -67,10 +67,16 @@ export interface PharmacyDrug {
   reorderLevel?: number;
   reorderQty?: number;
   costPrice?: number;
-  sellingPrice: number;
-  schedule: "otc" | "pom" | "controlled";
+  sellingPrice?: number;
+  price?: number;                    // Added
+  schedule: string;
   isControlled: boolean;
+  requiresPrescription?: boolean;    // Added
   requiresCounsel?: boolean;
+  controlledSchedule?: string;       // Added
+  barcode?: string;                  // Added
+  storage?: string;                  // Added
+  notes?: string;                    // Added
   nafdacNo?: string;
   manufacturer?: string;
   expiryDate?: string;

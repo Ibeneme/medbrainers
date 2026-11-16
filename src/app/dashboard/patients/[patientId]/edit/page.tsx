@@ -5,7 +5,7 @@ import Link from "@/components/access/guarded-link";
 import { useParams, useRouter } from "next/navigation";
 import { ChevronRight, Edit3, User } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/api/hooks";
-import type { Gender } from "@/api/types";
+import type { Gender, RegisterPatientPayload } from "@/api/types";
 import { fetchPatient, updatePatient } from "@/api/slices";
 import { useTheme } from "@/contexts/theme-context";
 import { PRIMARY_COLOR, getUI } from "@/constants/colors";
@@ -61,7 +61,7 @@ export default function EditPatientPage() {
       setEditDob(
         current.dateOfBirth
           ? new Date(current.dateOfBirth).toISOString().split("T")[0]
-          : ""
+          : "",
       );
       setEditGender(current.gender || "");
       setEditBloodGroup(current.bloodGroup || "");
@@ -93,13 +93,16 @@ export default function EditPatientPage() {
     }
 
     try {
-      const payload = {
+      const payload: Partial<
+        RegisterPatientPayload & { status?: string; primaryPhysician?: string }
+      > = {
         firstName: editFirstName,
         lastName: editLastName,
         middleName: editMiddleName || undefined,
         dateOfBirth: editDob || undefined,
         gender: (editGender || undefined) as Gender | undefined,
-        bloodGroup: editBloodGroup || undefined,
+        bloodGroup: (editBloodGroup ||
+          undefined) as RegisterPatientPayload["bloodGroup"],
         countryCode: editCountryCode || undefined,
         phone: editPhone || undefined,
         email: editEmail.trim(),
@@ -109,7 +112,7 @@ export default function EditPatientPage() {
       };
 
       await dispatch(
-        updatePatient({ facilityId: activeFacilityId, patientId, payload })
+        updatePatient({ facilityId: activeFacilityId, patientId, payload }),
       ).unwrap();
       notify("Patient details updated successfully");
       setTimeout(() => {
@@ -118,7 +121,7 @@ export default function EditPatientPage() {
     } catch (e: unknown) {
       notify(
         typeof e === "string" ? e : "Failed to update patient details",
-        true
+        true,
       );
     }
   };
