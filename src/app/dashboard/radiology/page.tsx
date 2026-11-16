@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, Suspense } from "react";
 import Link from "@/components/access/guarded-link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -34,7 +34,7 @@ interface RadiologyHomePageProps {
   destinationPath?: string;
 }
 
-export default function RadiologyHomePage({
+function RadiologyContent({
   title = "Radiology & PACS",
   description = "Manage orders, live worklists, DICOM viewer streams, and structured reports.",
   routes = [
@@ -126,7 +126,6 @@ export default function RadiologyHomePage({
           <button
             type="button"
             onClick={() => {
-              // Reload functionality if needed via hook
               window.location.reload();
             }}
             className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition hover:opacity-90 border shrink-0"
@@ -406,14 +405,14 @@ export default function RadiologyHomePage({
                             item.priority === "stat"
                               ? "rgba(220,38,38,0.14)"
                               : item.priority === "urgent"
-                              ? "rgba(217,119,6,0.14)"
-                              : ui.inner,
+                                ? "rgba(217,119,6,0.14)"
+                                : ui.inner,
                           color:
                             item.priority === "stat"
                               ? "#dc2626"
                               : item.priority === "urgent"
-                              ? "#d97706"
-                              : ui.text,
+                                ? "#d97706"
+                                : ui.text,
                         }}
                       >
                         {item.priority || "routine"}
@@ -441,5 +440,19 @@ export default function RadiologyHomePage({
         )}
       </div>
     </div>
+  );
+}
+
+export default function RadiologyHomePage(props: RadiologyHomePageProps) {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-6 text-sm opacity-70">
+          Loading Radiology & PACS...
+        </div>
+      }
+    >
+      <RadiologyContent {...props} />
+    </Suspense>
   );
 }
